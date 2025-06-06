@@ -1,0 +1,136 @@
+Control Structures:
+Filter:
+Basic Control Structures
+if
+while
+for
+forBy
+do
+switch
+case
+Other Control Structures
+Inline optimization
+Reference | Language
+
+Control Structures
+flow control
+See also: Boolean
+Control structures in SuperCollider are implemented via message sends. Here are a few of those available. See Syntax Shortcuts for the various ways expressions can be written.
+
+Basic Control Structures
+if
+Conditional execution is implemented via the if message. The if message is sent to an expression which must return a Boolean value. In addition it takes two arguments: a function to execute if the expression is true and another optional function to execute if the expression
+is false. The if message returns the value of the function which is executed. If the falseFunc is not present and the expression is false then the result of the if message is nil.
+Discussion:
+if (expr, trueFunc, falseFunc);
+
+Syntax
+expr.if (trueFunc, falseFunc);
+
+--or-if ( [false, true].choose,
+Boolean expression
+Examples //(chooses
+one at random)
+
+while
+The while message implements conditional execution of a loop. If the testFunc answers true when evaluated, then the bodyFunc is evaluated and the process is repeated. Once the testFunc returns false, the loop terminates.
+Discussion:
+while ( testFunc, bodyFunc );
+
+Syntax
+testFunc.while( bodyFunc );
+
+--or-(
+= 0;
+Example iwhile
+( { i < 5 }, { i = i + 1;
+
+while expressions are also optimized by the compiler if they do not contain variable declarations in the testFunc and the bodyFunc.
+
+for
+The for message implements iteration over an integer series from a starting value to an end value stepping by one each time. A function is evaluated each iteration and is passed the iterated numeric value as an argument.
+Discussion:
+for ( startValue, endValue,
+Syntax function )
+startValue.for ( endValue,
+--or-- function )
+for (3, 7, { arg i; i.postln }); //
+Example prints values 3 through 7
+
+forBy
+The forBy selector implements iteration over an integer series with a variable step size. A function is evaluated each iteration and is passed the iterated numeric value as an argument.
+Discussion:
+forBy ( startValue, endValue,
+Syntax stepValue, function );
+startValue.forBy ( endValue,
+--or-- stepValue, function );
+forBy (0, 8, 2, { arg i;
+}); // prints values
+Example i.postln
+0 through 8 by 2's
+
+do
+Do is used to iterate over a Collection. Positive Integers also respond to do by iterating from zero up to their value. Collections iterate, calling the function for each object they contain. Other kinds of Objects respond to do by passing themselves to the function one time. The
+function is called with two arguments, the item, and an iteration counter.
+Discussion:
+do ( collection, function )
+
+Syntax
+collection.do(function)
+
+--or-[ 1, 2, "abc", (3@4) ].do({
+item, i; [i, item].postln;
+Example arg
+});
+(8..20) do: { |item|
+} // is not
+NOTE: The syntax (8..20).do uses an optimization to avoid generating an array that is used only for iteration (but which would be discarded thereafter). The return value of (8..20).do({ |item| item.postln }) is 8, the starting value. item.postln
+optimized, and returns the
+
+switch
+Object implements a switch method which allows for conditional evaluation with multiple cases. These are implemented as pairs of test objects (tested using if this == test.value) and corresponding functions to be evaluated if true. The switch statement will be inlined if the
+test objects are all Floats, Integers, Symbols, Chars, nil, false, true and if the functions have no variable or argument declarations. The inlined switch uses a hash lookup (which is faster than nested if statements), so it should be very fast and scale to any number of clauses.
+Discussion:
+switch (value,
+testvalue1,
+Syntax trueFunction1,
+(
+x=0; //also try 1
+Examples var
+switch(x,0,{"hello"}, 1,
+(
+x, z;
+or: var
+z = [0, 1, 1.1, 1.3, 1.5, 2];
+
+case
+Function implements a case method which allows for conditional evaluation with multiple cases. Since the receiver represents the first case this can be simply written as pairs of test functions and corresponding functions to be evaluated if true. Case is inlined and is
+therefore just as efficient as nested if statements.
+Discussion:
+(
+i, x, z;
+Example var
+z = [0, 1, 1.1, 1.3, 1.5, 2];
+
+Other Control Structures
+Using Functions, many control structures can be defined like the ones above. In the class Collection: iteration there are many more messages defined for iterating over Collections.
+
+Inline optimization
+(
+if, while, switch and case expressions are optimized (i.e. inlined) by the compiler if they do not contain variable declarations in the functions. The optimization plucks the code from the functions and uses a more efficient jump statement: {
+(
+Failure to inline due to variable declarations: {
+
+if(6 == 9, {
+
+LanguageConfig.postInlin
+// warn
+You can switch on and off the above warning (see: LanguageConfig: *postInlineWarnings) eWarnings_(true)
+LanguageConfig.postInlin
+
+helpfile source: /usr/local/share/SuperCollider/HelpSource/Reference/Control-Structures.schelp
+link::Reference/Control-Structures::
+
+if(6 == 9, {
+
+

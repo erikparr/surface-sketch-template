@@ -1,0 +1,158 @@
+TITLE:: MIDIController
+summary:: A flexible MIDI control interface for VST plugins and OSC messaging
+categories:: External Control>MIDI
+related:: Classes/MIDIFunc, Classes/VSTPlugin, Classes/NetAddr
+
+DESCRIPTION::
+MIDIController provides a comprehensive interface for handling MIDI input devices, VST plugin control, and OSC messaging. It supports configurable numbers of knobs, continuous parameter mapping, and various MIDI control features including note handling, pitch bend, and glissando effects.
+
+CLASSMETHODS::
+
+METHOD:: new
+Create a new MIDIController instance
+
+argument:: vstList
+A Dictionary of VSTPlugin instances
+
+argument:: oscNetAddr
+A NetAddr instance for OSC communication
+
+argument:: bendSynth
+Optional. A synth for handling pitch bend effects
+
+argument:: numKnobs
+Optional. Number of MIDI knobs to handle (default: 8)
+
+argument:: startCC
+Optional. Starting CC number for knobs (default: 16)
+
+INSTANCEMETHODS::
+
+METHOD:: startVSTMapping
+Start continuous VST parameter mapping
+
+argument:: vstKey
+Symbol key for VST instance in vstList (default: \vsti)
+
+argument:: ccMappings
+Array of [channel, cc, knobIndex] mappings. Default: [[0,18,0], [0,19,1], [0,16,2]]
+
+argument:: rate
+Polling rate in seconds (default: 0.02)
+
+METHOD:: processKnobs
+Process all knobs with a function
+
+argument:: func
+Function to process each knob. Arguments passed: index, value, range
+
+METHOD:: getKnob
+Get values for a specific knob
+
+argument:: index
+Knob index (0-based)
+
+returns:: Event with keys: value, range, cc
+
+METHOD:: setKnob
+Set value for a specific knob
+
+argument:: index
+Knob index (0-based)
+
+argument:: value
+New value (0-127)
+
+METHOD:: setGlissandoMode
+Enable/disable glissando mode
+
+argument:: bool
+Boolean to enable/disable
+
+METHOD:: setPollRate
+Change the VST parameter mapping polling rate
+
+argument:: newRate
+New polling rate in seconds
+
+METHOD:: free
+Clean up and free all resources
+
+EXAMPLES::
+
+code::
+// Initialize MIDI
+MIDIClient.init;
+MIDIIn.connectAll;
+
+// Create NetAddr for OSC
+n = NetAddr("127.0.0.1", 57120);
+
+// Create a dictionary for VST plugins
+~vstList = Dictionary.new;
+~vstList.put(\vsti, VSTPlugin.new);
+
+// Create a bend synth
+~bend1 = Bus.control;
+SynthDef(\BendEnvelope1, {
+    arg start = 0, end = 1, dur = 1, chanIndex = 0;
+    var env;
+    env = EnvGen.kr(
+        Env([start, end], [dur], \sin),
+        gate: \gate.tr,
+        doneAction: 2
+    );
+    SendTrig.kr(Impulse.kr(64), id:chanIndex, value:env);
+}).add;
+
+~bendSynth1 = Synth(\BendEnvelope1, \outbus, 0);
+
+// Basic initialization
+~midiController = MIDIController(
+    vstList: ~vstList,
+    oscNetAddr: n
+);
+
+// Initialize with all options
+~midiController = MIDIController(
+    vstList: ~vstList,
+    oscNetAddr: n,
+    bendSynth: ~bendSynth1,
+    numKnobs: 16,
+    startCC: 20
+);
+
+// Start VST mapping with default settings
+~midiController.startVSTMapping;
+
+// Start VST mapping with custom settings
+~midiController.startVSTMapping(
+    vstKey: \vsti,
+    ccMappings: [
+        [0, 18, 0],
+        [0, 19, 1],
+        [0, 16, 2]
+    ],
+    rate: 0.01
+);
+
+// Process all knobs
+~midiController.processKnobs({ |index, value, range|
+    "Knob % : value = %, range = %\n".postf(index + 1, value, range);
+});
+
+// Get/Set individual knob values
+~midiController.getKnob(0).postln;
+~midiController.setKnob(0, 64);
+
+// Enable glissando mode
+~midiController.setGlissandoMode(true);
+
+// Change polling rate
+~midiController.setPollRate(0.01);
+
+// Cleanup
+~midiController.free;
+::
+
+PRIVATE:: init, initMIDIFuncs

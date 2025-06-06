@@ -1,0 +1,134 @@
+title:: TimeSignature
+summary:: A class for managing musical time signatures.
+
+categories:: Server>Abstractions
+
+class:: TimeSignature
+
+description::
+A class that handles time signatures in a musical context, allowing for tracking and managing beats, measures, and bars.
+
+section:: Class Methods
+
+method:: new
+Create a new instance of TimeSignature.
+argument:: num
+The numerator of the time signature.
+argument:: denom
+The denominator of the time signature.
+argument:: tempo
+The beats per minute.
+
+section:: Instance Methods
+
+method:: advance
+Advances the time based on the current time signature settings.
+
+method:: setBPM
+Sets the beats per minute.
+argument:: tempo
+The tempo in beats per minute.
+
+method:: reset
+Resets the beat, measure, and bar to their initial state.
+
+method:: calcBeatDuration
+Calculates the duration of a beat based on the BPM.
+
+method:: getBeatDuration
+Returns the current beat duration in seconds.
+
+method:: getBPM
+Returns the beats per minute calculated from the beat duration.
+
+method:: getMeasureDuration
+Calculates the total duration of the beats for the current measure.
+
+method:: getBarDuration
+Calculates the total duration of the beats for the current bar.
+
+method:: getDuration
+Calculates the total duration of beats for all bars up to the current one.
+
+method:: isLastBeatInMeasure
+Checks if the current beat is the last in the measure.
+
+method:: isLastMeasureInBar
+Checks if the current measure is the last in the bar.
+
+method:: isLastBeatInBarAndMeasure
+Checks if it is the last beat in both the bar and the measure.
+
+method:: isFirstBeatInMeasure
+Checks if the current beat is the first in the measure.
+
+method:: isFirstMeasureInBar
+Checks if the current measure is the first in the bar.
+
+method:: isFirstBeatInBarAndMeasure
+Checks if it is the first beat in both the bar and the measure.
+
+method:: printCurrentTime
+Prints the current beat, measure, and bar.
+
+section:: Examples
+
+code::
+// Example 1: Create a TimeSignature instance and advance time
+(
+var ts = TimeSignature.new(4, 4);
+8.do {
+    ts.advance;
+    ts.printCurrentTime;
+    0.5.wait;
+};
+)
+::
+
+code::
+// Example 2: Integrating with a Task for a sequence
+(
+var ts, myTask;
+ts = TimeSignature.new(3, 4);
+myTask = Task({
+    loop {
+        ts.advance;
+        ts.printCurrentTime;
+        1.wait; // Simulating a beat
+    }
+}).play;
+10.wait;
+myTask.stop;
+)
+::
+
+code::
+/*
+In this example, we'll create a scenario where a particular action (in this case, a simple postln statement, but it could be anything) is executed every few bars. We'll use a condition inside the loop to check the bar property of the TimeSignature instance and perform an action when it reaches a certain value.
+*/
+
+(
+var ts, myTask;
+ts = TimeSignature.new(4, 4); // 4/4 time signature
+myTask = Task({
+    loop {
+        ts.advance;
+        ts.printCurrentTime;
+
+        // Execute code after every 2 bars
+        if (ts.bar % 2 == 0 && ts.beat == 1 && ts.measure == 1) {
+            "Special action executed at bar: %\n".format(ts.bar).postln;
+            // Place your action here, e.g., triggering a sound, changing a parameter, etc.
+        }
+
+        1.wait; // Simulating a beat
+    }
+}).play;
+
+30.wait; // Let it run for a while to observe the behavior
+myTask.stop;
+)
+
+authors:: Erik Parr
+acknowledgements:: mostly gpt generated helpfile
+::

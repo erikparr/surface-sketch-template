@@ -1,0 +1,121 @@
+-> a Routine
+=== TEST 1: Working Approach (Manual Synth Creation) ===
+Created synth: Synth('vstHost' : 1158)
+VSTManager: VST loaded: Test1_Manual
+Test1 callback executed - controller: a VSTPluginController
+Test1 controller isOpen: true
+VSTManager: Updated  127  parameters for  Test1_Manual
+VST 'Test1_Manual' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test1_Manual, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+[PASS] Test 'Test1_WorkingApproach': SUCCESS - VST loaded successfully via manual synth creation
+=== TEST 2: GUI Approach (VSTManager Creates Synth) ===
+Created synth: Synth('vstHost' : 1159)
+VSTManager: VST loaded: Test2_GUI
+Test2 callback executed - controller: a VSTPluginController
+Test2 controller isOpen: true
+VSTManager: Updated  127  parameters for  Test2_GUI
+VST 'Test2_GUI' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test2_GUI, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (11 -...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+[PASS] Test 'Test2_GUIApproach': SUCCESS - VST loaded successfully via GUI approach
+=== TEST 3: Editor Timing Test ===
+VSTManager: VST loaded: Test3_EditorTiming
+Test3 callback - attempting to open editor...
+Test3: Controller is open, opening editor immediately
+VSTManager: Updated  127  parameters for  Test3_EditorTiming
+VST 'Test3_EditorTiming' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test3_EditorTiming, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0....etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+[PASS] Test 'Test3_EditorTiming': SUCCESS - Editor timing test completed
+=== TEST 4: Multiple VST Loading Test ===
+VSTManager: VST loaded: Test4_Multi2
+Test4 VST 2 callback executed
+VSTManager: VST loaded: Test4_Multi1
+Test4 VST 1 callback executed
+VSTManager: VST loaded: Test4_Multi0
+Test4 VST 0 callback executed
+VSTManager: Updated  127  parameters for  Test4_Multi2
+VSTManager: Updated  127  parameters for  Test4_Multi1
+VSTManager: Updated  127  parameters for  Test4_Multi0
+VST 'Test4_Multi0' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test4_Multi0, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+VST 'Test4_Multi1' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test4_Multi1, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+VST 'Test4_Multi2' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test4_Multi2, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+[PASS] Test 'Test4_MultipleVSTs': SUCCESS - All 3 VSTs loaded successfully
+=== TEST 5: Callback Debugging Test ===
+VSTManager: VST loaded: Test5_CallbackDebug
+=== CALLBACK DEBUG ===
+Callback executed at: 0.040864542000008 seconds
+Controller: a VSTPluginController
+Controller class: VSTPluginController
+Controller isOpen: true
+Controller info: VSTPluginDesc( SWAM Bass Tuba )
+Controller synth: Synth('vstHost' : 1164)
+======================
+VSTManager: Updated  127  parameters for  Test5_CallbackDebug
+VST 'Test5_CallbackDebug' state:
+  - Instance exists: true
+  - Controller exists: true
+  - Controller isOpen: true
+  - Synth: ('name': Test5_CallbackDebug, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
+  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
+  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
+  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
+  (110 -> 0.0), (14 -> 1.0), (47 -> 0...etc...
+  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+[PASS] Test 'Test5_CallbackDebugging': SUCCESS - Callback executed: true, Load success: true, Callback delay: 0.040864542000008s
+=== TEST SUMMARY ===
+[PASS] Test1_WorkingApproach: VST loaded successfully via manual synth creation
+[PASS] Test4_MultipleVSTs: All 3 VSTs loaded successfully
+[PASS] Test2_GUIApproach: VST loaded successfully via GUI approach
+[PASS] Test5_CallbackDebugging: Callback executed: true, Load success: true, Callback delay: 0.040864542000008s
+[PASS] Test3_EditorTiming: Editor timing test completed
+===================

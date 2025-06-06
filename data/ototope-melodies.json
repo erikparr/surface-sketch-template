@@ -1,0 +1,92 @@
+{
+    "melodies": [
+        {
+            "active": true,
+            "key": "bridge2b",
+            "loopCount": 15,
+            "name": "Tuba Melody IX",
+            "pattern": [66, 61, 0, 0, 66],
+            "velocityFirst": 1.5,
+            "velocityLast": 0.5
+        },
+        {
+            "active": true,
+            "key": "bridge2a",
+            "loopCount": 15,
+            "name": "Tuba Melody IX",
+            "pattern": [78, 73, 70, 63, 78],
+            "velocityFirst": 1.5,
+            "velocityLast": 0.5
+        },
+       
+        {
+            "active": true,
+            "key": "part2a",
+            "loopCount": 1,
+            "name": "Tuba Melody X",
+            "pattern": [77, 75, 77, 89, 78, 75, 77, 78, 90, 77, 78, 94, 82, 73, 77, 89, 78],
+            "velocityFirst": 1.0,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3a",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [70, 85, 84, 70],
+            "velocityFirst": 1.0,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3b",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [72, 85, 87, 72],
+            "velocityFirst": 1.0,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3c",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [73, 89, 87, 73],
+            "velocityFirst": 1.0,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3d",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [72, 87, 85, 72],
+            "velocityFirst": 1.5,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3e",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [70, 85, 84, 70],
+            "velocityFirst": 1.5,
+            "velocityLast": 1.0
+        },
+        {
+            "active": true,
+            "key": "part3f",
+            "loopCount": 5,
+            "name": "Tuba Melody X",
+            "pattern": [72, 87, 82, 72],
+            "velocityFirst": 1.5,
+            "velocityLast": 1.0
+        }
+    ],
+    "settings": {
+        "defaultNamePrefix": "melody",
+        "nextSequenceNumber": 1,
+        "selectedMelodyIndex": 0,
+        "windowSize": [600, 400]
+    }
+} 
