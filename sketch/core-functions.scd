@@ -15,9 +15,25 @@
 // Function to process a note based on current settings
 ~processNote = { |note, isFirstNote=false, isLastNote=false, melodyKey|
     var processedNote = note;
-    // Get velocity from Knob 4 (CC 17, top row) - 1 to 127
-    var velocity = ~midiController.getKnobRow1(4).linlin(0, 1, 1, 127);
-    var velocityMultiplier = 1.0;
+    var velocity, velocityMultiplier = 1.0;
+    var mappingHandlesVelocity;
+    
+    // NEW: Parameter-centric approach - check if ANY row handles velocity parameter
+    "=== VELOCITY PARAMETER ROUTING DEBUG ===".postln;
+    
+    // Check if any enabled row handles velocity parameter
+    mappingHandlesVelocity = ~anyRowHandlesParameter.(\velocity);
+    
+    // Use mapping value if available, otherwise fall back to direct knob reading
+    if (mappingHandlesVelocity) {
+        velocity = ~ccControl.velocity;
+        "✓ MAPPING SYSTEM: velocity = % (from ~ccControl)".format(velocity).postln;
+    } {
+        velocity = ~midiController.getKnobRow1(4).linlin(0, 1, 1, 127);
+        "⚠ FALLBACK: velocity = % (direct from knob 4)".format(velocity).postln;
+    };
+    
+    "=== END VELOCITY DEBUG ===".postln;
 
     // Apply note offset if enabled
     if(~modes.noteOffset) {

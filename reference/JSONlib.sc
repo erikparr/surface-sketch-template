@@ -50,13 +50,13 @@ JSONlib {
 		};
 
 		^case
-		{ v.isKindOf(Symbol) } { this.prConvertToJson(v.asString) }
+		{ v.isKindOf(Symbol) }, { this.prConvertToJson(v.asString) }
 		// only check value if it is a ref
-		{ v.isNil or: { v.isKindOf(Ref) and: { v.value.isNil } } } { "null" }
+		{ v.isNil or: { v.isKindOf(Ref) and: { v.value.isNil } } }, { "null" }
 		// sc closely implements the JSON string, see https://www.json.org/json-en.html
 		// but the post window parses \n as linebreak etc. which makes copying of the JSON from
 		// the post window error prone
-		{ v.isString } {
+		{ v.isString }, {
 			v
 			.replace("\\", "\\\\") // reverse solidus
 			.replace("/", "\\/") // solidus
@@ -69,21 +69,21 @@ JSONlib {
 			// @todo non ascii chars
 			.quote
 		}
-		{ v.isNumber } {
+		{ v.isNumber }, {
 			case
-			{ v == inf } { "inf".quote }
-			{ v == inf.neg } { "-inf".quote }
+			{ v == inf }, { "inf".quote }
+			{ v == inf.neg }, { "-inf".quote }
 			{ v.asCompileString }
 		}
-		{ v.isKindOf(Boolean) } { v.asBoolean }
-		{ v.isKindOf(SequenceableCollection) } {
+		{ v.isKindOf(Boolean) }, { v.asBoolean }
+		{ v.isKindOf(SequenceableCollection) }, {
 			array = v.collect { |x| this.prConvertToJson(x) };
 			if(postWarnings and: { v.class !== Array  }) {
 				"JSON file format will not recover % class, but instead an Array".format(v.class.name).warn
 			};
 			"[ % ]".format(array.join(", "))
 		}
-		{ v.isKindOf(Dictionary) } {
+		{ v.isKindOf(Dictionary) }, {
 			array = v.asAssociations.sort.collect { |x|
 				var key = x.key;
 				if((key.isKindOf(String)).not) {
@@ -112,16 +112,16 @@ JSONlib {
 		};
 
 		^case
-		{ v.isString and: { v.every { |x| x.isDecDigit } } } { v.asInteger }
+		{ v.isString and: { v.every { |x| x.isDecDigit } } }, { v.asInteger }
 		// see https://www.json.org/json-en.html Number section and
 		// https://stackoverflow.com/a/6425559/3475778
-		{ v.isString and: { "^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$".matchRegexp(v.asString) } } { v.asFloat }
-		{ v == "true" } { true }
-		{ v == "false" } { false }
+		{ v.isString and: { "^[-]?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$".matchRegexp(v.asString) } }, { v.asFloat }
+		{ v == "true" }, { true }
+		{ v == "false" }, { false }
 		// an event can not store nil as a value so wrap it in a Ref
-		{ v == nil } { Ref(nil) }
-		{ v.isArray } { v.collect { |x| this.prConvertToSC(x) } }
-		{ v.isKindOf(Dictionary) } {
+		{ v == nil }, { Ref(nil) }
+		{ v.isArray }, { v.collect { |x| this.prConvertToSC(x) } }
+		{ v.isKindOf(Dictionary) }, {
 			if(useEvent) {
 				res = Event.new;
 				v.pairsDo { |key, x|

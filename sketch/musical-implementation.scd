@@ -49,11 +49,35 @@
 
             // Use MIDI controller values if available
             if(~midiController.notNil) {
-                // Get note parameters from knobs
-                noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.005, 0.5);
-                ("noteDuration set to: " ++ noteDuration).postln; // DEBUG
-                noteRestTime = ~midiController.getKnobRow1(3).linlin(0, 1, 0.0001, 0.4);
-                ("noteRestTime set to: " ++ noteRestTime).postln; // DEBUG
+                // NEW: Parameter-centric approach - check if ANY row handles timing parameters
+                var mappingHandlesNoteDuration, mappingHandlesNoteRestTime;
+                
+                "=== TIMING PARAMETER ROUTING DEBUG ===".postln;
+                
+                // Check if any enabled row handles these parameters
+                mappingHandlesNoteDuration = ~anyRowHandlesParameter.(\noteDuration);
+                mappingHandlesNoteRestTime = ~anyRowHandlesParameter.(\noteRestTime);
+                
+                // Use mapping values if available, otherwise fall back to direct knob reading
+                if (mappingHandlesNoteDuration) {
+                    noteDuration = ~ccControl.noteDuration;
+                    "✓ MAPPING SYSTEM: noteDuration = % (from ~ccControl)".format(noteDuration).postln;
+                } {
+                    noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.005, 0.5);
+                    "⚠ FALLBACK: noteDuration = % (direct from knob 2)".format(noteDuration).postln;
+                };
+                
+                if (mappingHandlesNoteRestTime) {
+                    noteRestTime = ~ccControl.noteRestTime;
+                    "✓ MAPPING SYSTEM: noteRestTime = % (from ~ccControl)".format(noteRestTime).postln;
+                } {
+                    noteRestTime = ~midiController.getKnobRow1(3).linlin(0, 1, 0.0001, 0.4);
+                    "⚠ FALLBACK: noteRestTime = % (direct from knob 3)".format(noteRestTime).postln;
+                };
+                
+                "=== END TIMING DEBUG ===".postln;
+                
+                // Temporal accent is not part of mapping system, always read from slider
                 temporalAccent = ~midiController.getSliderValue(7).linlin(0, 1, 0, 8);  // Slider 8 (CC 61) is index 7
                 ("temporalAccent set to: " ++ temporalAccent).postln; // DEBUG
                 // Get melody rest time from slider 7 (CC 55) which is index 6

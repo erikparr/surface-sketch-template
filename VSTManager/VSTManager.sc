@@ -64,7 +64,7 @@ VSTManager {
         if (groupName.isNil) {
             // Failsafe: nil means all instances
             isAllInstances = true;
-        } {
+        }, {
             // Check for clean "All" syntax (case insensitive)
             if (groupName.isKindOf(String) || groupName.isKindOf(Symbol)) {
                 var groupStr = groupName.asString.toLower;
@@ -77,7 +77,7 @@ VSTManager {
         if (isAllInstances) {
             // Return all instances (delegate to existing method)
             ^this.getInstances();
-        } {
+        }, {
             // Return instances from specific group
             if (groups[groupName].notNil) {
                 groups[groupName].do { |name|
@@ -87,7 +87,7 @@ VSTManager {
                     };
                 };
                 ^instances;
-            } {
+            }, {
                 ("VSTManager: Group '%' not found, returning empty collection".format(groupName)).warn;
                 ^Dictionary.new;
             };
@@ -169,7 +169,7 @@ VSTManager {
         if (groups.includesKey(groupName)) {
             activeGroup = groupName;
             ^true;
-        } {
+        }, {
             ("VSTManager: Group not found: " ++ groupName).warn;
             ^false;
         };
@@ -189,7 +189,7 @@ VSTManager {
     getGroupInstances { |groupName|
         ^if (groups[groupName].notNil) {
             groups[groupName].collect { |name| vstInstances[name] };
-        } {
+        }, {
             [];
         };
     }
@@ -199,7 +199,7 @@ VSTManager {
         var instances = this.getGroupInstances(groupName);
         if (instances.size > 0) {
             ^instances.wrapAt(index);
-        } {
+        }, {
             ("VSTManager: No instances found in group: " ++ groupName).warn;
             ^nil;
         };
@@ -209,7 +209,7 @@ VSTManager {
     getActiveInstances {
         if (activeGroup.notNil) {
             ^this.getGroupInstances(activeGroup) ? [];
-        } {
+        }, {
             ^[];
         };
     }
@@ -219,7 +219,7 @@ VSTManager {
         var instances = this.getActiveInstances;
         if (instances.size > 0) {
             ^instances.wrapAt(index);
-        } {
+        }, {
             "VSTManager: No active instances available".warn;
             ^nil;
         };
@@ -231,7 +231,7 @@ VSTManager {
         if (instanceNames.size > 0) {
             var instanceName = instanceNames.wrapAt(index);
             ^vstInstances[instanceName];
-        } {
+        }, {
             "VSTManager: No VST instances available".warn;
             ^nil;
         };
@@ -242,7 +242,7 @@ VSTManager {
         var instance = this.getInstanceByIndex(index);
         if (instance.notNil) {
             ^instance.controller;
-        } {
+        }, {
             ^nil;
         };
     }
@@ -271,11 +271,11 @@ VSTManager {
                     programName, vstName, programCache
                 ).warn;
                 ^nil;
-            } {
+            }, {
                 "Program cache not available for VST '%'".format(vstName).warn;
                 ^nil;
             }
-        } {
+        }, {
             "VST '%' is not open or controller not available".format(vstName).warn;
             ^nil;
         }
@@ -293,11 +293,11 @@ VSTManager {
                 controller.program_(index);
                 "Set program '%' (index %) for VST '%'".format(programName, index, vstName).postln;
                 ^true;
-            } {
+            }, {
                 "No controller available for VST '%'".format(vstName).warn;
                 ^false;
             };
-        } {
+        }, {
             ^false;
         }
     }
@@ -311,7 +311,7 @@ VSTManager {
                 this.setActiveGroup(groupName);
             };
             ^true;
-        } {
+        }, {
             ("VSTManager: Cannot set default group, not found: " ++ groupName).warn;
             ^false;
         };
@@ -361,15 +361,15 @@ VSTManager {
                         vstName, groupName, groups[groupName]
                     ).postln;
                     ^true;
-                } {
+                }, {
                     "VSTManager: VST '%' not found in group '%'.".format(vstName, groupName).warn;
                     ^false;
                 };
-            } {
+            }, {
                 "VSTManager: VST instance '%' not found.".format(vstName).warn;
                 ^false;
             };
-        } {
+        }, {
             "VSTManager: Group '%' not found.".format(groupName).warn;
             ^false;
         };
@@ -413,10 +413,10 @@ VSTManager {
     resolveTarget { |target|
         ^if (groups[target].notNil) {
             groups[target]
-        } {
+        }, {
             if (vstInstances[target].notNil) {
                 [target]
-            } {
+            }, {
                 #[] // Return empty array literal
             };
         };
@@ -440,7 +440,7 @@ VSTManager {
             if (instance.group.notNil) {
                 groupName = if (instance.group.isKindOf(String) || instance.group.isKindOf(Symbol)) {
                     instance.group;
-                } {
+                }, {
                     instance.group.name; // Assuming group might be an object with a name
                 };
             };
@@ -504,10 +504,10 @@ VSTManager {
                     if (found.not) {
                         "Program '%' not found in VST '%'".format(programName, instance.name).warn;
                     };
-                } {
+                }, {
                     "Program cache not available for VST '%'".format(instance.name).warn;
                 };
-            } {
+            }, {
                 "VST '%' is not open".format(instance.name).warn;
             };
         };
@@ -544,10 +544,10 @@ VSTManager {
                     if (found.not) {
                         "Program '%' not found in VST '%'".format(programName, vstName).warn;
                     };
-                } {
+                }, {
                     "Program cache not available for VST '%'".format(vstName).warn;
                 };
-            } {
+            }, {
                 "VST '%' is not open".format(vstName).warn;
             };
         };

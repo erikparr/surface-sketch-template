@@ -95,37 +95,85 @@
 
 // Function to update expression range from MIDI knobs
 ~updateExpressionRangeFromKnobs = {
-    if (~midiController.notNil) {
+    // NEW: Parameter-centric approach - check if ANY row handles expression parameters
+    var mappingHandlesExpressionMin, mappingHandlesExpressionMax;
+    
+    "=== EXPRESSION RANGE DEBUG ===".postln;
+    
+    // Check if any enabled row handles these parameters
+    mappingHandlesExpressionMin = ~anyRowHandlesParameter.(\expressionMin);
+    mappingHandlesExpressionMax = ~anyRowHandlesParameter.(\expressionMax);
+    
+    if (mappingHandlesExpressionMin.not && mappingHandlesExpressionMax.not) {
+        // FALLBACK: Only read knobs if NO mapping system handles these parameters
+        if (~midiController.notNil) {
+            "⚠ FALLBACK: Reading expression range from Row 1 knobs directly".postln;
+            "Knob 5 value: %".format(~midiController.getKnobRow1(5)).postln;
+            "Knob 6 value: %".format(~midiController.getKnobRow1(6)).postln;
 
-        "Knob 5 value: %".format(~midiController.getKnobRow1(5)).postln;
-        "Knob 6 value: %".format(~midiController.getKnobRow1(6)).postln;
+            // CC 47 (knob row 1, pos 5) controls expression min
+            ~ccControl.expressionMin = ~midiController.getKnobRow1(5).linlin(0, 1, 0, 127).asInteger;
+            
+            // CC 51 (knob row 1, pos 6) controls expression max  
+            ~ccControl.expressionMax = ~midiController.getKnobRow1(6).linlin(0, 1, 0, 127).asInteger;
 
-        // CC 47 (knob row 1, pos 5) controls expression min
-        ~ccControl.expressionMin = ~midiController.getKnobRow1(5).linlin(0, 1, 0, 127).asInteger;
-        
-        // CC 51 (knob row 1, pos 6) controls expression max  
-        ~ccControl.expressionMax = ~midiController.getKnobRow1(6).linlin(0, 1, 0, 127).asInteger;
-
-        "ccControl.expressionMin: %".format(~ccControl.expressionMin).postln;
-        "ccControl.expressionMax: %".format(~ccControl.expressionMax).postln;
-        
-        // Ensure max is always greater than min
-        if (~ccControl.expressionMax <= ~ccControl.expressionMin) {
-            ~ccControl.expressionMax = ~ccControl.expressionMin + 1;
+            "ccControl.expressionMin: %".format(~ccControl.expressionMin).postln;
+            "ccControl.expressionMax: %".format(~ccControl.expressionMax).postln;
+            
+            // Ensure max is always greater than min
+            if (~ccControl.expressionMax <= ~ccControl.expressionMin) {
+                ~ccControl.expressionMax = ~ccControl.expressionMin + 1;
+            };
+            
+            ["Updated expression range: % - %".format(~ccControl.expressionMin, ~ccControl.expressionMax)].postln;
         };
-        
-        ["Updated expression range: % - %".format(~ccControl.expressionMin, ~ccControl.expressionMax)].postln;
+    } {
+        "✓ MAPPING SYSTEM: Using expression range values from ~ccControl (updated by mapping system)".postln;
+        "expressionMin: % (mapped: %), expressionMax: % (mapped: %)".format(
+            ~ccControl.expressionMin, mappingHandlesExpressionMin,
+            ~ccControl.expressionMax, mappingHandlesExpressionMax
+        ).postln;
+    };
+    
+    "=== END EXPRESSION RANGE DEBUG ===".postln;
+    
+    // ALWAYS: Ensure max > min regardless of source (mapping or knobs)
+    if (~ccControl.expressionMax <= ~ccControl.expressionMin) {
+        ~ccControl.expressionMax = ~ccControl.expressionMin + 1;
+        "Validation: Ensured expressionMax (%) > expressionMin (%)".format(~ccControl.expressionMax, ~ccControl.expressionMin).postln;
     };
 };
 
 // Function to update expression duration scalar from MIDI knob
 ~updateExpressionDurationScalarFromKnob = {
-    if (~midiController.notNil) {
-        "Knob 3 value: %".format(~midiController.getKnob(3)).postln;
-        // Knob row 1, pos 4 (index 3) controls expression duration scalar
-        ~ccControl.expressionDurationScalar = ~midiController.getKnob(3).linlin(0, 1, 0.1, 1.0);
-        ["Updated expression duration scalar: %".format(~ccControl.expressionDurationScalar)].postln;
+    // NEW: Parameter-centric approach - check if ANY row handles expression duration scalar
+    var mappingHandlesDurationScalar;
+    
+    "=== EXPRESSION DURATION SCALAR DEBUG ===".postln;
+    
+    // Check if any enabled row handles this parameter
+    mappingHandlesDurationScalar = ~anyRowHandlesParameter.(\expressionDurationScalar);
+    
+    if (mappingHandlesDurationScalar.not) {
+        // FALLBACK: Only read knob if NO mapping system handles this parameter
+        if (~midiController.notNil) {
+            "⚠ FALLBACK: Reading duration scalar from Row 1 knob directly".postln;
+            "Knob 3 value: %".format(~midiController.getKnob(3)).postln;
+            // Knob row 1, pos 4 (index 3) controls expression duration scalar
+            ~ccControl.expressionDurationScalar = ~midiController.getKnob(3).linlin(0, 1, 0.1, 1.0);
+            ["Updated expression duration scalar: %".format(~ccControl.expressionDurationScalar)].postln;
+        };
+    } {
+        "✓ MAPPING SYSTEM: Using duration scalar value from ~ccControl (updated by mapping system)".postln;
+        "expressionDurationScalar: % (mapped: %)".format(
+            ~ccControl.expressionDurationScalar, mappingHandlesDurationScalar
+        ).postln;
     };
+    
+    "=== END DURATION SCALAR DEBUG ===".postln;
+    
+    // ALWAYS: Ensure duration scalar is within valid range
+    ~ccControl.expressionDurationScalar = ~ccControl.expressionDurationScalar.clip(0.1, 1.0);
 };
 
 // Function to calculate envelope duration based on current melody
@@ -270,3 +318,12 @@ OSCdef(\releaseFermata, { |msg, time, addr, recvPort|
         ["Released note:", note, "on VST:", vstName].postln;
     };
 }, '/note/release'); 
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    MIDI CONTROL MAPPING INTEGRATION                        │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Refresh MIDI control mapping integration if available
+if (~refreshMIDIControlMappingIntegration.notNil) {
+    ~refreshMIDIControlMappingIntegration.();
+}; 

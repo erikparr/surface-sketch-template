@@ -45,6 +45,12 @@ MIDIController {
     var <activePreset;
     var <disabledKnobCCs; // Added for toggling knob CC processing
 
+    // MIDI Control Mapping integration properties
+    var <rowMappings;           // Row mapping configuration  
+    var <controlTemplates;      // Control template definitions
+    var <groupParameterCallback; // Callback for parameter updates
+    var <mappingMode;           // Enable/disable mapping processing
+
     *new { |vstList, oscNetAddr, bendSynth = nil, numKnobs = 16, startCC = 0, debug = false|
         ^super.new.init(vstList, oscNetAddr, bendSynth, numKnobs, startCC, debug);
     }
@@ -105,6 +111,12 @@ MIDIController {
         currentSnapshot = nil;
         programmedMode = false;
         snapshotDataPath = this.class.getSnapshotDataPath;
+        
+        // Initialize MIDI Control Mapping properties
+        rowMappings = nil;              // No mappings by default
+        controlTemplates = nil;         // No templates by default  
+        groupParameterCallback = nil;   // No callback by default
+        mappingMode = false;            // Mapping disabled by default
         
         // Initialize controller presets
         this.initControllerPresets;
@@ -587,54 +599,67 @@ MIDIController {
 
         // MIDI CC (Control Change)
         midiFuncs[\control] = MIDIFunc.cc({ |val, num, chan, src|
-            var normalizedVal;
+            var normalizedVal, mappingHandled = false;
 
-            // Slider handling (existing logic, ensure it's compatible or adjust if needed)
-            if(activePreset.notNil && activePreset.sliders.notNil) {
-                var sliderIndex = activePreset.sliders.indexOf(num);
-                if(sliderIndex.notNil) {
-                    normalizedVal = val / 127.0;
-                    if(sliderIndex < sliderValues.size) {
-                        sliderValues[sliderIndex] = normalizedVal;
-                    };
-                    if(debug) {
-                        "MIDIController Slider CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln;
-                    };
-                    if(oscNetAddr.notNil) {
-                        oscNetAddr.sendMsg("/slider", sliderIndex, normalizedVal);
+            // NEW: Check if mapping system should handle this CC first
+            if(mappingMode && rowMappings.notNil) {
+                var rowInfo = this.findRowForCC(num);
+                if(rowInfo.notNil) {
+                    var rowNum = rowInfo.row;
+                    var mapping = rowMappings[rowNum];
+                    if(mapping.notNil && mapping.enabled) {
+                        // Mapping system handles this CC - route through mappings and skip original processing
+                        normalizedVal = val / 127.0;
+                        this.routeCCThroughMappings(num, normalizedVal);
+                        if(debug) {
+                            "MIDIController CC: % handled by mapping system (Row %)".format(num, rowNum).postln;
+                        };
+                        mappingHandled = true;
                     };
                 };
             };
 
-            // Handle knobs for the active preset
-            if(activePreset.notNil && activePreset.knobs.notNil) {
-                // Check if the CC number 'num' is one of the defined knobs for the current preset
-                // For nanoKONTROL2, activePreset.knobs is a Range. For midiMix, it's an Array.
-                var isDefinedKnob = if(activePreset.knobs.isKindOf(SequenceableCollection)) {
-                    activePreset.knobs.includes(num);   
-                } { false };
-
-                if(isDefinedKnob) {
-                    // Check if processing for this knob CC is temporarily disabled
-                    if (this.isPresetKnobProcessingDisabled(num).not) {
+            // ORIGINAL: Continue with original processing only if mapping system didn't handle this CC
+            if(mappingHandled.not) {
+                // Slider handling (existing logic, ensure it's compatible or adjust if needed)
+                if(activePreset.notNil && activePreset.sliders.notNil) {
+                    var sliderIndex = activePreset.sliders.indexOf(num);
+                    if(sliderIndex.notNil) {
                         normalizedVal = val / 127.0;
+                        if(sliderIndex < sliderValues.size) {
+                            sliderValues[sliderIndex] = normalizedVal;
+                        };
+                        if(debug) {
+                            "MIDIController Slider CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln;
+                        };
+                        if(oscNetAddr.notNil) {
+                            oscNetAddr.sendMsg("/slider", sliderIndex, normalizedVal);
+                        };
+                    };
+                };
 
-                        // Store value in dictionary using CC number as key
-                        knobValues.put(num, normalizedVal);
-
+                // Handle knobs for the active preset (UNIFIED PROCESSING)
+                if(activePreset.notNil && activePreset.knobs.notNil) {
+                    var knobIndex = activePreset.knobs.indexOf(num);
+                    if(knobIndex.notNil) {
+                        normalizedVal = val / 127.0;
+                        knobValues.put(num, val);
+                        
                         if(debug) {
                             "MIDIController Knob CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln;
                         };
                         
-                        // Send OSC message if oscNetAddr is set, using CC number
                         if(oscNetAddr.notNil) {
-                            oscNetAddr.sendMsg("/knob", num, normalizedVal);
+                            oscNetAddr.sendMsg(("/knob" ++ num).asSymbol, normalizedVal);
                         };
-                    } {
-                        if(debug) { ("MIDIController: Ignored disabled preset knob CC %").format(num).postln; };
-                    }
-                }
-            }
+                        
+                        // Route through mapping system if enabled (fallback for non-mapped knobs)
+                        if(mappingMode) {
+                            this.routeCCThroughMappings(num, normalizedVal);
+                        };
+                    };
+                };
+            };
         });
 
         // Initialize Buttons from active preset
@@ -1141,5 +1166,152 @@ MIDIController {
 
     isPresetKnobProcessingDisabled { |ccNum|
         ^disabledKnobCCs.includes(ccNum);
+    }
+
+    // ========== MIDI CONTROL MAPPING INTEGRATION ==========
+    
+    // Enable/disable mapping mode
+    setMappingMode { |bool|
+        mappingMode = bool;
+        this.debug("MIDI Control Mapping mode %".format(if(bool, "enabled", "disabled")));
+        ^this;
+    }
+    
+    // Set row mappings configuration
+    setRowMappings { |mappings|
+        rowMappings = mappings;
+        this.debug("Row mappings updated: %".format(rowMappings));
+        ^this;
+    }
+    
+    // Set control templates
+    setControlTemplates { |templates|
+        controlTemplates = templates;
+        this.debug("Control templates updated: %".format(templates.keys));
+        ^this;
+    }
+    
+    // Set callback for group parameter updates
+    setGroupParameterCallback { |callback|
+        groupParameterCallback = callback;
+        this.debug("Group parameter callback set");
+        ^this;
+    }
+    
+    // Find which row and position a CC number belongs to (for MIDIMix preset)
+    findRowForCC { |ccNum|
+        var midiMixRows, rowIndex, posIndex;
+        
+        if(activePresetName != \midiMix) { ^nil }; // Only works for MIDIMix
+        
+        midiMixRows = [
+            [16,20,24,28,46,50,54,58],  // Row 1 CCs
+            [17,21,25,29,47,51,55,59],  // Row 2 CCs  
+            [18,22,26,30,48,52,56,60]   // Row 3 CCs
+        ];
+        
+        midiMixRows.do { |row, rIdx|
+            posIndex = row.indexOf(ccNum);
+            if(posIndex.notNil) {
+                ^(row: rIdx + 1, pos: posIndex + 1); // Convert to 1-based indexing
+            };
+        };
+        
+        ^nil; // CC not found in any row
+    }
+    
+    // Route CC through mapping system (unified processing)
+    routeCCThroughMappings { |ccNum, normalizedValue|
+        var rowInfo, rowNum, pos, mapping, template, knobMapping, paramValue;
+        
+        if(debug) {
+            "--- routeCCThroughMappings START: CC %, val %".format(ccNum, normalizedValue).postln;
+        };
+        
+        // If mapping mode is disabled or no mappings, just store the raw value
+        if(mappingMode.not || rowMappings.isNil) {
+            if(debug) { "routeCCThroughMappings: mapping mode disabled or no mappings".postln; };
+            ^this;
+        };
+        
+        // Find which row/position this CC belongs to
+        rowInfo = this.findRowForCC(ccNum);
+        if(rowInfo.isNil) { 
+            if(debug) { "routeCCThroughMappings: CC % not found in any row".format(ccNum).postln; };
+            ^this; 
+        };
+        
+        rowNum = rowInfo.row;
+        pos = rowInfo.pos;
+        mapping = rowMappings[rowNum];
+        
+        if(debug) {
+            "routeCCThroughMappings: CC % found in row %, pos %".format(ccNum, rowNum, pos).postln;
+            "routeCCThroughMappings: mapping = %".format(mapping).postln;
+        };
+        
+        // Check if this row is enabled
+        if(mapping.isNil || mapping.enabled.not) { 
+            if(debug) { "routeCCThroughMappings: row % is disabled or nil".format(rowNum).postln; };
+            ^this;
+        };
+        
+        // Get the control template
+        if(controlTemplates.isNil) { 
+            if(debug) { "routeCCThroughMappings: no control templates".postln; };
+            ^this; 
+        };
+        template = controlTemplates[mapping.template];
+        if(template.isNil) { 
+            if(debug) { "routeCCThroughMappings: template % not found".format(mapping.template).postln; };
+            ^this; 
+        };
+        
+        if(debug) {
+            "routeCCThroughMappings: using template %".format(mapping.template).postln;
+        };
+        
+        // Find the knob mapping for this position
+        knobMapping = template.knobMappings.detect { |km| km.pos == pos };
+        if(knobMapping.isNil) { 
+            if(debug) { "routeCCThroughMappings: no knob mapping for pos %".format(pos).postln; };
+            ^this; 
+        };
+        
+        if(debug) {
+            "routeCCThroughMappings: found knob mapping: %".format(knobMapping).postln;
+        };
+        
+        // Calculate parameter value
+        paramValue = normalizedValue.linlin(0, 1, knobMapping.range[0], knobMapping.range[1]);
+        
+        // Handle integer parameters
+        if([\expressionMin, \expressionMax, \velocity].includes(knobMapping.param)) {
+            paramValue = paramValue.asInteger;
+        };
+        
+        if(debug) {
+            "routeCCThroughMappings: calculated param value: % = %".format(knobMapping.param, paramValue).postln;
+            "routeCCThroughMappings: groupParameterCallback is nil? %".format(groupParameterCallback.isNil).postln;
+        };
+        
+        // Update parameter through callback
+        if(groupParameterCallback.notNil) {
+            if(debug) { "routeCCThroughMappings: calling groupParameterCallback...".postln; };
+            groupParameterCallback.value(mapping.vstGroup, knobMapping.param, paramValue);
+            if(debug) { "routeCCThroughMappings: groupParameterCallback call completed".postln; };
+        } {
+            if(debug) { "routeCCThroughMappings: WARNING - groupParameterCallback is nil!".postln; };
+        };
+        
+        if(debug) {
+            "Mapped CC % (Row %, Pos %) → % = %".format(
+                ccNum, rowNum, pos, knobMapping.param, paramValue
+            ).postln;
+        };
+        
+        if(debug) {
+            "--- routeCCThroughMappings END".postln;
+        };
     }
 }

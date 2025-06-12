@@ -89,7 +89,7 @@
     // Check for "all instances" conditions
     if (groupName.isNil) {
         isAllInstances = true;
-    } {
+    }, {
         if (groupName.isKindOf(String) || groupName.isKindOf(Symbol)) {
             groupStr = groupName.asString.toLower;
             if (groupStr == "all") {
@@ -101,19 +101,19 @@
     if (isAllInstances) {
         ~layer2.activeVSTGroup = nil;
         ["Second Layer VST Group set to: ALL INSTANCES (was: %)".format(previousGroup ? "ALL")].postln;
-    } {
+    }, {
         // Check if group exists (try both Symbol and String forms)
         if (~vstManager.groups.includesKey(groupName)) {
             groupExists = true;
             actualGroupKey = groupName;
-        } {
+        }, {
             if (groupName.isKindOf(String)) {
                 symbolKey = groupName.asSymbol;
                 if (~vstManager.groups.includesKey(symbolKey)) {
                     groupExists = true;
                     actualGroupKey = symbolKey;
                 };
-            } {
+            }, {
                 if (groupName.isKindOf(Symbol)) {
                     stringKey = groupName.asString;
                     if (~vstManager.groups.includesKey(stringKey)) {
@@ -130,7 +130,7 @@
             ["Second Layer VST Group set to: % (% instances) (was: %)".format(
                 actualGroupKey, instances.size, previousGroup ? "ALL"
             )].postln;
-        } {
+        }, {
             "Second Layer VST Group '%' not found, keeping current setting: %".format(
                 groupName, ~layer2.activeVSTGroup ? "ALL"
             ).warn;
@@ -192,7 +192,7 @@
         "Layer2: initialized for melody: % (noteIndex: %)".format(
             melodyKey, ~layer2.noteIndex
         ).postln;
-    } {
+    }, {
         "Layer2: melody key % not found in ~melodyDict".format(melodyKey).warn;
     };
 };
@@ -306,7 +306,7 @@
         processedNote = ~layer2ProcessNote.(note, melodyKey);
         ~layer2PlayNote.(processedNote[0], processedNote[1]);
         ~layer2.noteIndex = (~layer2.noteIndex + 1) % ~layer2.pattern.size;
-    } {
+    }, {
         "Layer2: no pattern available or reached end".postln;
     };
 };

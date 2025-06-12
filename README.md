@@ -379,6 +379,17 @@ outputBus = 2 + ((existingInstances * 2) % numOutputChannels);
 - Use buttons for structural changes (cycles, pause, melody rest)
 - Monitor post window for system status and debug information
 
+## MIDI Control Mapping System
+
+For detailed documentation on the advanced MIDI Control Mapping system that enables dynamic assignment of MIDI knob rows to different VST groups, see [midi-control-mapping-readme.md](midi-control-mapping-readme.md).
+
+**Key Features:**
+- Dynamic row-to-group assignments (Row 1→Strings, Row 2→Winds, etc.)
+- Two control templates: Expression Control and Timing Control  
+- Group-specific parameter storage with real-time updates
+- GUI configuration interface with save/load functionality
+- Full backward compatibility with existing control systems
+
 ## Technical Requirements
 
 - **SuperCollider 3.12+** with VSTPlugin extension
@@ -393,12 +404,15 @@ outputBus = 2 + ((existingInstances * 2) % numOutputChannels);
 surfacing/
 ├── surfacing.scd                 # Primary layer application
 ├── second-layer.scd              # Secondary layer system
+├── readme.md                     # Main documentation
+├── midi-control-mapping-readme.md # MIDI Control Mapping documentation
 ├── setup/
 │   ├── _setup-loader.scd         # Initialization coordinator
 │   ├── synths-setup.scd          # SynthDef definitions
 │   ├── vstplugin-setup.scd       # VST infrastructure
 │   ├── vst-management.scd        # GUI interface
 │   ├── midi-setup.scd            # MIDI integration
+│   ├── midi-control-mapping.scd  # MIDI knob row mapping system
 │   └── osc-setup.scd             # OSC communication
 ├── VSTManager/
 │   └── VSTManager.sc             # Central VST management
@@ -407,6 +421,7 @@ surfacing/
 │       └── MIDIController.sc     # MIDI handling class
 └── data/
     ├── vst-list.txt              # Available VST list
+    ├── midi-control-mappings.scd # MIDI mapping configurations
     └── sketch-melody.scd      # Musical content
 ```
 

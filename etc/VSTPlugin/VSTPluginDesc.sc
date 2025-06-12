@@ -81,8 +81,8 @@ VSTPluginDesc {
 	}
 	printParameters {
 		this.parameters.do { arg param, i;
-			var label = (param.label.size > 0).if { " (" ++ param.label ++ ")" } { "" };
-			var auto = param.automatable.not.if { " [not automatable]" } { "" };
+			var label = (param.label.size > 0).if { " (" ++ param.label ++ ")" }, { "" };
+			var auto = param.automatable.not.if { " [not automatable]" }, { "" };
 			"[%] %%%".format(i, param.name, label, auto).postln;
 		}
 	}
@@ -210,7 +210,7 @@ VSTPluginDesc {
 	*prBashPath { arg path;
 		var forbidden = IdentitySet[$/, $\\, $", $?, $*, $:, $<, $>, $|];
 		^path.collect({ arg c;
-			forbidden.findMatch(c).notNil.if { $_ } { c }
+			forbidden.findMatch(c).notNil.if { $_ }, { c }
 		});
 	}
 	addPreset { arg name, path;
@@ -228,7 +228,7 @@ VSTPluginDesc {
 		^index;
 	}
 	deletePreset { arg preset;
-		var result = preset.isKindOf(Event).if { preset } { this.findPreset(preset) };
+		var result = preset.isKindOf(Event).if { preset }, { this.findPreset(preset) };
 		// can only remove user presets!
 		result.notNil.if {
 			(result.type == \user).if {
@@ -244,7 +244,7 @@ VSTPluginDesc {
 		^false;
 	}
 	renamePreset { arg preset, name;
-		var result = preset.isKindOf(Event).if { preset } { this.findPreset(preset) };
+		var result = preset.isKindOf(Event).if { preset }, { this.findPreset(preset) };
 		var newPath = this.presetPath(name);
 		// can only rename user presets!
 		result.notNil.if {
@@ -296,7 +296,7 @@ VSTPluginDesc {
 				#channels, type, name = line.split($,);
 				(
 					channels: channels.asInteger,
-					type: (type.asInteger == 1).if { \aux } { \main },
+					type: (type.asInteger == 1).if { \aux }, { \main },
 					name: name.stripWhiteSpace
 					// more info later...
 				)
@@ -413,7 +413,7 @@ VSTPluginDesc {
 
 		^ "name: %".format(this.name) ++ sep
 		++ "type: %%%".format(this.sdkVersion,
-			this.synth.if { " (synth)" } { "" }, this.bridged.if { " [bridged]" } { "" }) ++ sep
+			this.synth.if { " (synth)" }, { "" }, this.bridged.if { " [bridged]" }, { "" }) ++ sep
 		++ "path: %".format(this.path) ++ sep
 		++ "vendor: %".format(this.vendor) ++ sep
 		++ "category: %".format(this.category) ++ sep

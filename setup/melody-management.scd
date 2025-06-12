@@ -13,7 +13,7 @@
 // Function to load melody data from JSON file or create default
 ~loadMelodyData = {
     var melodyDataPath, loadedData;
-    melodyDataPath = ~melodyMgmtDir +/+ "../data/melody-data.json";
+    melodyDataPath = ~melodyMgmtDir +/+ "../data/ototope-melodies.json";
     
     if (File.exists(melodyDataPath)) {
         "Loading melody data from: %".format(melodyDataPath).postln;
@@ -35,7 +35,7 @@
 // Function to save melody data to JSON file
 ~saveMelodyData = {
     var melodyDataPath, file, jsonString;
-    melodyDataPath = ~melodyMgmtDir +/+ "../data/melody-data.json";
+    melodyDataPath = ~melodyMgmtDir +/+ "../data/ototope-melodies.json";
     
     if (~melodyData.notNil) {
         try {

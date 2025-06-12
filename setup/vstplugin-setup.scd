@@ -55,6 +55,14 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
 
         // Update the UI if callback is provided
         if (callback.notNil) { callback.() };
+        
+        // Initialize MIDI setup now that VST Manager is ready
+        if (~initMIDISetup.notNil) {
+            "Calling ~initMIDISetup.() now that VST Manager is ready...".postln;
+            ~initMIDISetup.();
+        } {
+            "WARNING: ~initMIDISetup function not available".warn;
+        };
 
         // Open editors after delay
         SystemClock.sched(5, {

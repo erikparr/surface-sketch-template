@@ -60,7 +60,10 @@
     expressionMax: 120,
     expressionShape: \sin,
     expressionPeakPos: 0.5,
-    expressionDurationScalar: 1.0
+    expressionDurationScalar: 1.0,
+    noteDuration: 0.2,
+    noteRestTime: 0.2,
+    velocity: 100
 );
 
 // Continuous loop variables
@@ -89,6 +92,12 @@
 (thisProcess.nowExecutingPath.dirname +/+ "initialization-startup.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      POST-INITIALIZATION SETUP                             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Post-initialization setup can go here if needed
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                           SUCCESS MESSAGE                                  │
 // └─────────────────────────────────────────────────────────────────────────────┘
 /*
@@ -98,4 +107,5 @@
 ~listVSTGroups.value;
 ~showVSTTargeting.value;
 ~createMelodyManagerUI.value;
+~createMIDIControlMappingGUI.();  // Open MIDI Control Mapping GUI
 */
