@@ -9,6 +9,9 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
 ~synth1 = Synth(\vstHost, [\bus, 0, \out, 2]);  // First instance
 ~synth2 = Synth(\vstHost, [\bus, 0, \out, 4]);  // Second instance
 ~synth3 = Synth(\vstHost, [\bus, 0, \out, 6]);  // Third instance
+~synth4 = Synth(\vstHost, [\bus, 0, \out, 2]);  // First instance
+~synth5 = Synth(\vstHost, [\bus, 0, \out, 4]);  // Second instance
+~synth6 = Synth(\vstHost, [\bus, 0, \out, 6]);  // Third instance
 // ~synth4 = Synth(\vstHost, [\bus, 0, \out, 2]);  // Fourth instance
 
 // 3. Initialize VSTManager
@@ -34,12 +37,11 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
         ~vstManager.addVST("Alto Flute 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
         ~vstManager.addVST("Alto Flute 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
         ~vstManager.addVST("Alto Flute 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
-        // ~vstManager.addVST("Euphonium 01", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
-        // ~vstManager.addVST("Euphonium 02", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
+        ~vstManager.addVST("Alto Flute 04", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3", true);
 
         // Create a group for all VSTs
         ~vstManager.createGroup('Alto Flute', ["Alto Flute 01", "Alto Flute 02", "Alto Flute 03"]);
-        // ~vstManager.createGroup('Euphonium', ["Euphonium 01", "Euphonium 02"]);
+        ~vstManager.createGroup('Alto Flute 2', ["Alto Flute 04", "Alto Flute 05", "Alto Flute 06"]);
 
         // Explicitly schedule a group UI refresh
         AppClock.sched(0.2, { // Short delay for UI readiness

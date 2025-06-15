@@ -101,7 +101,7 @@
     var chanIndex = msg[3].asInteger;
     var ccNum = msg[4].asInteger;
     var exprValue = msg[5].asInteger.clip(0, 127);
-    var targetGroup = ~layer2.activeVSTGroup; // nil => all instances
+    var targetGroup = ~activeVSTGroup_2; // nil => all instances
     var instances = ~vstManager.getTargetInstances(targetGroup);
 
     instances.values.do { |vst|

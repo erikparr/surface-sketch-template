@@ -1,33 +1,33 @@
-/Library/Audio/Plug-Ins/VST/SWAM Alto Flute 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Alto Sax 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Alto Trombone.vst
-/Library/Audio/Plug-Ins/VST/SWAM Baritone Sax 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Bass Clarinet 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Bass Flute 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Bass Trombone.vst
-/Library/Audio/Plug-Ins/VST/SWAM Bass Tuba.vst
-/Library/Audio/Plug-Ins/VST/SWAM Bassoon 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Cello 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Clarinet 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Contrabassoon 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Double Bass 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Double Bass Trombone.vst
-/Library/Audio/Plug-Ins/VST/SWAM English Horn 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Euphonium.vst
-/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn Eb.vst
-/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn.vst
-/Library/Audio/Plug-Ins/VST/SWAM Flute 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM French Horn Bb.vst
-/Library/Audio/Plug-Ins/VST/SWAM French Horn F.vst
-/Library/Audio/Plug-Ins/VST/SWAM Oboe 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Piccolo 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Piccolo Trumpet.vst
-/Library/Audio/Plug-Ins/VST/SWAM Soprano Sax 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Tenor Bass Trombone.vst
-/Library/Audio/Plug-Ins/VST/SWAM Tenor Sax 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Tenor Trombone.vst
-/Library/Audio/Plug-Ins/VST/SWAM Trumpet C.vst
-/Library/Audio/Plug-Ins/VST/SWAM Trumpet.vst
-/Library/Audio/Plug-Ins/VST/SWAM Tuba Eb.vst
-/Library/Audio/Plug-Ins/VST/SWAM Viola 3.vst
-/Library/Audio/Plug-Ins/VST/SWAM Violin 3.vst
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Baritone Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Cello 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Contrabassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM English Horn 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn Bb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn F.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Oboe 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Soprano Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet C.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Viola 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Violin 3.vst3

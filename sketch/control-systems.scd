@@ -43,14 +43,18 @@
 ~nextMelody.free;
 ~nextMelody = MIDIdef.noteOn(\nextMelody, { |veloc, note, chan, src|
     if (note == 27 && veloc > 0) {
-        if (~currentSequence.notNil && ~currentSequence.size > 0) {
-            // Move to next melody in sequence
-            ~currentLoopIndex = (~currentLoopIndex + 1) % ~currentSequence.size;
-            ["MIDI Note 27: Next melody - Index: %, Melody: %".format(
-                ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
-            )].postln;
+        if (~navigateMelody.notNil) {
+            ~navigateMelody.(\next);
         } {
-            ["MIDI Note 27: No melody sequence available"].postln;
+            // Fallback to original behavior if dual layer system not loaded
+            if (~currentSequence.notNil && ~currentSequence.size > 0) {
+                ~currentLoopIndex = (~currentLoopIndex + 1) % ~currentSequence.size;
+                "MIDI Note 27: Next melody - Index: %, Melody: %".format(
+                    ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
+                ).postln;
+            } {
+                "MIDI Note 27: No melody sequence available".postln;
+            };
         };
     };
 }, 27);  // Note 27 for next melody
@@ -59,14 +63,18 @@
 ~prevMelody.free;
 ~prevMelody = MIDIdef.noteOn(\prevMelody, { |veloc, note, chan, src|
     if (note == 22 && veloc > 0) {
-        if (~currentSequence.notNil && ~currentSequence.size > 0) {
-            // Move to previous melody in sequence
-            ~currentLoopIndex = (~currentLoopIndex - 1).wrap(0, ~currentSequence.size - 1);
-            ["MIDI Note 22: Previous melody - Index: %, Melody: %".format(
-                ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
-            )].postln;
+        if (~navigateMelody.notNil) {
+            ~navigateMelody.(\prev);
         } {
-            ["MIDI Note 22: No melody sequence available"].postln;
+            // Fallback to original behavior if dual layer system not loaded
+            if (~currentSequence.notNil && ~currentSequence.size > 0) {
+                ~currentLoopIndex = (~currentLoopIndex - 1).wrap(0, ~currentSequence.size - 1);
+                "MIDI Note 22: Previous melody - Index: %, Melody: %".format(
+                    ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
+                ).postln;
+            } {
+                "MIDI Note 22: No melody sequence available".postln;
+            };
         };
     };
 }, 22);  // Note 22 for previous melody
