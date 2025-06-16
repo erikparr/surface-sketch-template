@@ -34,14 +34,15 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
         "Adding VST instances...".postln;
 
         // Add VSTs with unique names
-        ~vstManager.addVST("Alto Flute 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
-        ~vstManager.addVST("Alto Flute 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
-        ~vstManager.addVST("Alto Flute 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3", true);
-        ~vstManager.addVST("Alto Flute 04", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3", true);
+        ~vstManager.addVST("Bass Tuba 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
+        ~vstManager.addVST("Bass Tuba 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
+        ~vstManager.addVST("Bass Tuba 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
+        // ~vstManager.addVST("Euphonium 01", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
+        // ~vstManager.addVST("Euphonium 02", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
 
         // Create a group for all VSTs
-        ~vstManager.createGroup('Alto Flute', ["Alto Flute 01", "Alto Flute 02", "Alto Flute 03"]);
-        ~vstManager.createGroup('Alto Flute 2', ["Alto Flute 04", "Alto Flute 05", "Alto Flute 06"]);
+        ~vstManager.createGroup('Bass Tuba', ["Bass Tuba 01", "Bass Tuba 02", "Bass Tuba 03"]);
+        // ~vstManager.createGroup('Euphonium', ["Euphonium 01", "Euphonium 02"]);
 
         // Explicitly schedule a group UI refresh
         AppClock.sched(0.2, { // Short delay for UI readiness

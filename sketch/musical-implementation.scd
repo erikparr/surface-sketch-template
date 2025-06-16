@@ -104,7 +104,7 @@
                         var note = pattern[noteIndex];
                         var isFirstNote = (noteIndex == 0);
                         var isLastNote = (noteIndex == (effectiveLength - 1));
-                        var isFermata = isLastNote && ~modes.fermata && ~modes.melodyRestMode;
+                        var isFermata = isLastNote && ~modes.fermata;  // Fermata no longer depends on melodyRestMode
                         var actualDuration, processedNote;
                         var actualWaitTime;
                         // Process the note (apply offset, etc.)
@@ -151,6 +151,7 @@
                         ["Playing note:", processedNote[0], "duration:", actualDuration,
                             "noteIndex:", noteIndex, "fermata:", isFermata,
                             "first:", isFirstNote, "last:", isLastNote,
+                            if(isFermata, {"[FERMATA MODE - will hold for" + ~fermataDuration + "s]"}, {""})
                         ].postln;
 
                         NetAddr.localAddr.sendMsg('/note/on', 0, processedNote[0], processedNote[1],
@@ -188,22 +189,25 @@
                     };
                 };
 
-                // After all repetitions, handle melody rest if enabled
+                // Handle fermata note timing FIRST (if present)
+                if(~lastFermataNote.notNil) {
+                    ["Holding fermata note:", ~lastFermataNote, "for", ~fermataDuration, "seconds"].postln;
+                    ~fermataDuration.wait;
+                    
+                    ["Releasing fermata note:", ~lastFermataNote].postln;
+                    NetAddr.localAddr.sendMsg('/note/release', ~lastFermataNote);
+                    
+                    // Short rest after fermata release
+                    ["Fermata release rest:", ~fermataReleaseRest, "seconds"].postln;
+                    ~fermataReleaseRest.wait;
+                    
+                    ~lastFermataNote = nil;
+                };
+
+                // Then handle melody rest if enabled
                 if(~modes.melodyRestMode) {
-                    ["Taking a longer rest between melodies:", ~melodyRestTime, "seconds (controlled by slider 4)"].postln;
+                    ["Taking melody rest:", ~melodyRestTime, "seconds (controlled by slider 4)"].postln;
                     ~melodyRestTime.wait;
-
-                    // Release fermata note after melody rest
-                    if(~lastFermataNote.notNil) {
-                        ["Releasing fermata note after melody rest:", ~lastFermataNote].postln;
-                        NetAddr.localAddr.sendMsg('/note/release', ~lastFermataNote);
-
-                        // Wait for additional fermata release rest
-                        ["Waiting for fermata release rest:", ~fermataReleaseRest, "seconds"].postln;
-                        ~fermataReleaseRest.wait;
-
-                        ~lastFermataNote = nil;
-                    };
                 };
 
                 // Signal completion
@@ -330,6 +334,12 @@
                 };
 
                 totalWaitTime = melodyDuration;
+
+                // Add fermata duration if fermata mode is enabled
+                if(~modes.fermata) {
+                    ["Adding fermata duration of", ~fermataDuration, "seconds"].postln;
+                    totalWaitTime = totalWaitTime + ~fermataDuration + ~fermataReleaseRest;
+                };
 
                 // Check real-time melody rest mode setting (affected by CC 45)
                 if(~modes.melodyRestMode) {

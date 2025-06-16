@@ -28,6 +28,7 @@
 ~noteRest = 0.2;
 ~melodyRestTime = 0.025;
 ~fermataReleaseRest = 0.25;
+~fermataDuration = 1.0;  // Duration to hold fermata notes (in seconds)
 ~noteOffset = -12;
 ~repetitions = 1;
 ~currentMelodySetIndex = 0;
@@ -44,7 +45,7 @@
 // Initialize modes dictionary - CRITICAL: This must come before loading modules
 ~modes = (
     noteOffset: false,
-    fermata: false,
+    fermata: true,
     melodyRestMode: true,
     pauseNotesMode: false,
     removeLast: false,
@@ -71,7 +72,6 @@
 ~currentLoopIteration = 0;
 ~continuousLoopTask = nil;
 ~continuousLoopRunning = false;
-
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                          LOAD CORE MODULES                                 │
 // └─────────────────────────────────────────────────────────────────────────────┘
