@@ -15,17 +15,29 @@
 // Track last button state to implement toggle logic
 ~lastButtonState = Dictionary.new;
 
-// Toggle Melody Rest mode (Note 45)
+// Toggle Melody Rest mode (Note 21)
 ~toggleMelodyRest.free;
 ~toggleMelodyRest = MIDIdef.noteOn(\toggleMelodyRest, { |veloc, note, chan, src|
-    if (note == 45 && veloc > 0) {
+    if (note == 21 && veloc > 0) {
         // Toggle the melody rest mode on every note-on
         ~modes.melodyRestMode = ~modes.melodyRestMode.not;
-        ["MIDI Note 45: Melody Rest toggled to",
+        ["MIDI Note 21: Melody Rest toggled to",
             if(~modes.melodyRestMode, "ON", "OFF"),
             "- Will take effect on next loop cycle"].postln;
     };
-}, 45);  // Note 45 for the button
+}, 21);  // Note 21 for melody rest toggle
+
+// Toggle Fermata mode (Note 24)
+~toggleFermata.free;
+~toggleFermata = MIDIdef.noteOn(\toggleFermata, { |veloc, note, chan, src|
+    if (note == 24 && veloc > 0) {
+        // Toggle the fermata mode on every note-on
+        ~modes.fermata = ~modes.fermata.not;
+        ["MIDI Note 24: Fermata Mode toggled to",
+            if(~modes.fermata, "ON", "OFF"),
+            "- Fermata duration: % seconds".format(~fermataDuration)].postln;
+    };
+}, 24);  // Note 24 for fermata toggle
 
 // Add pause notes toggle control (Note 25)
 ~togglePauseNotes.free;
@@ -293,12 +305,17 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
         ["Playing on VST:", vstName].postln;
         vst.midi.noteOn(0, note, velocity);
 
-        // Schedule note off if duration is provided
-        if(duration.notNil) {
+        // Schedule note off if duration is provided AND it's not a fermata note
+        if(duration.notNil && isFermata.not) {
             SystemClock.sched(duration, {
                 vst.midi.noteOff(0, note, 0);
+                ["Auto-released note:", note, "on VST:", vstName, "(normal duration)"].postln;
                 nil;
             });
+        } {
+            if(isFermata) {
+                ["Fermata note:", note, "on VST:", vstName, "- will be released manually"].postln;
+            };
         };
     };
 }, '/note/on');

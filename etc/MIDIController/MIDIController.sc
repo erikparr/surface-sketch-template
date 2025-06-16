@@ -619,24 +619,25 @@ MIDIController {
                 };
             };
 
-            // ORIGINAL: Continue with original processing only if mapping system didn't handle this CC
-            if(mappingHandled.not) {
-                // Slider handling (existing logic, ensure it's compatible or adjust if needed)
-                if(activePreset.notNil && activePreset.sliders.notNil) {
-                    var sliderIndex = activePreset.sliders.indexOf(num);
-                    if(sliderIndex.notNil) {
-                        normalizedVal = val / 127.0;
-                        if(sliderIndex < sliderValues.size) {
-                            sliderValues[sliderIndex] = normalizedVal;
-                        };
-                        if(debug) {
-                            "MIDIController Slider CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln;
-                        };
-                        if(oscNetAddr.notNil) {
-                            oscNetAddr.sendMsg("/slider", sliderIndex, normalizedVal);
-                        };
+            // ALWAYS process sliders regardless of mapping system (sliders need to be stored for direct access)
+            if(activePreset.notNil && activePreset.sliders.notNil) {
+                var sliderIndex = activePreset.sliders.indexOf(num);
+                if(sliderIndex.notNil) {
+                    normalizedVal = val / 127.0;
+                    if(sliderIndex < sliderValues.size) {
+                        sliderValues[sliderIndex] = normalizedVal;
+                    };
+                    if(debug) {
+                        "MIDIController Slider CC: % val: % (norm: %) index: % chan: % src: %".format(num, val, normalizedVal, sliderIndex, chan, src).postln;
+                    };
+                    if(oscNetAddr.notNil) {
+                        oscNetAddr.sendMsg("/slider", sliderIndex, normalizedVal);
                     };
                 };
+            };
+            
+            // ORIGINAL: Continue with original knob processing only if mapping system didn't handle this CC  
+            if(mappingHandled.not) {
 
                 // Handle knobs for the active preset (UNIFIED PROCESSING)
                 if(activePreset.notNil && activePreset.knobs.notNil) {
