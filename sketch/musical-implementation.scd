@@ -326,7 +326,7 @@
                     currentNoteRest = ~midiController.getKnobRow1(3).linlin(0, 1, 0.0001, 0.4);
                 };
 
-                // Calculate wait time
+                // Calculate base wait time (always needed for melody to complete)
                 if(~lastNoteDuration.notNil) {
                     melodyDuration = (noteCount - 1) * currentNoteRest + ~lastNoteDuration;
                 } {
@@ -341,12 +341,13 @@
                     totalWaitTime = totalWaitTime + ~fermataDuration + ~fermataReleaseRest;
                 };
 
-                // Check real-time melody rest mode setting (affected by CC 45)
+                // Only add melody rest if melody rest mode is enabled
                 if(~modes.melodyRestMode) {
                     ["Adding melody rest of", ~melodyRestTime, "seconds (controlled by slider 4)"].postln;
                     totalWaitTime = totalWaitTime + ~melodyRestTime;
                 } {
                     ["No melody rest (CC 45 is OFF)"].postln;
+                    // totalWaitTime remains as melodyDuration (no addition)
                 };
 
                 // Create and play a new ProcMod for this iteration

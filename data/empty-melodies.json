@@ -1,0 +1,13 @@
+{
+    "melodies": [
+      
+       
+
+    ],
+    "settings": {
+        "defaultNamePrefix": "melody",
+        "nextSequenceNumber": 1,
+        "selectedMelodyIndex": 0,
+        "windowSize": [600, 400]
+    }
+} 

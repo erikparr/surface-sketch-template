@@ -1,23 +1,6 @@
 {
     "melodies": [
-        {
-            "active": true,
-            "key": "set1",
-            "loopCount": 1,
-            "name": "Tuba Melody I",
-            "pattern": [94, 89, 84, 78, 94],
-            "velocityFirst": 1.5,
-            "velocityLast": 0.5
-        },
-        {
-            "active": true,
-            "key": "set1b",
-            "loopCount": 1,
-            "name": "Tuba Melody I",
-            "pattern": [94, 89, 84, 78, 94, 89, 84, 78, 94],
-            "velocityFirst": 1.5,
-            "velocityLast": 0.5
-        },
+       
         {
             "active": true,
             "key": "set2",

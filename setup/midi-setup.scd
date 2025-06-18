@@ -31,7 +31,7 @@
     // Defaulting to all VST instances
     ~midiController = MIDIController(
         ~vstManager.getInstances(), // Get all VST instances by default
-        n, nil, 16, 0, true
+        NetAddr.localAddr, nil, 16, 0, true
     );
     
     // Configure MIDI controller

@@ -45,8 +45,8 @@
 // Initialize modes dictionary - CRITICAL: This must come before loading modules
 ~modes = (
     noteOffset: false,
-    fermata: true,
-    melodyRestMode: true,
+    fermata: false,
+    melodyRestMode: false,
     pauseNotesMode: false,
     removeLast: false,
     velocityMultiply: false,
@@ -91,11 +91,12 @@
 "Loading Initialization & Startup...".postln;
 (thisProcess.nowExecutingPath.dirname +/+ "initialization-startup.scd").load;
 
+
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                      POST-INITIALIZATION SETUP                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
-
-// Post-initialization setup can go here if needed
+"Loading Sketch GUI...".postln;
+(thisProcess.nowExecutingPath.dirname +/+ "sketch-gui.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                           SUCCESS MESSAGE                                  │
@@ -108,4 +109,8 @@
 ~showVSTTargeting.value;
 ~createMelodyManagerUI.value;
 ~createMIDIControlMappingGUI.();  // Open MIDI Control Mapping GUI
+
+// GUI Controls (automatically loaded after 3 seconds)
+~createSketchGUI.();              // Manual GUI creation (if needed)
+~closeSketchGUI.();               // Close GUI and cleanup
 */

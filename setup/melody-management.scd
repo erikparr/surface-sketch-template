@@ -10,10 +10,16 @@
 ~melodyManagerWin = nil;
 ~updateMelodyManagerUI = nil;
 
+// Global variables for MIDI note capturing
+~capturedNotes = [];
+~maxCapturedNotes = 15;
+~capturedNotesField = nil;
+~keyOnResponder = nil;
+
 // Function to load melody data from JSON file or create default
 ~loadMelodyData = {
     var melodyDataPath, loadedData;
-    melodyDataPath = ~melodyMgmtDir +/+ "../data/ototope-melodies.json";
+    melodyDataPath = ~melodyMgmtDir +/+ "../data/melody-data.json";
     
     if (File.exists(melodyDataPath)) {
         "Loading melody data from: %".format(melodyDataPath).postln;
@@ -178,13 +184,151 @@
     key;
 };
 
+// Functions for MIDI note capturing
+~clearCapturedNotes = {
+    ~capturedNotes = [];
+    if (~capturedNotesField.notNil) {
+        { ~capturedNotesField.string = "[]"; }.defer;
+    };
+    "Cleared captured notes".postln;
+};
+
+~addCapturedNote = { |note|
+    if (~capturedNotes.size < ~maxCapturedNotes) {
+        ~capturedNotes = ~capturedNotes.add(note);
+        if (~capturedNotesField.notNil) {
+            { ~capturedNotesField.string = ~capturedNotes.asCompileString; }.defer;
+        };
+        "Added note % to captured notes (% / %)".format(note, ~capturedNotes.size, ~maxCapturedNotes).postln;
+    } {
+        "Captured notes at maximum limit (%)".format(~maxCapturedNotes).postln;
+    };
+};
+
+~setupKeyOnResponder = {
+    // Clean up existing responder
+    if (~keyOnResponder.notNil) {
+        ~keyOnResponder.free;
+    };
+    
+    // Create OSC responder for keyOn messages from MidiController
+    // Try multiple address configurations to find the working one
+    ~keyOnResponder = OSCdef(\melodyCapture, { |msg|
+        var channel = msg[1].asInteger;
+        var note = msg[2].asInteger;
+        var velocity = msg[3].asInteger;
+        
+        "*** OSC /keyOn received: msg=%, channel=%, note=%, velocity=%".format(msg, channel, note, velocity).postln;
+        
+        if (velocity > 0 && note >= 0 && note <= 127) {
+            ~addCapturedNote.(note);
+        } {
+            "Note rejected: velocity=%, note=%".format(velocity, note).postln;
+        };
+    }, '/keyOn');  // Try without specifying address to catch all sources
+    
+    // Also create a test responder that catches ALL OSC messages temporarily
+    ~testResponder = OSCdef(\testAll, { |msg, time, addr, recvPort|
+        if (msg[0] == '/keyOn') {
+            "*** TEST: Caught /keyOn from addr=%, port=%, msg=%".format(addr, recvPort, msg).postln;
+        };
+    });
+    
+    "OSC keyOn responder setup for melody capture (listening on all addresses)".postln;
+};
+
+~saveCapturedMelody = {
+    if (~capturedNotes.size > 0) {
+        var newKey = ~getNextMelodyKey.();
+        var newMelody = (
+            key: newKey,
+            name: newKey ++ " (captured)",
+            pattern: ~capturedNotes.copy,
+            velocityFirst: 1.0,
+            velocityLast: 1.0,
+            loopCount: 1,
+            active: true
+        );
+        ~melodyData[\melodies] = ~melodyData[\melodies].add(newMelody);
+        if (~updateMelodyManagerUI.notNil) {
+            ~updateMelodyManagerUI.();
+        };
+        "Saved captured melody: % with % notes".format(newKey, ~capturedNotes.size).postln;
+        ^newKey;
+    } {
+        "No captured notes to save".postln;
+        ^nil;
+    };
+};
+
+// Function to open and load melody file
+~openMelodyFile = { |statusText, updateMelodyList|
+    FileDialog({ |path|
+        if (path.notNil) {
+            ~loadMelodyFileFromPath.(path, statusText, updateMelodyList);
+        } {
+            if (statusText.notNil) {
+                { statusText.string = "File selection cancelled"; }.defer;
+            };
+        };
+    }, 
+    fileMode: 1, // 1 = open file mode
+    acceptMode: 0, // 0 = open mode
+    stripResult: true
+    );
+};
+
+// Function to load melody data from file path
+~loadMelodyFileFromPath = { |filePath, statusText, updateMelodyList|
+    var loadedData, melodyCount;
+    
+    if (File.exists(filePath)) {
+        try {
+            "Loading melody file from: %".format(filePath).postln;
+            loadedData = JSONlib.parseFile(filePath, useEvent: true);
+            
+            if (loadedData.notNil && loadedData[\melodies].notNil) {
+                ~melodyData = loadedData;
+                melodyCount = ~melodyData[\melodies].size;
+                
+                // Update GUI
+                if (updateMelodyList.notNil) {
+                    { updateMelodyList.(); }.defer;
+                };
+                
+                if (statusText.notNil) {
+                    { statusText.string = "Loaded % melodies from file".format(melodyCount); }.defer;
+                };
+                
+                "Successfully loaded % melodies from %".format(melodyCount, filePath).postln;
+            } {
+                if (statusText.notNil) {
+                    { statusText.string = "Invalid melody file format"; }.defer;
+                };
+                "Error: File does not contain valid melody data".postln;
+            };
+        } { |error|
+            if (statusText.notNil) {
+                { statusText.string = "Error loading file: %".format(error); }.defer;
+            };
+            "Error loading melody file: %".format(error).postln;
+        };
+    } {
+        if (statusText.notNil) {
+            { statusText.string = "File not found: %".format(filePath); }.defer;
+        };
+        "Error: File not found - %".format(filePath).postln;
+    };
+};
+
 // Main function to create the Melody Manager UI
 ~createMelodyManagerUI = {
     var win, layout, melodyList, editPanel;
-    var prefixField, loadButton, saveButton, addButton, deleteButton;
+    var prefixField, loadButton, saveButton, openFileButton, addButton, deleteButton;
     var nameField, patternField, firstVelField, lastVelField, loopCountField, activeCheckbox;
     var updateButton, updateMelodyList, updateEditPanel, selectedMelodyIndex, statusText;
     var topLayout, mainLayout, leftLayout, rightLayout, listButtonLayout;
+    var captureLayout, captureButtonLayout, clearCapturedButton, saveCapturedButton;
 
     // Check if melody data is loaded
     if (~melodyData.isNil) {
@@ -224,7 +368,52 @@
         });
     topLayout.add(saveButton);
     
+    openFileButton = Button()
+        .states_([["Open File"]])
+        .action_({
+            ~openMelodyFile.(statusText, updateMelodyList);
+        });
+    topLayout.add(openFileButton);
+    
     layout.add(topLayout);
+
+    // MIDI Note Capture Section
+    captureLayout = VLayout();
+    captureLayout.add(StaticText().string_("MIDI Note Capture"));
+    
+    // Captured notes display field
+    ~capturedNotesField = TextField()
+        .string_("[]")
+        .background_(Color.gray(0.95))
+        .enabled_(false); // Read-only
+    captureLayout.add(~capturedNotesField);
+    
+    // Capture control buttons
+    captureButtonLayout = HLayout();
+    clearCapturedButton = Button()
+        .states_([["Clear Notes"]])
+        .action_({
+            ~clearCapturedNotes.();
+            statusText.string = "Cleared captured notes";
+        });
+    
+    saveCapturedButton = Button()
+        .states_([["Save as Melody"]])
+        .action_({
+            var savedKey = ~saveCapturedMelody.();
+            if (savedKey.notNil) {
+                statusText.string = "Saved captured melody: %".format(savedKey);
+            } {
+                statusText.string = "No notes to save";
+            };
+        });
+    
+    captureButtonLayout.add(clearCapturedButton);
+    captureButtonLayout.add(saveCapturedButton);
+    captureButtonLayout.add(StaticText().string_("Max % notes".format(~maxCapturedNotes)), stretch: 1);
+    captureLayout.add(captureButtonLayout);
+    
+    layout.add(captureLayout);
 
     // Main content area
     mainLayout = HLayout();
@@ -447,9 +636,21 @@
     win.layout = layout;
     updateMelodyList.();
     
+    // Setup OSC responder for MIDI note capture
+    ~setupKeyOnResponder.();
+    
     // Cleanup on close
     win.onClose = {
         ~melodyManagerWin = nil;
+        // Clean up OSC responders
+        if (~keyOnResponder.notNil) {
+            ~keyOnResponder.free;
+            ~keyOnResponder = nil;
+        };
+        if (~testResponder.notNil) {
+            ~testResponder.free;
+            ~testResponder = nil;
+        };
     };
     
     // Store window reference
