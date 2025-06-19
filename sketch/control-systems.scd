@@ -33,9 +33,6 @@
     if (note == 24 && veloc > 0) {
         // Toggle the fermata mode on every note-on
         ~modes.fermata = ~modes.fermata.not;
-        ["MIDI Note 24: Fermata Mode toggled to",
-            if(~modes.fermata, "ON", "OFF"),
-            "- Fermata duration: % seconds".format(~fermataDuration)].postln;
     };
 }, 24);  // Note 24 for fermata toggle
 

@@ -33,7 +33,6 @@ Parameter Mapping → ProcMod Sequencing → Live Performance
 ~bpm = 298;
 ~noteDuration = 0.2;
 ~noteRest = 0.2;
-~fermataDuration = 1.0;
 ~noteOffset = -12;
 ~repetitions = 1;
 

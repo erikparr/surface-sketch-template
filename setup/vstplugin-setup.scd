@@ -9,9 +9,9 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
 ~synth1 = Synth(\vstHost, [\bus, 0, \out, 2]);  // First instance
 ~synth2 = Synth(\vstHost, [\bus, 0, \out, 4]);  // Second instance
 ~synth3 = Synth(\vstHost, [\bus, 0, \out, 6]);  // Third instance
-~synth4 = Synth(\vstHost, [\bus, 0, \out, 2]);  // First instance
-~synth5 = Synth(\vstHost, [\bus, 0, \out, 4]);  // Second instance
-~synth6 = Synth(\vstHost, [\bus, 0, \out, 6]);  // Third instance
+// ~synth4 = Synth(\vstHost, [\bus, 0, \out, 2]);  // First instance
+// ~synth5 = Synth(\vstHost, [\bus, 0, \out, 4]);  // Second instance
+// ~synth6 = Synth(\vstHost, [\bus, 0, \out, 6]);  // Third instance
 // ~synth4 = Synth(\vstHost, [\bus, 0, \out, 2]);  // Fourth instance
 
 // 3. Initialize VSTManager

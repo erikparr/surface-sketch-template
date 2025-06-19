@@ -80,10 +80,9 @@
                 // Temporal accent is not part of mapping system, always read from slider
                 temporalAccent = ~midiController.getSliderValue(7).linlin(0, 1, 0, 8);  // Slider 8 (CC 61) is index 7
                 ("temporalAccent set to: " ++ temporalAccent).postln; // DEBUG
-                // Get melody rest time from slider 7 (CC 55) which is index 6
-                ~melodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
 
-                // First note rest multiplier functionality removed
+                // Note: melody rest time is now read fresh each time it's needed (real-time control)
+                // No more caching of ~melodyRestTime to ensure clean separation when mode is OFF
             };
 
             // Store the ID of the active melody
@@ -112,14 +111,14 @@
 
                         // Calculate note duration based on position in melody - clear if/else structure
                         if(isFirstNote) {
-                            // Only first note gets temporal accent
+                            // First note gets base duration
                             actualDuration = noteDuration * 1;
                         } {
-                            if(isLastNote) {
-                                // Only last note gets the last note duration scalar
+                            if(isLastNote && isFermata) {
+                                // Only last note gets temporal accent when fermata is ON
                                 actualDuration = noteDuration * temporalAccent;
                             } {
-                                // Middle notes get the base duration with no modifier
+                                // All other notes (middle notes and last note when fermata is OFF) get base duration
                                 actualDuration = noteDuration;
                             };
                         };
@@ -146,13 +145,6 @@
                             NetAddr.localAddr.sendMsg('/note/release', ~lastFermataNote);
                             ~lastFermataNote = nil;
                         };
-
-                        // Play the note with OSC
-                        ["Playing note:", processedNote[0], "duration:", actualDuration,
-                            "noteIndex:", noteIndex, "fermata:", isFermata,
-                            "first:", isFirstNote, "last:", isLastNote,
-                            if(isFermata, {"[FERMATA MODE - will hold for" + ~fermataDuration + "s]"}, {""})
-                        ].postln;
 
                         NetAddr.localAddr.sendMsg('/note/on', 0, processedNote[0], processedNote[1],
                             actualDuration, isFermata.asInteger,
@@ -191,23 +183,26 @@
 
                 // Handle fermata note timing FIRST (if present)
                 if(~lastFermataNote.notNil) {
-                    ["Holding fermata note:", ~lastFermataNote, "for", ~fermataDuration, "seconds"].postln;
-                    ~fermataDuration.wait;
+                    // Use melodyRestTime for fermata duration (unified system)
+                    var currentMelodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
+                    ["Holding fermata note:", ~lastFermataNote, "for", currentMelodyRestTime, "seconds (using melodyRestTime)"].postln;
+                    currentMelodyRestTime.wait;
                     
                     ["Releasing fermata note:", ~lastFermataNote].postln;
                     NetAddr.localAddr.sendMsg('/note/release', ~lastFermataNote);
                     
-                    // Short rest after fermata release
-                    ["Fermata release rest:", ~fermataReleaseRest, "seconds"].postln;
-                    ~fermataReleaseRest.wait;
+                    // No delay after fermata release - go directly to next step
+                    ["Fermata released - proceeding immediately to next step"].postln;
                     
                     ~lastFermataNote = nil;
                 };
 
-                // Then handle melody rest if enabled
-                if(~modes.melodyRestMode) {
-                    ["Taking melody rest:", ~melodyRestTime, "seconds (controlled by slider 4)"].postln;
-                    ~melodyRestTime.wait;
+                // Handle melody rest for non-fermata cases (fermata already handled melodyRestTime above)
+                if(~modes.melodyRestMode && ~lastFermataNote.isNil) {
+                    // Read melody rest time fresh from MIDI slider (real-time control)
+                    var currentMelodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
+                    ["Taking melody rest:", currentMelodyRestTime, "seconds (melody rest mode, no fermata)"].postln;
+                    currentMelodyRestTime.wait;
                 };
 
                 // Signal completion
@@ -319,12 +314,27 @@
                 pattern = ~melodyDict[currentLoopKey].patterns[0];
                 noteCount = if(~modes.removeLast, {pattern.size - 1}, {pattern.size});
 
-                // Get current rest time
+                // Get current rest time - use same source as ProcMod
                 currentNoteRest = ~noteRest;
-                if(~midiController.notNil) {
-                    // Get note rest time from knob 3
-                    currentNoteRest = ~midiController.getKnobRow1(3).linlin(0, 1, 0.0001, 0.4);
+                "LOOP DEBUG 1: Initial currentNoteRest (from ~noteRest) = %".format(currentNoteRest).postln;
+                
+                if(~ccControl.noteRestTime.notNil) {
+                    "LOOP DEBUG 2: ~ccControl.noteRestTime exists = %".format(~ccControl.noteRestTime).postln;
+                    // Use the same note rest time that ProcMod uses (from mapping system)
+                    currentNoteRest = ~ccControl.noteRestTime;
+                    "LOOP DEBUG 3: Updated currentNoteRest (from ~ccControl) = %".format(currentNoteRest).postln;
+                } {
+                    "LOOP DEBUG 2: ~ccControl.noteRestTime is NIL - using fallback".postln;
                 };
+
+                "LOOP DEBUG 4: Final currentNoteRest before calculation = %".format(currentNoteRest).postln;
+
+                // DEBUG - Show all timing values
+                ["DEBUG - MIDI knob raw value:", ~midiController.getKnobRow1(3)].postln;
+                ["DEBUG - currentNoteRest from MIDI:", currentNoteRest].postln;
+                ["DEBUG - ~ccControl.noteRestTime:", ~ccControl.noteRestTime].postln;
+                ["DEBUG - noteCount:", noteCount].postln;
+                ["DEBUG - ~lastNoteDuration:", ~lastNoteDuration].postln;
 
                 // Calculate base wait time (always needed for melody to complete)
                 if(~lastNoteDuration.notNil) {
@@ -335,18 +345,27 @@
 
                 totalWaitTime = melodyDuration;
 
-                // Add fermata duration if fermata mode is enabled
-                if(~modes.fermata) {
-                    ["Adding fermata duration of", ~fermataDuration, "seconds"].postln;
-                    totalWaitTime = totalWaitTime + ~fermataDuration + ~fermataReleaseRest;
-                };
+                ["DEBUG - melodyDuration calculation:", melodyDuration].postln;
+                ["DEBUG - totalWaitTime final:", totalWaitTime].postln;
 
-                // Only add melody rest if melody rest mode is enabled
-                if(~modes.melodyRestMode) {
-                    ["Adding melody rest of", ~melodyRestTime, "seconds (controlled by slider 4)"].postln;
-                    totalWaitTime = totalWaitTime + ~melodyRestTime;
+                // Unified melody rest system: fermata mode = held note + melodyRestTime, melody rest mode = melodyRestTime only
+                if(~modes.fermata || ~modes.melodyRestMode) {
+                    // Read melody rest time fresh from MIDI slider each iteration (real-time control)
+                    var currentMelodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
+                    
+                    if(~modes.fermata && ~modes.melodyRestMode) {
+                        ["Adding melody rest of", currentMelodyRestTime, "seconds (fermata + melody rest: held note + rest time)"].postln;
+                    } {
+                        if(~modes.fermata) {
+                            ["Adding melody rest of", currentMelodyRestTime, "seconds (fermata mode: held note + rest time)"].postln;
+                        } {
+                            ["Adding melody rest of", currentMelodyRestTime, "seconds (melody rest mode: rest time only)"].postln;
+                        };
+                    };
+                    
+                    totalWaitTime = totalWaitTime + currentMelodyRestTime;
                 } {
-                    ["No melody rest (CC 45 is OFF)"].postln;
+                    ["No melody rest (both fermata and melody rest modes OFF)"].postln;
                     // totalWaitTime remains as melodyDuration (no addition)
                 };
 

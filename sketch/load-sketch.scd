@@ -27,8 +27,6 @@
 ~noteDuration = 0.2;
 ~noteRest = 0.2;
 ~melodyRestTime = 0.025;
-~fermataReleaseRest = 0.25;
-~fermataDuration = 1.0;  // Duration to hold fermata notes (in seconds)
 ~noteOffset = -12;
 ~repetitions = 1;
 ~currentMelodySetIndex = 0;

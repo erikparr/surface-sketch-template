@@ -258,7 +258,6 @@
 
                     if(~lastFermataNote_2.notNil) {
                         NetAddr.localAddr.sendMsg('/note/release2', ~lastFermataNote_2);
-                        ~fermataReleaseRest.wait;
                         ~lastFermataNote_2 = nil;
                     };
                 };

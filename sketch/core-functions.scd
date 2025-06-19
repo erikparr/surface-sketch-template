@@ -127,8 +127,3 @@
     ["Note offset set to", offset, "semitones"].postln;
 };
 
-// Set fermata duration
-~setFermataDuration = { |duration|
-    ~fermataDuration = duration;
-    ["Fermata duration set to", duration, "seconds"].postln;
-}; 
