@@ -15,6 +15,15 @@
 // Override ~loadActiveMelodies to use clip-aware loading
 ~loadActiveMelodies_original = ~loadActiveMelodies; // Backup original
 
+// Safety check for original function
+if (~loadActiveMelodies_original.isNil) {
+    "WARNING: Original ~loadActiveMelodies not found, creating fallback".postln;
+    ~loadActiveMelodies_original = { 
+        "FALLBACK: No original ~loadActiveMelodies function available".postln; 
+        0; 
+    };
+};
+
 ~loadActiveMelodies = {
     var activeMelodies, activeMelodyKeys, clipCount = 0, melodyCount = 0;
     
@@ -86,27 +95,24 @@
 
 // Enhanced timing calculation for continuous loop that handles clips
 ~calculateLoopWaitTime = { |currentLoopKey|
-    var melody, totalWaitTime, melodyDuration, currentNoteRest, pattern, noteCount;
+    var melody, totalWaitTime = 1.0, melodyDuration, currentNoteRest, pattern, noteCount;
     
     melody = ~melodyDict[currentLoopKey];
     if (melody.isNil) {
         "ERROR: Melody not found: %".format(currentLoopKey).postln;
-        1.0; // Fallback - don't use ^ in deferred contexts
     } {
-    
-    if (melody[\isClip] == true) {
+        if (melody[\isClip] == true) {
         // CLIP TIMING: Use recorded duration with tempo scaling
         var clipDuration = ~getClipDurationForKey.(currentLoopKey, ~clipControl.tempoScale);
         if (clipDuration.isNil) {
             "ERROR: Could not get clip duration for %".format(currentLoopKey).postln;
-            totalWaitTime = 1.0; // Fallback - don't use ^ in deferred contexts
+            totalWaitTime = 1.0; // Fallback
         } {
-        
             totalWaitTime = clipDuration;
             "Clip timing: % duration = %s (tempo scale: %x)".format(
                 currentLoopKey, 
-                clipDuration.round(0.01),
-                ~clipControl.tempoScale.round(0.01)
+                clipDuration.round(~clipSystemConfig.displayPrecision),
+                ~clipControl.tempoScale.round(~clipSystemConfig.displayPrecision)
             ).postln;
         };
         
@@ -129,21 +135,21 @@
         };
         
         totalWaitTime = melodyDuration;
-        "Traditional melody timing: % duration = %s".format(currentLoopKey, melodyDuration.round(0.01)).postln;
+        "Traditional melody timing: % duration = %s".format(currentLoopKey, melodyDuration.round(~clipSystemConfig.displayPrecision)).postln;
+        };
+        
+        // Add melody rest for both clips and traditional melodies (if enabled)
+        if (~modes.fermata || ~modes.melodyRestMode) {
+            var currentMelodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
+            totalWaitTime = totalWaitTime + currentMelodyRestTime;
+            "Adding melody rest: %s (total wait: %s)".format(
+                currentMelodyRestTime.round(~clipSystemConfig.displayPrecision), 
+                totalWaitTime.round(~clipSystemConfig.displayPrecision)
+            ).postln;
+        };
     };
     
-    // Add melody rest for both clips and traditional melodies (if enabled)
-    if (~modes.fermata || ~modes.melodyRestMode) {
-        var currentMelodyRestTime = ~midiController.getSliderValue(6).linlin(0, 1, 0.0, 1.0);
-        totalWaitTime = totalWaitTime + currentMelodyRestTime;
-        "Adding melody rest: %s (total wait: %s)".format(
-            currentMelodyRestTime.round(0.01), 
-            totalWaitTime.round(0.01)
-        ).postln;
-    };
-    
-    totalWaitTime; // Don't use ^ in deferred contexts
-};
+    totalWaitTime;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -168,8 +174,17 @@
 // Enhanced ProcMod creation that detects clips
 ~createMelodyProc_original = ~createMelodyProc; // Backup original
 
+// Safety check for original function
+if (~createMelodyProc_original.isNil) {
+    "WARNING: Original ~createMelodyProc not found, creating fallback".postln;
+    ~createMelodyProc_original = { |melodyKey, patternIndex=0|
+        "FALLBACK: No original ~createMelodyProc function available for %".format(melodyKey).postln;
+        nil;
+    };
+};
+
 ~createMelodyProc = { |melodyKey, patternIndex=0|
-    var melody;
+    var melody, result = nil;
     
     // Safety check to prevent infinite loops
     if (~clipSystemLoading == true) {
@@ -181,21 +196,21 @@
             melody = ~melodyData[\melodies].detect({ |m| m[\key] == melodyKey });
             if (melody.notNil and: { ~createClipProc.notNil }) {
                 "Creating clip ProcMod for: %".format(melodyKey).postln;
-                ~createClipProc.(melody, melodyKey); // Don't use ^ in deferred contexts
+                result = ~createClipProc.(melody, melodyKey);
             } {
                 "ERROR: Clip melody not found or ~createClipProc not available: %".format(melodyKey).postln;
-                nil;
             };
         } {
             // Fall back to original melody ProcMod creation
             if (~createMelodyProc_original.notNil) {
                 "Creating traditional melody ProcMod for: %".format(melodyKey).postln;
-                ~createMelodyProc_original.(melodyKey, patternIndex); // Don't use ^ in deferred contexts
+                result = ~createMelodyProc_original.(melodyKey, patternIndex);
             } {
                 "ERROR: No original ~createMelodyProc function found".postln;
-                nil; // Don't use ^ in deferred contexts
             };
         };
+        
+        result;
     };
 };
 

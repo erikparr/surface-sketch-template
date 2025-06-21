@@ -9,35 +9,105 @@
 */
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         CONFIGURATION CONSTANTS                            │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Centralized configuration for clip system
+~clipSystemConfig = (
+    // MIDI Control Numbers
+    defaultTempoCC: 20,
+    defaultModeButton: 26,
+    
+    // Tempo Scaling Limits
+    minTempoScale: 0.25,    // Minimum tempo scaling (4x slower)
+    maxTempoScale: 4.0,     // Maximum tempo scaling (4x faster)
+    defaultTempoScale: 1.0, // Default tempo scaling
+    
+    // Envelope Settings
+    envelopeAttack: 0.01,   // Quick attack time
+    envelopeRelease: 0.1,   // Quick release time
+    envelopeCurve: \lin,    // Linear curve
+    
+    // System Settings
+    initializationDelay: 0.5, // Delay before system initialization
+    timingPrecision: 0.001,   // Timing display precision (milliseconds)
+    displayPrecision: 0.01    // General display precision
+);
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         CORE CLIP PLAYBACK                                 │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Global clip control parameters
 ~clipControl = (
-    tempoScale: 1.0,        // 1.0 = original speed, 0.5 = half speed, 2.0 = double speed
-    minTempoScale: 0.25,    // Minimum tempo scaling (4x slower)
-    maxTempoScale: 4.0,     // Maximum tempo scaling (4x faster)
+    tempoScale: ~clipSystemConfig.defaultTempoScale,
+    minTempoScale: ~clipSystemConfig.minTempoScale,
+    maxTempoScale: ~clipSystemConfig.maxTempoScale,
     enabled: true           // Enable/disable clip system
 );
 
 // Core clip playback function
 ~playClip = { |clipData, tempoScale=1.0, targetVSTGroup=nil|
-    var notePairs, startTime, targetGroup, task;
+    var notePairs, startTime, targetGroup, task, result = nil;
     
     // Validate input
     if (clipData.isNil or: { clipData[\clipData].isNil }) {
         "ERROR: Invalid clip data provided".postln;
-        nil; // Don't use ^ in deferred contexts
     } {
         notePairs = clipData[\clipData][\notePairs];
         if (notePairs.isNil or: { notePairs.size == 0 }) {
             "ERROR: No note pairs found in clip data".postln;
-            nil; // Don't use ^ in deferred contexts
         } {
-    
             targetGroup = targetVSTGroup ? ~activeVSTGroup;
             
-            "Playing clip with % notes at %x tempo".format(notePairs.size, tempoScale.round(0.01)).postln;
+            // DIAGNOSTIC: Verify VST system setup
+            ~verifyVSTSetup = {
+                var issues = [];
+                
+                if (~vstManager.isNil) {
+                    issues = issues ++ ["~vstManager is nil - VST system not initialized"];
+                } {
+                    var instances = ~vstManager.getTargetInstances(targetGroup);
+                    "🎯 Target VST group: % (% instances available)".format(
+                        targetGroup ? "ALL", 
+                        instances.size
+                    ).postln;
+                    if (instances.size == 0) {
+                        issues = issues ++ ["No VST instances found for target group: %".format(targetGroup)];
+                    } {
+                        "   VST instances: %".format(instances.keys.asArray).postln;
+                    };
+                };
+                
+                if (OSCdef(\noteOn).isNil) {
+                    issues = issues ++ ["OSC responder for /note/on not found - control-systems.scd not loaded?"];
+                } {
+                    "✅ OSC responder active: /note/on".postln;
+                };
+                
+                if (~activeVSTGroup.isNil) {
+                    issues = issues ++ ["~activeVSTGroup not set - use ~setActiveVSTGroup.('groupName') or ~useAllVSTs.()"];
+                };
+                
+                if (issues.size > 0) {
+                    "⚠️  VST SETUP ISSUES DETECTED:".postln;
+                    issues.do({ |issue, i|
+                        "   %: %".format(i + 1, issue).postln;
+                    });
+                    "   → Try: ~setActiveVSTGroup.('Bass Tuba') or ~useAllVSTs.()".postln;
+                    "   → Ensure sketch system is fully loaded first".postln;
+                };
+                
+                issues.size == 0;
+            };
+            
+            if (~verifyVSTSetup.()) {
+                "✅ VST system verified - proceeding with clip playback".postln;
+            } {
+                "⚠️  Continuing clip playback despite setup issues (notes may not sound)".postln;
+            };
+            
+            "🎵 Playing clip with % notes at %x tempo".format(notePairs.size, tempoScale.round(~clipSystemConfig.displayPrecision)).postln;
             
             // Create task to schedule all notes based on recorded timing
             task = Task({
@@ -61,8 +131,8 @@
                         
                         "Clip note: % at %s (scaled from %s)".format(
                             notePair[\note], 
-                            adjustedStartTime.round(0.001),
-                            notePair[\startTime].round(0.001)
+                            adjustedStartTime.round(~clipSystemConfig.timingPrecision),
+                            notePair[\startTime].round(~clipSystemConfig.timingPrecision)
                         ).postln;
                         
                         nil; // Don't reschedule
@@ -76,43 +146,36 @@
                 "Clip playback completed".postln;
             });
             
-            task; // Don't use ^ in deferred contexts
+            result = task;
         };
     };
+    
+    result;
 };
 
 // Utility function to get clip duration with tempo scaling
 ~getClipDuration = { |clipData, tempoScale=1.0|
-    if (clipData.isNil or: { clipData[\clipData].isNil }) {
-        0; // Don't use ^ in deferred contexts
-    } {
-        clipData[\clipData][\duration] / tempoScale;
+    var duration = 0;
+    
+    if (clipData.notNil and: { clipData[\clipData].notNil }) {
+        duration = clipData[\clipData][\duration] / tempoScale;
     };
+    
+    duration;
 };
 
 // Utility function to validate clip data
 ~isValidClip = { |melody|
-    if (melody.isNil) { 
-        false; // Don't use ^ in deferred contexts
-    } {
-        if (melody[\isClip] != true) { 
-            false; // Don't use ^ in deferred contexts
-        } {
-            if (melody[\clipData].isNil) { 
-                false; // Don't use ^ in deferred contexts
-            } {
-                if (melody[\clipData][\notePairs].isNil) { 
-                    false; // Don't use ^ in deferred contexts
-                } {
-                    if (melody[\clipData][\notePairs].size == 0) { 
-                        false; // Don't use ^ in deferred contexts
-                    } {
-                        true; // Don't use ^ in deferred contexts
-                    };
-                };
-            };
-        };
-    };
+    var isValid = true;
+    
+    // Guard clauses for cleaner validation logic
+    if (melody.isNil) { isValid = false };
+    if (isValid && (melody[\isClip] != true)) { isValid = false };
+    if (isValid && melody[\clipData].isNil) { isValid = false };
+    if (isValid && melody[\clipData][\notePairs].isNil) { isValid = false };
+    if (isValid && (melody[\clipData][\notePairs].size == 0)) { isValid = false };
+    
+    isValid;
 };
 
 "Clip playback system loaded".postln; 

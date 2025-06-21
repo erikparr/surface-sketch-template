@@ -15,7 +15,8 @@
 // MIDI CC control for clip tempo scaling
 ~clipTempoControl = nil; // Will hold MIDIdef
 
-~setupClipTempoControl = { |ccNumber=20|
+~setupClipTempoControl = { |ccNumber|
+    ccNumber = ccNumber ? ~clipSystemConfig.defaultTempoCC;
     // Clean up existing control
     if (~clipTempoControl.notNil) {
         ~clipTempoControl.free;
@@ -27,7 +28,7 @@
         ~clipControl.tempoScale = newTempoScale;
         
         "Clip tempo scale: %x (CC %: %)".format(
-            newTempoScale.round(0.01), 
+            newTempoScale.round(~clipSystemConfig.displayPrecision), 
             cc, 
             val
         ).postln;
@@ -40,7 +41,7 @@
 ~setClipTempo = { |tempoScale|
     tempoScale = tempoScale.clip(~clipControl.minTempoScale, ~clipControl.maxTempoScale);
     ~clipControl.tempoScale = tempoScale;
-    "Clip tempo scale set to: %x".format(tempoScale.round(0.01)).postln;
+    "Clip tempo scale set to: %x".format(tempoScale.round(~clipSystemConfig.displayPrecision)).postln;
 };
 
 ~halfSpeed = { ~setClipTempo.(0.5); };
@@ -72,7 +73,7 @@
 ~updateClipControlFromMapping = {
     if (~ccControl.notNil and: { ~ccControl.clipTempoScale.notNil }) {
         ~clipControl.tempoScale = ~ccControl.clipTempoScale;
-        "Updated clip tempo from mapping: %x".format(~clipControl.tempoScale.round(0.01)).postln;
+        "Updated clip tempo from mapping: %x".format(~clipControl.tempoScale.round(~clipSystemConfig.displayPrecision)).postln;
     };
 };
 
@@ -83,7 +84,8 @@
 // MIDI button controls for clip functions
 ~clipModeToggle = nil;
 
-~setupClipModeControls = { |buttonNumber=26|
+~setupClipModeControls = { |buttonNumber|
+    buttonNumber = buttonNumber ? ~clipSystemConfig.defaultModeButton;
     // Clean up existing control
     if (~clipModeToggle.notNil) {
         ~clipModeToggle.free;
@@ -101,7 +103,7 @@
                 { 1.0 };  // fallback to normal
             
             ~setClipTempo.(newTempo);
-            "MIDI Button %: Clip tempo cycled to %x".format(buttonNumber, newTempo.round(0.01)).postln;
+            "MIDI Button %: Clip tempo cycled to %x".format(buttonNumber, newTempo.round(~clipSystemConfig.displayPrecision)).postln;
         };
     }, buttonNumber);
     
@@ -116,12 +118,12 @@
 ~showClipControlStatus = {
     "=== CLIP CONTROL STATUS ===".postln;
     "Tempo Scale: %x (% BPM equivalent)".format(
-        ~clipControl.tempoScale.round(0.01),
+        ~clipControl.tempoScale.round(~clipSystemConfig.displayPrecision),
         (~bpm * ~clipControl.tempoScale).round(1)
     ).postln;
     "Tempo Range: %x - %x".format(
-        ~clipControl.minTempoScale.round(0.01),
-        ~clipControl.maxTempoScale.round(0.01)
+        ~clipControl.minTempoScale.round(~clipSystemConfig.displayPrecision),
+        ~clipControl.maxTempoScale.round(~clipSystemConfig.displayPrecision)
     ).postln;
     "System Enabled: %".format(~clipControl.enabled).postln;
     "==========================".postln;
@@ -140,7 +142,7 @@
                 "% - %: %s duration%".format(
                     i + 1, 
                     melodyKey, 
-                    duration.round(0.01),
+                    duration.round(~clipSystemConfig.displayPrecision),
                     current
                 ).postln;
                 clipCount = clipCount + 1;
@@ -174,15 +176,16 @@
     };
     
     // Setup default MIDI controls
-    ~setupClipTempoControl.(20);  // CC 20 for tempo
-    ~setupClipModeControls.(26);  // Note 26 for mode toggle
+    ~setupClipTempoControl.();  // Use default CC from config
+    ~setupClipModeControls.();  // Use default button from config
     
     "Clip controls initialized".postln;
-    "- CC 20: Tempo scale (%x - %x)".format(
-        ~clipControl.minTempoScale.round(0.01),
-        ~clipControl.maxTempoScale.round(0.01)
+    "- CC %: Tempo scale (%x - %x)".format(
+        ~clipSystemConfig.defaultTempoCC,
+        ~clipControl.minTempoScale.round(~clipSystemConfig.displayPrecision),
+        ~clipControl.maxTempoScale.round(~clipSystemConfig.displayPrecision)
     ).postln;
-    "- Note 26: Tempo preset cycling".postln;
+    "- Note %: Tempo preset cycling".format(~clipSystemConfig.defaultModeButton).postln;
 };
 
 // Cleanup function

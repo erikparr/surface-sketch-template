@@ -17,7 +17,7 @@ if (~setupAlreadyLoaded == true) {
             "midi-setup.scd",            // 4. Then MIDI setup (depends on VST manager)
             "midi-control-mapping.scd",  // 5. Then MIDI control mapping (depends on MIDI controller)
             "osc-setup.scd",             // 6. Then OSC setup (depends on VST manager)
-            "melody-management.scd"      // 7. Finally melody management (depends on VST manager)
+            // "melody-management.scd"      // 7. Finally melody management (depends on VST manager)
         ];
         
         // Recursive function to load files in sequence
@@ -49,6 +49,17 @@ if (~setupAlreadyLoaded == true) {
                 };
             } {
                 "All setup files loaded successfully!".postln;
+                
+                // Load clip system after setup is complete
+                {
+                    var clipLoaderPath = ~setupDir.dirname +/+ "sketch/clip-system/clip-loader.scd";
+                    if (File.exists(clipLoaderPath)) {
+                        "Loading clip system...".postln;
+                        clipLoaderPath.load;
+                    } {
+                        "Clip system not found at: %".format(clipLoaderPath).postln;
+                    };
+                }.defer(1.0); // Give setup time to settle
             };
         };
         

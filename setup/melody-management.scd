@@ -425,7 +425,7 @@
 // Function to save melody data to JSON file
 ~saveMelodyData = {
     var melodyDataPath, file, jsonString;
-    melodyDataPath = ~melodyMgmtDir +/+ "../data/ototope-melodies.json";
+    melodyDataPath = ~melodyMgmtDir +/+ "../data/empty-melodies.json";
     
     if (~melodyData.notNil) {
         try {

@@ -27,7 +27,12 @@
     totalClipDuration = clipData[\duration];
     
     // Create ASR envelope: quick attack, sustain at 1, quick release
-    env = Env.asr(attackTime: 0.01, sustainLevel: 1.0, releaseTime: 0.1, curve: \lin);
+    env = Env.asr(
+        attackTime: ~clipSystemConfig.envelopeAttack, 
+        sustainLevel: 1.0, 
+        releaseTime: ~clipSystemConfig.envelopeRelease, 
+        curve: ~clipSystemConfig.envelopeCurve
+    );
     
     // Create ProcMod instance using existing ProcMod class
     ProcMod.new(
@@ -88,12 +93,11 @@
 
 // Enhanced melody loading that detects clips and routes them appropriately
 ~loadClipBasedMelodies = {
-    var clipCount = 0, melodyCount = 0;
+    var clipCount = 0, melodyCount = 0, result = nil;
     
     if (~melodyData.isNil or: { ~melodyData[\melodies].isNil }) {
         "No melody data available for clip-based loading".postln;
-        ^nil;
-    };
+    } {
     
     ~melodyData[\melodies].do { |melody|
         if (~isValidClip.(melody)) {
@@ -110,8 +114,11 @@
         };
     };
     
-    "Loaded % clips and % traditional melodies into ProcMod system".format(clipCount, melodyCount).postln;
-    ^(clips: clipCount, melodies: melodyCount);
+        "Loaded % clips and % traditional melodies into ProcMod system".format(clipCount, melodyCount).postln;
+        result = (clips: clipCount, melodies: melodyCount);
+    };
+    
+    result;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -120,32 +127,30 @@
 
 // Check if a melody key refers to a clip
 ~isClipKey = { |melodyKey|
-    var melody;
-    if (~melodyData.isNil or: { ~melodyData[\melodies].isNil }) {
-        ^false;
+    var melody, result = false;
+    
+    if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
+        melody = ~melodyData[\melodies].detect({ |m| m[\key] == melodyKey });
+        if (melody.notNil) {
+            result = ~isValidClip.(melody);
+        };
     };
     
-    melody = ~melodyData[\melodies].detect({ |m| m[\key] == melodyKey });
-    if (melody.isNil) {
-        ^false;
-    };
-    
-    ~isValidClip.(melody);
+    result;
 };
 
 // Get clip duration for timing calculations (used in continuous loop system)
 ~getClipDurationForKey = { |melodyKey, tempoScale=nil|
-    var melody, clipData;
+    var melody, clipData, duration = nil;
     
     melody = ~melodyData[\melodies].detect({ |m| m[\key] == melodyKey });
-    if (melody.isNil or: { ~isValidClip.(melody).not }) {
-        ^nil;
+    if (melody.notNil and: { ~isValidClip.(melody) }) {
+        clipData = melody[\clipData];
+        tempoScale = tempoScale ? ~clipControl.tempoScale;
+        duration = clipData[\duration] / tempoScale;
     };
     
-    clipData = melody[\clipData];
-    tempoScale = tempoScale ? ~clipControl.tempoScale;
-    
-    clipData[\duration] / tempoScale;
+    duration;
 };
 
 "Clip ProcMod integration loaded".postln; 
