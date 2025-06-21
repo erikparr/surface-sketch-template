@@ -1,6 +1,7 @@
 // Melody Management GUI
 // Provides interface to manage sketch melodies with active/inactive toggles
 // Uses JSON format for reliable data persistence
+// PHASE 1: Enhanced MIDI Clip Recording System
 
 // Capture the setup directory path at file load time
 ~melodyMgmtDir = thisProcess.nowExecutingPath.dirname;
@@ -10,11 +11,394 @@
 ~melodyManagerWin = nil;
 ~updateMelodyManagerUI = nil;
 
-// Global variables for MIDI note capturing
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    PHASE 1: MIDI CLIP RECORDING SYSTEM                     │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Global variables for MIDI clip recording
+~clipRecordingState = \idle;  // \idle, \recording, \processing
+~recordingStartTime = nil;
+~recordingTimeout = 10.0;  // 10 second max recording
+~recordedEvents = [];
+~maxRecordedEvents = 1000;  // Prevent memory overflow
+~recordingNoteOnDef = nil;
+~recordingNoteOffDef = nil;
+~recordingTimer = nil;
+~recordingUI = (); // Dictionary to hold UI elements
+
+// Global variables for legacy MIDI note capturing (preserved for compatibility)
 ~capturedNotes = [];
 ~maxCapturedNotes = 15;
 ~capturedNotesField = nil;
 ~keyOnResponder = nil;
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       PHASE 1.1: MIDI INPUT ENHANCEMENT                    │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Setup direct MIDI input for clip recording
+~setupClipMIDIInput = {
+    // Initialize MIDI client if needed
+    if (MIDIClient.initialized.not) {
+        MIDIClient.init;
+        "MIDI Client initialized".postln;
+    };
+    
+    // Cleanup existing MIDI handlers
+    if (~recordingNoteOnDef.notNil) {
+        ~recordingNoteOnDef.free;
+    };
+    if (~recordingNoteOffDef.notNil) {
+        ~recordingNoteOffDef.free;
+    };
+    
+    // Create MIDIdef for Note On events
+    ~recordingNoteOnDef = MIDIdef.noteOn(\clipRecordingNoteOn, { |vel, note, chan, src|
+        if (~clipRecordingState == \recording) {
+            ~addRecordedEvent.(\noteOn, chan, note, vel);
+        };
+    });
+    
+    // Create MIDIdef for Note Off events  
+    ~recordingNoteOffDef = MIDIdef.noteOff(\clipRecordingNoteOff, { |vel, note, chan, src|
+        if (~clipRecordingState == \recording) {
+            ~addRecordedEvent.(\noteOff, chan, note, vel);
+        };
+    });
+    
+    "Direct MIDI input setup complete using MIDIdef".postln;
+};
+
+// Add recorded MIDI event with precise timing
+~addRecordedEvent = { |type, channel, note, velocity|
+    var currentTime, relativeTime, event;
+    
+    if (~recordedEvents.size >= ~maxRecordedEvents) {
+        "Maximum events reached, stopping recording".postln;
+        ~stopClipRecording.();
+        ^nil;
+    };
+    
+    currentTime = Main.elapsedTime;
+    relativeTime = currentTime - ~recordingStartTime;
+    
+    event = (
+        type: type,
+        time: relativeTime,
+        note: note,
+        channel: channel,
+        velocity: velocity
+    );
+    
+    ~recordedEvents = ~recordedEvents.add(event);
+    
+    // Update UI if available
+    if (~recordingUI[\eventCount].notNil) {
+        { ~recordingUI[\eventCount].string = "Events: %".format(~recordedEvents.size); }.defer;
+    };
+    
+    "Recorded % event: ch=%, note=%, vel=%, time=%".format(
+        type, channel, note, velocity, relativeTime.round(0.001)
+    ).postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    PHASE 1.2: RECORDING STATE MACHINE                      │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Start clip recording
+~startClipRecording = {
+    if (~clipRecordingState != \idle) {
+        "Cannot start recording: currently in state %".format(~clipRecordingState).postln;
+        ^false;
+    };
+    
+    // Initialize recording
+    ~clipRecordingState = \recording;
+    ~recordingStartTime = Main.elapsedTime;
+    ~recordedEvents = [];
+    
+    // Setup timeout
+    ~recordingTimer = AppClock.sched(~recordingTimeout, {
+        // Only stop if we're still recording (avoid race condition with manual stop)
+        if (~clipRecordingState == \recording) {
+            "Recording auto-stopped after % seconds".format(~recordingTimeout).postln;
+            ~stopClipRecording.();
+        } {
+            "Recording timeout fired but recording already stopped".postln;
+        };
+        nil; // Don't reschedule
+    });
+    
+    // Update UI
+    if (~recordingUI[\recordButton].notNil) {
+        { 
+            ~recordingUI[\recordButton].states = [["● STOP", Color.white, Color.red]];
+            ~recordingUI[\recordButton].value = 0;
+            ~recordingUI[\statusText].string = "Recording...";
+            ~recordingUI[\eventCount].string = "Events: 0";
+        }.defer;
+    };
+    
+    "Clip recording started (max % seconds)".format(~recordingTimeout).postln;
+    ^true;
+};
+
+// Stop clip recording
+~stopClipRecording = {
+    // Handle case where recording has already been stopped (prevent race condition)
+    if (~clipRecordingState == \idle) {
+        // Already stopped and processed, just update UI to be safe
+        if (~recordingUI[\recordButton].notNil) {
+            { 
+                ~recordingUI[\recordButton].states = [["● RECORD", Color.black, Color.green]];
+                ~recordingUI[\recordButton].value = 0;
+                ~recordingUI[\statusText].string = "Ready to record";
+            }.defer;
+        };
+        ^true; // Return success since we're already in the desired state
+    };
+    
+    if (~clipRecordingState == \processing) {
+        "Recording is currently being processed, please wait".postln;
+        ^false;
+    };
+    
+    if (~clipRecordingState != \recording) {
+        "Cannot stop recording: not currently recording (state: %)".format(~clipRecordingState).postln;
+        ^false;
+    };
+    
+    // Change state to processing
+    ~clipRecordingState = \processing;
+    
+    // Cancel timeout timer
+    if (~recordingTimer.notNil) {
+        ~recordingTimer.clear;
+        ~recordingTimer = nil;
+    };
+    
+    // Process the recorded data
+    ~processRecordedClip.();
+    
+    // Update UI
+    if (~recordingUI[\recordButton].notNil) {
+        { 
+            ~recordingUI[\recordButton].states = [["● RECORD", Color.black, Color.green]];
+            ~recordingUI[\recordButton].value = 0;
+        }.defer;
+    };
+    
+    ^true;
+};
+
+// Toggle recording state
+~toggleClipRecording = {
+    if (~clipRecordingState == \idle) {
+        ~startClipRecording.();
+    } {
+        if (~clipRecordingState == \recording) {
+            "User stopped recording".postln;
+            ~stopClipRecording.();
+        } {
+            "Cannot toggle: currently processing previous recording (state: %)".format(~clipRecordingState).postln;
+        };
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      PHASE 1.3: DATA PROCESSING                            │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Process recorded clip data
+~processRecordedClip = {
+    var totalDuration, notePairs, statusText, noteOnEvents, clipMelody;
+    
+    if (~recordedEvents.size == 0) {
+        "No events recorded".postln;
+        ~clipRecordingState = \idle;
+        if (~recordingUI[\statusText].notNil) {
+            { ~recordingUI[\statusText].string = "No events recorded"; }.defer;
+        };
+        ^nil;
+    };
+    
+    "Processing % events...".format(~recordedEvents.size).postln;
+    
+    // Calculate total duration
+    totalDuration = ~recordedEvents.last[\time] + 0.1;
+    
+    // Sort events by time
+    ~recordedEvents = ~recordedEvents.sort({ |a, b| a[\time] <= b[\time] });
+    
+    // Calculate note durations directly (simplified approach)
+    noteOnEvents = IdentityDictionary.new;
+    notePairs = [];
+    
+    ~recordedEvents.do { |event|
+        var noteKey = (event[\channel].asString ++ "_" ++ event[\note]).asSymbol;
+        
+        if (event[\type] == \noteOn && (event[\velocity].isNumber && event[\velocity] > 0)) {
+            noteOnEvents[noteKey] = event;
+        } {
+            if (event[\type] == \noteOff || (event[\type] == \noteOn && (event[\velocity].isNumber.not || event[\velocity] == 0))) {
+                var noteOnEvent = noteOnEvents[noteKey];
+                if (noteOnEvent.notNil) {
+                    var duration = event[\time] - noteOnEvent[\time];
+                    var notePair = (
+                        note: noteOnEvent[\note],
+                        channel: noteOnEvent[\channel],
+                        startTime: noteOnEvent[\time],
+                        duration: duration.max(0.01),
+                        velocity: noteOnEvent[\velocity]
+                    );
+                    notePairs = notePairs.add(notePair);
+                    noteOnEvents.removeAt(noteKey);
+                };
+            };
+        };
+    };
+    
+    "Created % note pairs".format(notePairs.size).postln;
+    
+    // PHASE 2: Store full timing data instead of converting to old format
+    if (notePairs.size > 0) {
+        var clipName = "clip-" ++ Date.getDate.format("%H%M%S");
+        var notePattern = notePairs.collect({ |pair| pair[\note] }); // For compatibility only
+        
+        clipMelody = (
+            key: clipName,
+            name: clipName ++ " (recorded clip)",
+            // Legacy compatibility fields
+            pattern: notePattern,
+            velocityFirst: 1.0,
+            velocityLast: 1.0,
+            loopCount: 1,
+            active: true,
+            // PHASE 2: Store full clip timing data
+            isClip: true,
+            clipData: (
+                notePairs: notePairs,
+                duration: totalDuration,
+                eventCount: ~recordedEvents.size,
+                metadata: (
+                    recordedAt: Date.getDate.stamp,
+                    noteCount: notePairs.size,
+                    recordingDuration: totalDuration
+                )
+            )
+        );
+        
+        // Add to melody data
+        ~melodyData[\melodies] = ~melodyData[\melodies].add(clipMelody);
+        
+        statusText = "Recorded clip: % notes, %s duration (TIMING PRESERVED)".format(
+            notePairs.size, totalDuration.round(0.01)
+        );
+        
+        "PHASE 2: Clip processing successful with timing data preserved: %".format(statusText).postln;
+        "PHASE 2: Clip data structure: %".format(clipMelody[\clipData]).postln;
+    } {
+        statusText = "No complete note pairs found";
+        "Warning: %".format(statusText).postln;
+    };
+    
+    // Update UI
+    if (~recordingUI[\statusText].notNil) {
+        { ~recordingUI[\statusText].string = statusText; }.defer;
+    };
+    
+    // Reset state
+    ~clipRecordingState = \idle;
+    ~recordedEvents = [];
+    
+    // Update melody manager UI
+    if (~updateMelodyManagerUI.notNil) {
+        ~updateMelodyManagerUI.();
+    };
+    
+    "Clip processing complete".postln;
+    ^clipMelody;
+};
+
+// Calculate note durations from note on/off pairs
+~calculateNoteDurations = { |events|
+    var noteOnEvents, notePairs, openNotes;
+    
+    noteOnEvents = IdentityDictionary.new;
+    notePairs = [];
+    
+    events.do { |event|
+        var noteKey = (event[\channel].asString ++ "_" ++ event[\note]).asSymbol;
+        
+        if (event[\type] == \noteOn && (event[\velocity].isNumber && event[\velocity] > 0)) {
+            // Store note on event
+            noteOnEvents[noteKey] = event;
+        } {
+            if (event[\type] == \noteOff || (event[\type] == \noteOn && (event[\velocity].isNumber.not || event[\velocity] == 0))) {
+                // Find matching note on event
+                var noteOnEvent = noteOnEvents[noteKey];
+                if (noteOnEvent.notNil) {
+                    var duration = event[\time] - noteOnEvent[\time];
+                    var notePair = (
+                        note: noteOnEvent[\note],
+                        channel: noteOnEvent[\channel],
+                        startTime: noteOnEvent[\time],
+                        duration: duration.max(0.01), // Minimum 10ms duration
+                        velocity: noteOnEvent[\velocity]
+                    );
+                    notePairs = notePairs.add(notePair);
+                    noteOnEvents.removeAt(noteKey);
+                };
+            };
+        };
+    };
+    
+    // Handle any remaining open notes (no note off received)
+    noteOnEvents.keysValuesDo { |key, noteOnEvent|
+        var duration = (~recordedEvents.last[\time] - noteOnEvent[\time]).max(0.1);
+        var notePair = (
+            note: noteOnEvent[\note],
+            channel: noteOnEvent[\channel], 
+            startTime: noteOnEvent[\time],
+            duration: duration,
+            velocity: noteOnEvent[\velocity]
+        );
+        notePairs = notePairs.add(notePair);
+        "Note left open, auto-closed: %".format(notePair).postln;
+    };
+    
+    ^notePairs.sort({ |a, b| a[\startTime] <= b[\startTime] });
+};
+
+// Generate unique clip name
+~generateClipName = {
+    var timestamp = Date.getDate.format("%H%M%S");
+    var name = "clip-" ++ timestamp;
+    ^name;
+};
+
+// Add processed clip to melody data structure
+~addClipToMelodyData = { |clipData|
+    var clipMelody;
+    
+    // Convert clip to melody format for compatibility
+    clipMelody = (
+        key: clipData[\metadata][\name],
+        name: clipData[\metadata][\name] ++ " (recorded clip)",
+        pattern: clipData[\notePairs].collect({ |note| note[\note] }), // Extract just note numbers for compatibility
+        velocityFirst: 1.0,
+        velocityLast: 1.0,
+        loopCount: 1,
+        active: true,
+        // Add clip-specific data
+        isClip: true,
+        clipData: clipData
+    );
+    
+    ~melodyData[\melodies] = ~melodyData[\melodies].add(clipMelody);
+    "Added clip % to melody data".format(clipData[\metadata][\name]).postln;
+};
 
 // Function to load melody data from JSON file or create default
 ~loadMelodyData = {
@@ -329,6 +713,7 @@
     var updateButton, updateMelodyList, updateEditPanel, selectedMelodyIndex, statusText;
     var topLayout, mainLayout, leftLayout, rightLayout, listButtonLayout;
     var captureLayout, captureButtonLayout, clearCapturedButton, saveCapturedButton;
+    var clipRecordingLayout, recordingControlsLayout, recordButton, clipStatusText, eventCountText, paramsLayout;
 
     // Check if melody data is loaded
     if (~melodyData.isNil) {
@@ -377,9 +762,53 @@
     
     layout.add(topLayout);
 
-    // MIDI Note Capture Section
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                    PHASE 1: CLIP RECORDING UI SECTION                      │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+    
+    // Clip Recording Section
+    clipRecordingLayout = VLayout();
+    clipRecordingLayout.add(StaticText().string_("MIDI Clip Recording (Phase 1)").font_(Font.default.boldVariant));
+    
+    // Recording controls row
+    recordingControlsLayout = HLayout();
+    
+    // Record button
+    recordButton = Button()
+        .states_([["● RECORD", Color.black, Color.green]])
+        .action_({
+            ~toggleClipRecording.();
+        });
+    recordingControlsLayout.add(recordButton);
+    
+    // Status and event count
+    clipStatusText = StaticText().string_("Ready to record");
+    eventCountText = StaticText().string_("Events: 0");
+    recordingControlsLayout.add(clipStatusText, stretch: 1);
+    recordingControlsLayout.add(eventCountText);
+    
+    clipRecordingLayout.add(recordingControlsLayout);
+    
+    // Recording parameters
+    paramsLayout = HLayout();
+    paramsLayout.add(StaticText().string_("Max duration: %s".format(~recordingTimeout)));
+    paramsLayout.add(StaticText().string_("Max events: %".format(~maxRecordedEvents)), stretch: 1);
+    clipRecordingLayout.add(paramsLayout);
+    
+    // Store UI elements for state updates
+    ~recordingUI[\recordButton] = recordButton;
+    ~recordingUI[\statusText] = clipStatusText;
+    ~recordingUI[\eventCount] = eventCountText;
+    
+    layout.add(clipRecordingLayout);
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                    LEGACY MIDI NOTE CAPTURE SECTION                        │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+    
+    // MIDI Note Capture Section (Legacy - preserved for compatibility)
     captureLayout = VLayout();
-    captureLayout.add(StaticText().string_("MIDI Note Capture"));
+    captureLayout.add(StaticText().string_("Legacy MIDI Note Capture"));
     
     // Captured notes display field
     ~capturedNotesField = TextField()
@@ -651,6 +1080,20 @@
             ~testResponder.free;
             ~testResponder = nil;
         };
+        // Clean up MIDI clip recording handlers
+        if (~recordingNoteOnDef.notNil) {
+            ~recordingNoteOnDef.free;
+            ~recordingNoteOnDef = nil;
+        };
+        if (~recordingNoteOffDef.notNil) {
+            ~recordingNoteOffDef.free;
+            ~recordingNoteOffDef = nil;
+        };
+        // Clean up any active recording timer
+        if (~recordingTimer.notNil) {
+            ~recordingTimer.clear;
+            ~recordingTimer = nil;
+        };
     };
     
     // Store window reference
@@ -669,3 +1112,99 @@ AppClock.sched(1.0, {
 });
 
 // Note: To create the melody manager UI, call ~createMelodyManagerUI.(); 
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      PHASE 1: TESTING AND DEBUGGING                        │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Test function to inspect captured clip data
+~inspectLastClip = {
+    var lastClip, clips;
+    
+    if (~melodyData.isNil or: { ~melodyData[\melodies].isNil }) {
+        "No melody data available for inspection".postln;
+        ^nil;
+    };
+    
+    clips = ~melodyData[\melodies].select({ |melody| melody[\isClip] == true });
+    
+    if (clips.size == 0) {
+        "No clips found in melody data".postln;
+        ^nil;
+    };
+    
+    lastClip = clips.last;
+    
+    "=== CLIP INSPECTION ===".postln;
+    "Clip name: %".format(lastClip[\name]).postln;
+    "Clip key: %".format(lastClip[\key]).postln;
+    "Is clip: %".format(lastClip[\isClip]).postln;
+    "".postln;
+    
+    if (lastClip[\clipData].notNil) {
+        "✅ CLIP DATA PRESERVED!".postln;
+        "Total duration: %s".format(lastClip[\clipData][\duration].round(0.001)).postln;
+        "Event count: %".format(lastClip[\clipData][\eventCount]).postln;
+        "Note count: %".format(lastClip[\clipData][\metadata][\noteCount]).postln;
+        "Recorded at: %".format(lastClip[\clipData][\metadata][\recordedAt]).postln;
+        "".postln;
+        
+        "=== TIMING DATA ===".postln;
+        lastClip[\clipData][\notePairs].do({ |notePair, i|
+            "Note %: pitch=%, start=%s, duration=%s, velocity=%".format(
+                i + 1,
+                notePair[\note],
+                notePair[\startTime].round(0.001),
+                notePair[\duration].round(0.001),
+                notePair[\velocity]
+            ).postln;
+        });
+        
+        "".postln;
+        "✅ SUCCESS: Timing data is being preserved!".postln;
+    } {
+        "❌ ERROR: No clipData found - timing data was lost!".postln;
+    };
+    
+    ^lastClip;
+};
+
+// Test function to verify MIDI capture is working
+~testMIDICapture = {
+    "=== MIDI CAPTURE TEST ===".postln;
+    "Recording state: %".format(~clipRecordingState).postln;
+    "Recorded events: %".format(~recordedEvents.size).postln;
+    "".postln;
+    
+    if (~recordedEvents.size > 0) {
+        "Recent events:".postln;
+        ~recordedEvents.do({ |event, i|
+            "Event %: type=%, note=%, velocity=%, time=%s".format(
+                i + 1,
+                event[\type],
+                event[\note],
+                event[\velocity],
+                event[\time].round(0.001)
+            ).postln;
+        });
+    } {
+        "No events captured yet".postln;
+    };
+    
+    "".postln;
+    "MIDI handlers status:".postln;
+    "Note On handler: %".format(if (~recordingNoteOnDef.notNil) { "✅ Active" } { "❌ Not active" }).postln;
+    "Note Off handler: %".format(if (~recordingNoteOffDef.notNil) { "✅ Active" } { "❌ Not active" }).postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      PHASE 1: SYSTEM INITIALIZATION                        │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Initialize the MIDI clip recording system
+AppClock.sched(0.5, {
+    // Setup MIDI input for clip recording
+    ~setupClipMIDIInput.();
+    "MIDI Clip Recording System (Phase 1) initialized".postln;
+    nil; // Don't reschedule
+}); 
