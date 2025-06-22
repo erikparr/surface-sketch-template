@@ -40,8 +40,9 @@
 "[2/4] Loading ProcMod integration...".postln;
 (~clipSystemDir +/+ "clip-procmod.scd").load;
 
-"[3/4] Loading system integration...".postln;
-(~clipSystemDir +/+ "clip-integration.scd").load;
+// "[3/4] Loading system integration...".postln;
+// (~clipSystemDir +/+ "clip-integration.scd").load;
+// NOTE: Integration with melody system disabled - clip system is independent
 
 "[4/5] Loading control system...".postln;
 (~clipSystemDir +/+ "clip-controls.scd").load;
@@ -50,7 +51,7 @@
 (~clipSystemDir +/+ "clip-filemanager.scd").load;
 
 "[6/6] Loading clip management GUI...".postln;
-(~clipSystemDir +/+ "../../setup/clip-management.scd").load;
+(~clipSystemDir.dirname +/+ "setup/clip-management.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                           SYSTEM INITIALIZATION                            │
@@ -129,87 +130,71 @@ if (~createClipManagerGUI.notNil) {
 };
 
 // Quick clip playback test
-~testClipPlayback = { |melodyKey|
-    var result = nil;
+~testClipPlayback = { |clipKey|
+    var result = nil, clip;
     
-    if (melodyKey.isNil) {
-        if (~currentSequence.notNil && ~currentSequence.size > 0) {
-            melodyKey = ~currentSequence[~currentLoopIndex];
+    if (clipKey.isNil) {
+        if (~clipMgmtData.notNil and: { ~clipMgmtData.clips.size > 0 }) {
+            clip = ~clipMgmtData.clips[0];  // Test first available clip
+            clipKey = clip[\key];
         } {
-            "No melody key provided and no current sequence available".postln;
+            "No clip key provided and no clips available".postln;
         };
     };
     
-    if (melodyKey.notNil) {
-        if (~isClipKey.(melodyKey)) {
-            "Testing clip playback: %".format(melodyKey).postln;
-            if (~melodyProcs[melodyKey].notNil) {
-                ~melodyProcs[melodyKey].play;
+    if (clipKey.notNil) {
+        // Find clip in clip management data
+        if (~clipMgmtData.notNil) {
+            clip = ~clipMgmtData.clips.detect({ |c| c[\key] == clipKey });
+            if (clip.notNil) {
+                "Testing clip playback: %".format(clipKey).postln;
+                // Use clip management playback
+                if (~playSelectedClip.notNil) {
+                    // Set selected index to this clip
+                    var clipIndex = ~clipMgmtData.clips.indexOf(clip);
+                    if (clipIndex.notNil) {
+                        ~clipMgmtData.selectedClipIndex = clipIndex;
+                        ~playSelectedClip.();
+                    };
+                } {
+                    "Clip playback function not available".postln;
+                };
             } {
-                "No ProcMod found for clip: %".format(melodyKey).postln;
+                "Clip not found: %".format(clipKey).postln;
             };
         } {
-            "% is not a clip".format(melodyKey).postln;
+            "No clip management data available".postln;
         };
     };
     
     result;
 };
 
-// Safe melody loading that doesn't trigger continuous loop
-~loadMelodiesForClips = {
-    var originalAutoStart;
+// Load clips from clip management data 
+~loadClipsFromData = {
+    "Loading clips from clip management data...".postln;
     
-    "Loading melodies for clip system (no auto-playback)...".postln;
-    
-    // Stop any existing continuous loop first
-    if (~continuousLoopRunning == true) {
-        "Stopping existing continuous loop...".postln;
-        if (~continuousLoopTask.notNil) {
-            ~continuousLoopTask.stop;
-        };
-        ~continuousLoopRunning = false;
-    };
-    
-    // Set a flag to prevent auto-start during loading
-    originalAutoStart = ~autoStartContinuousLoop;
-    ~autoStartContinuousLoop = false;
-    
-    // Now safely load melodies
-    if (~melodyData.notNil) {
-        ~loadActiveMelodies.();
-        "✅ Melodies loaded for clip system".postln;
+    if (~clipMgmtData.notNil and: { ~clipMgmtData.clips.notNil }) {
+        var clipCount = ~clipMgmtData.clips.size;
+        "✅ Found % clips in clip management data".format(clipCount).postln;
+        ~refreshClipSequence.();
     } {
-        "⚠️  No melody data found - load melody data first".postln;
+        "⚠️  No clip management data found - record some clips first".postln;
     };
-    
-    // Restore original auto-start setting
-    ~autoStartContinuousLoop = originalAutoStart;
 };
 
 // Quick refresh of current sequence after loading clips
 ~refreshClipSequence = {
-    var activeMelodies, activeMelodyKeys;
+    var activeClips, activeClipKeys;
     
-    if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
-        activeMelodies = ~melodyData[\melodies].select({ |melody| melody[\active] == true });
-        activeMelodyKeys = activeMelodies.collect({ |melody| melody[\key].asSymbol });
+    if (~clipMgmtData.notNil and: { ~clipMgmtData.clips.notNil }) {
+        activeClips = ~clipMgmtData.clips.select({ |clip| clip[\active] == true });
+        activeClipKeys = activeClips.collect({ |clip| clip[\key].asSymbol });
         
-        // Update current sequence
-        ~currentSequence = activeMelodyKeys;
-        
-        // Initialize index if needed
-        if (~currentLoopIndex.isNil) {
-            ~currentLoopIndex = 0;
-        };
-        
-        // Ensure index is within bounds
-        ~currentLoopIndex = ~currentLoopIndex.clip(0, activeMelodyKeys.size - 1);
-        
-        "✅ Sequence refreshed: % active items".format(activeMelodyKeys.size).postln;
-        "Current sequence: %".format(activeMelodyKeys).postln;
+        "✅ Clip sequence refreshed: % active clips".format(activeClipKeys.size).postln;
+        "Active clips: %".format(activeClipKeys).postln;
     } {
-        "No melody data to refresh".postln;
+        "No clip data to refresh".postln;
     };
 };
 
@@ -264,14 +249,16 @@ if (~createClipManagerGUI.notNil) {
         ~continuousLoopRunning = false;
     };
     
-    // Stop all ProcMods
-    if (~melodyProcs.notNil) {
-        "Stopping all ProcMods...".postln;
-        ~melodyProcs.do({ |proc| 
+    // Stop all clip ProcMods
+    if (~clipPlaybackProcs.notNil) {
+        "Stopping all clip ProcMods...".postln;
+        ~clipPlaybackProcs.keysValuesDo({ |key, proc| 
             if (proc.notNil && proc.isRunning) { 
+                "Killing ProcMod: %".format(key).postln;
                 proc.kill;  // Use kill instead of release for immediate stop
             }; 
         });
+        ~clipPlaybackProcs.clear;
     };
     
     // Stop all notes
@@ -285,9 +272,10 @@ if (~createClipManagerGUI.notNil) {
 // Simple stop function - what should have been there from the start!
 ~stopClips = {
     "Stopping all clip playback...".postln;
-    if (~melodyProcs.notNil) {
-        ~melodyProcs.do({ |proc| 
+    if (~clipPlaybackProcs.notNil) {
+        ~clipPlaybackProcs.keysValuesDo({ |key, proc| 
             if (proc.notNil && proc.isRunning) { 
+                "Releasing clip: %".format(key).postln;
                 proc.release; 
             }; 
         });
@@ -317,8 +305,8 @@ if (~createClipManagerGUI.notNil) {
 ║  Available functions:                                                         ║
 ║  • ~clipStatus.()              - Show current status                         ║
 ║  • ~setupVSTForClips.()        - Verify and setup VST system                 ║
-║  • ~loadMelodiesForClips.()    - Safe melody loading (no auto-playback)      ║
-║  • ~refreshClipSequence.()     - Refresh sequence after loading clips        ║
+║  • ~loadClipsFromData.()       - Load clips from clip management data        ║
+║  • ~refreshClipSequence.()     - Refresh clip sequence display               ║
 ║  • ~testClipPlayback.(key)     - Test clip playback                          ║
 ║  • ~emergencyStop.()           - EMERGENCY STOP (stops everything)           ║
 ║  • ~stopClips.()               - Stop all clip playback                      ║

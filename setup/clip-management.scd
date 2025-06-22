@@ -32,8 +32,14 @@ if (JSONlib.isNil) {
     recordingState: \idle,  // \idle, \recording, \processing
     recordedEvents: [],
     recordStartTime: nil,
-    recordTimeout: nil
+    recordTimeout: nil,
+    playbackMode: \manual,  // \manual or \auto (sequence advance)
+    sequenceIndex: 0,
+    sequenceRunning: false
 );
+
+// Storage for active clip playback ProcMods
+~clipPlaybackProcs = Dictionary.new;
 
 // UI references
 ~clipMgmtWindow = nil;
@@ -183,6 +189,8 @@ if (JSONlib.isNil) {
             velocityFirst: 1.0,
             velocityLast: 1.0,
             loopCount: 1,
+            clipLoopCount: 1,  // Individual clip loop count for ProcMod looping (0 = infinite)
+            loopMode: \forward,  // \forward, \reverse, \pingpong, \random
             active: true,
             isClip: true,
             clipData: (
@@ -199,25 +207,6 @@ if (JSONlib.isNil) {
         
         // Add to clips collection
         ~clipMgmtData.clips = ~clipMgmtData.clips ++ [newClip];
-        
-        // Also add to main melody data if it exists
-        if (~melodyData.notNil) {
-            if (~melodyData[\melodies].isNil) {
-                ~melodyData[\melodies] = [];
-            };
-            ~melodyData[\melodies] = ~melodyData[\melodies] ++ [newClip];
-        } {
-            // Create melody data if it doesn't exist
-            ~melodyData = (
-                melodies: [newClip],
-                settings: (
-                    defaultNamePrefix: "clip",
-                    nextSequenceNumber: 1,
-                    selectedMelodyIndex: 0,
-                    windowSize: [600, 400]
-                )
-            );
-        };
         
         // Update the clip system sequence if functions are available
         if (~refreshClipSequence.notNil) {
@@ -262,30 +251,288 @@ if (JSONlib.isNil) {
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         PROCMOD CLIP LOOPING SYSTEM                        │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Create a ProcMod for looping clip playback with enhanced modes
+~createLoopingClipProc = { |clip, loopCount=nil|
+    var effectiveLoopCount = loopCount ?? { clip[\clipLoopCount] ?? 1 };
+    var loopMode = clip[\loopMode] ?? \forward;
+    var id = (clip[\key] ++ "_loop").asSymbol;
+    var env = Env.asr(0.01, 1.0, 0.1, \lin);  // ASR envelope like sketch system
+    var isInfinite = (effectiveLoopCount == 0) || (effectiveLoopCount == inf);
+    
+    if (isInfinite) {
+        "🔄 Creating INFINITE looping ProcMod for clip: % (mode: %)".format(clip[\key], loopMode).postln;
+    } {
+        "🔄 Creating looping ProcMod for clip: % (% loops, mode: %)".format(clip[\key], effectiveLoopCount, loopMode).postln;
+    };
+    
+    ProcMod.new(
+        env,          // ASR envelope
+        1.0,          // Amplitude
+        id,           // Unique ID
+        nil,          // Group (create new)
+        0,            // addAction
+        1,            // target
+        
+        // Main function - executes when ProcMod plays
+        { |group, envbus|
+            var task = Task({
+                var currentIteration = 0;
+                var notePairs = clip[\clipData][\notePairs];
+                var processedNotePairs;
+                
+                // Process note pairs based on loop mode
+                processedNotePairs = switch(loopMode,
+                    \forward, { notePairs },
+                    \reverse, { notePairs.reverse },
+                    \pingpong, { notePairs ++ notePairs.drop(1).reverse.drop(-1) },
+                    \random, { notePairs.scramble }
+                );
+                
+                if (isInfinite) {
+                    "▶️ Starting INFINITE clip loop playback".postln;
+                } {
+                    "▶️ Starting clip loop playback: % iterations".format(effectiveLoopCount).postln;
+                };
+                
+                // Main loop - infinite or counted
+                while { 
+                    if (isInfinite) { 
+                        ~clipPlaybackProcs[clip[\key]].notNil && ~clipPlaybackProcs[clip[\key]].isRunning 
+                    } { 
+                        currentIteration < effectiveLoopCount 
+                    }
+                } {
+                    var tempoScale = if (~clipControl.notNil) { ~clipControl.tempoScale } { 1.0 };
+                    var clipDuration = clip[\clipData][\duration] / tempoScale;
+                    var scheduledNotes = [];
+                    
+                    if (isInfinite) {
+                        "🎵 Infinite loop iteration % (tempo: %x)".format(
+                            currentIteration + 1, tempoScale.round(0.01)
+                        ).postln;
+                    } {
+                        "🎵 Loop iteration % of % (tempo: %x)".format(
+                            currentIteration + 1, effectiveLoopCount, tempoScale.round(0.01)
+                        ).postln;
+                    };
+                    
+                    // Regenerate random sequence for each iteration if random mode
+                    if (loopMode == \random) {
+                        processedNotePairs = notePairs.scramble;
+                    };
+                    
+                    // Schedule all notes for this iteration
+                    processedNotePairs.do { |notePair|
+                        var adjustedTime = notePair.startTime / tempoScale;
+                        var adjustedDuration = notePair.duration / tempoScale;
+                        
+                        var scheduledTask = SystemClock.sched(adjustedTime, {
+                            NetAddr.localAddr.sendMsg('/note/on', 0, 
+                                notePair.note, 
+                                notePair.velocity,
+                                adjustedDuration,
+                                0, 0, 0);
+                            nil;
+                        });
+                        
+                        scheduledNotes = scheduledNotes ++ [scheduledTask];
+                    };
+                    
+                    // Wait for clip to complete
+                    clipDuration.wait;
+                    
+                    // Add inter-loop delay
+                    if (isInfinite || (currentIteration < (effectiveLoopCount - 1))) {
+                        var gapTime = clipDuration * 0.05;  // 5% gap between loops
+                        "⏸ Inter-loop gap: %s".format(gapTime.round(0.01)).postln;
+                        gapTime.wait;
+                    };
+                    
+                    currentIteration = currentIteration + 1;
+                };
+                
+                "✅ Clip loop completed: %".format(id).postln;
+            });
+            
+            task.play;
+            task; // Return task for ProcMod tracking
+        },
+        
+        // Release function - executes after ProcMod has fully released
+        { |group, envbus|
+            "🛑 ProcMod clip loop released: %".format(id).postln;
+            // Clean up any remaining scheduled notes
+        },
+        
+        // onReleaseFunc - executes when release is triggered
+        { |group, envbus|
+            "⏹ Releasing ProcMod clip loop: %".format(id).postln;
+            // Clean up without triggering emergency stop to avoid loops
+        }
+    );
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       REAL-TIME LOOP CONTROL FUNCTIONS                      │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update loop count for currently playing clip
+~updateClipLoopCount = { |clipKey, newLoopCount|
+    var selectedClip = ~clipMgmtData.clips.detect({ |c| c[\key] == clipKey });
+    
+    if (selectedClip.notNil) {
+        selectedClip[\clipLoopCount] = newLoopCount;
+        "🔄 Updated loop count for %: % loops".format(clipKey, if (newLoopCount == 0) { "infinite" } { newLoopCount }).postln;
+        
+        // If currently playing, restart with new loop count
+        if (~clipPlaybackProcs[clipKey].notNil && ~clipPlaybackProcs[clipKey].isRunning) {
+            "♻️ Restarting % with new loop count".format(clipKey).postln;
+            ~clipPlaybackProcs[clipKey].release;
+            ~clipPlaybackProcs.removeAt(clipKey);
+            
+            // Small delay then restart
+            {
+                var proc = ~createLoopingClipProc.(selectedClip);
+                ~clipPlaybackProcs[clipKey] = proc;
+                proc.play;
+            }.defer(0.1);
+        };
+        
+        // Update UI if this is the selected clip
+        if (~clipMgmtData.selectedClipIndex < ~clipMgmtData.clips.size &&
+           ~clipMgmtData.clips[~clipMgmtData.selectedClipIndex][\key] == clipKey) {
+            ~updateClipManagerUI.();
+        };
+    } {
+        "❌ Clip not found: %".format(clipKey).postln;
+    };
+};
+
+// Update loop mode for clip
+~updateClipLoopMode = { |clipKey, newLoopMode|
+    var selectedClip = ~clipMgmtData.clips.detect({ |c| c[\key] == clipKey });
+    
+    if (selectedClip.notNil) {
+        selectedClip[\loopMode] = newLoopMode;
+        "🔄 Updated loop mode for %: %".format(clipKey, newLoopMode).postln;
+        
+        // If currently playing, restart with new loop mode
+        if (~clipPlaybackProcs[clipKey].notNil && ~clipPlaybackProcs[clipKey].isRunning) {
+            "♻️ Restarting % with new loop mode".format(clipKey).postln;
+            ~clipPlaybackProcs[clipKey].release;
+            ~clipPlaybackProcs.removeAt(clipKey);
+            
+            // Small delay then restart
+            {
+                var proc = ~createLoopingClipProc.(selectedClip);
+                ~clipPlaybackProcs[clipKey] = proc;
+                proc.play;
+            }.defer(0.1);
+        };
+        
+        // Update UI if this is the selected clip
+        if (~clipMgmtData.selectedClipIndex < ~clipMgmtData.clips.size &&
+           ~clipMgmtData.clips[~clipMgmtData.selectedClipIndex][\key] == clipKey) {
+            ~updateClipManagerUI.();
+        };
+    } {
+        "❌ Clip not found: %".format(clipKey).postln;
+    };
+};
+
+// Quick functions for common loop adjustments
+~setInfiniteLoop = { |clipKey| ~updateClipLoopCount.(clipKey, 0); };
+~setLoopCount = { |clipKey, count| ~updateClipLoopCount.(clipKey, count); };
+~setLoopMode = { |clipKey, mode| ~updateClipLoopMode.(clipKey, mode); };
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                        QUANTIZED/SYNCHRONIZED PLAYBACK                      │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Play clip synchronized to beat grid
+~playClipQuantized = { |clip, quantization=4|
+    var currentBeat, nextBeat, delay, proc;
+    
+    // Use TempoClock if available, otherwise immediate playback
+    if (TempoClock.default.notNil) {
+        currentBeat = TempoClock.default.beats;
+        nextBeat = (currentBeat / quantization).ceil * quantization;
+        delay = (nextBeat - currentBeat) * TempoClock.default.beatDur;
+        
+        "🕐 Quantizing clip start: current beat %, next beat %, delay %s".format(
+            currentBeat.round(0.01), nextBeat, delay.round(0.01)
+        ).postln;
+        
+        // Schedule the playback
+        SystemClock.sched(delay, {
+            proc = ~createLoopingClipProc.(clip);
+            ~clipPlaybackProcs[clip[\key]] = proc;
+            proc.play;
+            "🎵 Quantized playback started for: %".format(clip[\name]).postln;
+            nil;
+        });
+    } {
+        // Immediate playback if no TempoClock
+        "⚠️ No TempoClock - playing immediately".postln;
+        proc = ~createLoopingClipProc.(clip);
+        ~clipPlaybackProcs[clip[\key]] = proc;
+        proc.play;
+    };
+};
+
+// Play selected clip with quantization
+~playSelectedClipQuantized = { |quantization=4|
+    var selectedClip;
+    
+    if (~clipMgmtData.clips.size > 0 and: { ~clipMgmtData.selectedClipIndex < ~clipMgmtData.clips.size }) {
+        selectedClip = ~clipMgmtData.clips[~clipMgmtData.selectedClipIndex];
+        
+        // Stop any existing playback for this clip
+        if (~clipPlaybackProcs[selectedClip[\key]].notNil) {
+            "⏹ Stopping existing playback for: %".format(selectedClip[\key]).postln;
+            ~clipPlaybackProcs[selectedClip[\key]].release;
+            ~clipPlaybackProcs.removeAt(selectedClip[\key]);
+        };
+        
+        ~playClipQuantized.(selectedClip, quantization);
+        
+        {
+            if (~clipMgmtViews.statusText.notNil) {
+                ~clipMgmtViews.statusText.string = "🕐 Quantized start: {} (Q: {})".format(
+                    selectedClip[\name], quantization
+                );
+            };
+        }.defer;
+    } {
+        "No clip selected to play".postln;
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                            CLIP FILE MANAGEMENT                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Load clips from main melody data
-~loadClipsFromMelodyData = {
+// Load clips from file manager or previous session
+~loadClipsFromStorage = {
     var loadedClips = [];
     
-    if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
-        loadedClips = ~melodyData[\melodies].select({ |melody|
-            melody[\isClip] == true and: { ~isValidClip.(melody) }
-        });
-        
-        ~clipMgmtData.clips = loadedClips;
-        "Loaded % clips from melody data".format(loadedClips.size).postln;
-        
-        // Re-initialize clip system to ensure ProcMods are created
-        if (~initializeClipSystem.notNil) {
-            ~initializeClipSystem.();
+    "Loading clips from clip storage...".postln;
+    
+    // Try to load clips from file manager if available
+    if (~listClipFiles.notNil) {
+        var clipFiles = ~listClipFiles.();
+        if (clipFiles.size > 0) {
+            "Found % clip files available for loading".format(clipFiles.size).postln;
         };
-        
-        ~updateClipManagerUI.();
-    } {
-        "No melody data available to load clips from".postln;
     };
+    
+    // For now, just refresh the UI with existing clips
+    ~updateClipManagerUI.();
+    
+    "Clip storage check complete - % clips in memory".format(~clipMgmtData.clips.size).postln;
 };
 
 // Standalone clip save function (works without clip system)
@@ -450,46 +697,42 @@ if (JSONlib.isNil) {
 // │                            CLIP PLAYBACK                                   │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Play selected clip
+// Play selected clip using ProcMod looping
 ~playSelectedClip = {
-    var selectedClip, tempoScale, playTask;
+    var selectedClip, proc;
     
     if (~clipMgmtData.clips.size > 0 and: { ~clipMgmtData.selectedClipIndex < ~clipMgmtData.clips.size }) {
         selectedClip = ~clipMgmtData.clips[~clipMgmtData.selectedClipIndex];
         
-        "▶️ Playing clip: %".format(selectedClip[\name]).postln;
+        "▶️ Playing clip with ProcMod: % (% loops)".format(
+            selectedClip[\name], 
+            selectedClip[\clipLoopCount] ? 1
+        ).postln;
         
-        // Try different playback methods
-        if (~testClipPlayback.notNil and: { ~isClipKey.notNil } and: { ~isClipKey.(selectedClip[\key]) }) {
-            // Use clip system if available and clip is recognized
-            ~testClipPlayback.(selectedClip[\key]);
+        // Stop any existing playback for this clip
+        if (~clipPlaybackProcs[selectedClip[\key]].notNil) {
+            "⏹ Stopping existing playback for: %".format(selectedClip[\key]).postln;
+            ~clipPlaybackProcs[selectedClip[\key]].release;
+            ~clipPlaybackProcs.removeAt(selectedClip[\key]);
+        };
+        
+        // Create and start ProcMod for this clip
+        if (selectedClip[\clipData].notNil) {
+            proc = ~createLoopingClipProc.(selectedClip);
+            ~clipPlaybackProcs[selectedClip[\key]] = proc;
+            proc.play;
+            
+            "✅ Started ProcMod playback for: %".format(selectedClip[\key]).postln;
         } {
-            // Direct playback using clip data
-            if (~playClip.notNil and: { selectedClip[\clipData].notNil }) {
-                "Using direct clip playback".postln;
-                tempoScale = if (~clipControl.notNil) { ~clipControl.tempoScale } { 1.0 };
-                playTask = ~playClip.(selectedClip, tempoScale);
-                if (playTask.notNil) {
-                    playTask.play;
-                };
-            } {
-                "No clip playback method available".postln;
-                // Fallback: show clip info
-                if (selectedClip[\clipData].notNil) {
-                    "Clip info: % notes, %s duration".format(
-                        selectedClip[\clipData][\notePairs].size,
-                        selectedClip[\clipData][\duration].round(0.01)
-                    ).postln;
-                    selectedClip[\clipData][\notePairs].do({ |np, i|
-                        "Note %: % at %s".format(i+1, np[\note], np[\startTime].round(0.01)).postln;
-                    });
-                };
-            };
+            "❌ No clip data available for: %".format(selectedClip[\name]).postln;
         };
         
         {
             if (~clipMgmtViews.statusText.notNil) {
-                ~clipMgmtViews.statusText.string = "▶️ Playing: {}".format(selectedClip[\name]);
+                ~clipMgmtViews.statusText.string = "▶️ Playing: {} ({} loops)".format(
+                    selectedClip[\name], 
+                    selectedClip[\clipLoopCount] ? 1
+                );
             };
         }.defer;
     } {
@@ -504,19 +747,175 @@ if (JSONlib.isNil) {
 
 // Stop all clip playback
 ~stopAllClipPlayback = {
-    if (~stopClips.notNil) {
-        ~stopClips.();
-        "⏹ All clip playback stopped".postln;
-        
-        {
-            if (~clipMgmtViews.statusText.notNil) {
-                ~clipMgmtViews.statusText.string = "⏹ Playback stopped";
+    "⏹ Stopping all clip playback ProcMods...".postln;
+    
+    // Release all active ProcMod playback instances
+    if (~clipPlaybackProcs.notNil) {
+        ~clipPlaybackProcs.keysValuesDo { |key, proc|
+            if (proc.notNil && proc.isRunning) {
+                "⏹ Releasing ProcMod for clip: %".format(key).postln;
+                proc.release;
             };
-        }.defer;
-    } {
-        if (~emergencyStop.notNil) {
-            ~emergencyStop.();
         };
+        ~clipPlaybackProcs.clear;
+    };
+    
+    "✅ All clip playback stopped".postln;
+    
+    {
+        if (~clipMgmtViews.statusText.notNil) {
+            ~clipMgmtViews.statusText.string = "⏹ All playback stopped";
+        };
+    }.defer;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       CONTINUOUS CLIP SEQUENCE PLAYBACK                     │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Storage for sequence playback
+~clipSequenceTask = nil;
+
+// Start continuous clip sequence (like musical-implementation)
+~startClipSequence = {
+    var activeClips, sequenceIndex = 0;
+    
+    // Stop any existing sequence
+    if (~clipSequenceTask.notNil) {
+        ~clipSequenceTask.stop;
+        ~clipSequenceTask = nil;
+    };
+    
+    // Get active clips
+    activeClips = ~clipMgmtData.clips.select({ |clip| clip[\active] == true });
+    
+    if (activeClips.size == 0) {
+        "❌ No active clips to sequence".postln;
+        ^nil;
+    };
+    
+    "🎬 Starting clip sequence with % active clips".format(activeClips.size).postln;
+    ~clipMgmtData.sequenceRunning = true;
+    ~clipMgmtData.sequenceIndex = 0;
+    
+    ~clipSequenceTask = Task({
+        while { ~clipMgmtData.sequenceRunning } {
+            var currentClip = activeClips[~clipMgmtData.sequenceIndex];
+            var clipDuration, totalWaitTime, proc;
+            var effectiveLoopCount = currentClip[\clipLoopCount] ?? 1;
+            var tempoScale = if (~clipControl.notNil) { ~clipControl.tempoScale } { 1.0 };
+            
+            "🎵 Sequence: Playing clip % of % - % (% loops)".format(
+                ~clipMgmtData.sequenceIndex + 1, 
+                activeClips.size, 
+                currentClip[\name],
+                if (effectiveLoopCount == 0) { "infinite" } { effectiveLoopCount }
+            ).postln;
+            
+            // Calculate how long to wait for this clip
+            clipDuration = currentClip[\clipData][\duration] / tempoScale;
+            
+            if (effectiveLoopCount == 0) {
+                // Infinite loops in sequence don't make sense, treat as single play
+                totalWaitTime = clipDuration;
+                "⚠️ Infinite loop in sequence - playing once".postln;
+            } {
+                // Account for loop count and gaps
+                totalWaitTime = (clipDuration * effectiveLoopCount) + (clipDuration * 0.05 * (effectiveLoopCount - 1));
+            };
+            
+            // Stop any existing playback for this clip
+            if (~clipPlaybackProcs[currentClip[\key]].notNil) {
+                ~clipPlaybackProcs[currentClip[\key]].release;
+                ~clipPlaybackProcs.removeAt(currentClip[\key]);
+            };
+            
+            // Create and start clip with original loop count
+            proc = ~createLoopingClipProc.(currentClip);
+            ~clipPlaybackProcs[currentClip[\key]] = proc;
+            proc.play;
+            
+            // Wait for clip to complete
+            totalWaitTime.wait;
+            
+            // Advance sequence based on mode
+            if (~clipMgmtData.playbackMode == \manual) {
+                // Manual mode: stay on current clip
+                "🔄 Manual mode: repeating %".format(currentClip[\name]).postln;
+            } {
+                // Auto mode: advance to next clip
+                ~clipMgmtData.sequenceIndex = (~clipMgmtData.sequenceIndex + 1) % activeClips.size;
+                if (~clipMgmtData.sequenceIndex == 0) {
+                    "🔄 Sequence completed, starting over".postln;
+                };
+            };
+        };
+        
+        "✅ Clip sequence stopped".postln;
+    }).play;
+    
+    {
+        if (~clipMgmtViews.statusText.notNil) {
+            ~clipMgmtViews.statusText.string = "🎬 Sequence: % clips ({})".format(
+                activeClips.size, ~clipMgmtData.playbackMode
+            );
+        };
+    }.defer;
+};
+
+// Stop clip sequence
+~stopClipSequence = {
+    "⏹ Stopping clip sequence".postln;
+    ~clipMgmtData.sequenceRunning = false;
+    
+    if (~clipSequenceTask.notNil) {
+        ~clipSequenceTask.stop;
+        ~clipSequenceTask = nil;
+    };
+    
+    {
+        if (~clipMgmtViews.statusText.notNil) {
+            ~clipMgmtViews.statusText.string = "⏹ Sequence stopped";
+        };
+    }.defer;
+};
+
+// Toggle between manual and auto sequence modes
+~toggleSequenceMode = {
+    ~clipMgmtData.playbackMode = if (~clipMgmtData.playbackMode == \manual) { \auto } { \manual };
+    "🔄 Sequence mode: %".format(~clipMgmtData.playbackMode).postln;
+    
+    {
+        if (~clipMgmtViews.statusText.notNil) {
+            ~clipMgmtViews.statusText.string = "🔄 Mode: {}".format(~clipMgmtData.playbackMode);
+        };
+    }.defer;
+};
+
+// Navigate sequence manually (like in musical-implementation)
+~nextClipInSequence = {
+    var activeClips = ~clipMgmtData.clips.select({ |clip| clip[\active] == true });
+    
+    if (activeClips.size > 0) {
+        ~clipMgmtData.sequenceIndex = (~clipMgmtData.sequenceIndex + 1) % activeClips.size;
+        "➡️ Next clip: % (% of %)".format(
+            activeClips[~clipMgmtData.sequenceIndex][\name],
+            ~clipMgmtData.sequenceIndex + 1,
+            activeClips.size
+        ).postln;
+    };
+};
+
+~prevClipInSequence = {
+    var activeClips = ~clipMgmtData.clips.select({ |clip| clip[\active] == true });
+    
+    if (activeClips.size > 0) {
+        ~clipMgmtData.sequenceIndex = (~clipMgmtData.sequenceIndex - 1 + activeClips.size) % activeClips.size;
+        "⬅️ Previous clip: % (% of %)".format(
+            activeClips[~clipMgmtData.sequenceIndex][\name],
+            ~clipMgmtData.sequenceIndex + 1,
+            activeClips.size
+        ).postln;
     };
 };
 
@@ -540,8 +939,11 @@ if (JSONlib.isNil) {
                     "?" 
                 };
                 var active = if (clip[\active] == true) { "🎵" } { "🔇" };
+                var loopCount = clip[\clipLoopCount] ? 1;
+                var loopMode = clip[\loopMode] ? \forward;
+                var loopDisplay = if (loopCount == 0) { "∞" } { loopCount.asString ++ "x" };
                 
-                "% {} - {}s ({} notes)".format(active, clip[\name], duration, noteCount);
+                "% {} - {}s ({} notes, {}, {})".format(active, clip[\name], duration, noteCount, loopDisplay, loopMode);
             });
             
             ~clipMgmtViews.clipList.items = listItems;
@@ -592,6 +994,13 @@ if (JSONlib.isNil) {
                 };
                 ~clipMgmtViews.noteCountText.string = "Notes: %".format(noteCount);
             };
+            if (~clipMgmtViews.loopCountField.notNil) {
+                ~clipMgmtViews.loopCountField.value = selectedClip[\clipLoopCount] ? 1;
+            };
+            if (~clipMgmtViews.loopModeMenu.notNil) {
+                var modeIndex = [\forward, \reverse, \pingpong, \random].indexOf(selectedClip[\loopMode] ? \forward);
+                ~clipMgmtViews.loopModeMenu.value = modeIndex ? 0;
+            };
         }.defer;
     };
 };
@@ -610,14 +1019,15 @@ if (JSONlib.isNil) {
         if (~clipMgmtViews.activeCheck.notNil) {
             selectedClip[\active] = ~clipMgmtViews.activeCheck.value;
         };
-        
-        // Update melody data if connected
-        if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
-            var melodyIndex = ~melodyData[\melodies].detectIndex({ |m| m[\key] == selectedClip[\key] });
-            if (melodyIndex.notNil) {
-                ~melodyData[\melodies][melodyIndex] = selectedClip;
-            };
+        if (~clipMgmtViews.loopCountField.notNil) {
+            selectedClip[\clipLoopCount] = ~clipMgmtViews.loopCountField.value.asInteger.max(0);
         };
+        if (~clipMgmtViews.loopModeMenu.notNil) {
+            var modes = [\forward, \reverse, \pingpong, \random];
+            selectedClip[\loopMode] = modes[~clipMgmtViews.loopModeMenu.value];
+        };
+        
+        // Clip details saved to clip management data only
         
         ~updateClipManagerUI.();
         
@@ -633,7 +1043,8 @@ if (JSONlib.isNil) {
 ~createClipManagerGUI = {
     var window, mainLayout, topControls, contentLayout, leftPanel, rightPanel;
     var clipList, recordButton, playButton, stopButton, loadButton, saveButton;
-    var nameField, keyField, activeCheck, durationText, noteCountText, statusText;
+    var nameField, keyField, activeCheck, durationText, noteCountText, loopCountField, loopModeMenu, statusText;
+    var sequenceButton, modeButton, quantButton;
     
     // Close existing window
     if (~clipMgmtWindow.notNil) {
@@ -672,6 +1083,9 @@ if (JSONlib.isNil) {
         playButton = Button()
             .states_([["▶️ PLAY", Color.black, Color.cyan]])
             .action_({ ~playSelectedClip.(); }),
+        quantButton = Button()
+            .states_([["🕐 QUANT", Color.black, Color(0.8, 0.9, 1.0)]])
+            .action_({ ~playSelectedClipQuantized.(4); }),
         stopButton = Button()
             .states_([["⏹ STOP", Color.white, Color.red]])
             .action_({ ~stopAllClipPlayback.(); }),
@@ -683,6 +1097,26 @@ if (JSONlib.isNil) {
         saveButton = Button()
             .states_([["💾 SAVE", Color.black, Color(1, 0.6, 0)]])  // Orange color
             .action_({ ~saveSelectedClipToFile.(); }),
+        
+        StaticText().string_(" | SEQUENCE:").font_(Font.sansSerif(12, true)),
+        sequenceButton = Button()
+            .states_([["🎬 START", Color.black, Color(0.7, 1.0, 0.7)], ["⏹ STOP", Color.white, Color.red]])
+            .action_({ |btn|
+                if (~clipMgmtData.sequenceRunning) {
+                    ~stopClipSequence.();
+                    btn.value = 0;
+                } {
+                    ~startClipSequence.();
+                    btn.value = 1;
+                };
+            }),
+        modeButton = Button()
+            .states_([["🔄 MANUAL", Color.black, Color(1, 1, 0.7)], ["⏩ AUTO", Color.black, Color(0.7, 1, 1)]])
+            .value_(if (~clipMgmtData.playbackMode == \auto) { 1 } { 0 })
+            .action_({ |btn|
+                ~toggleSequenceMode.();
+                btn.value = if (~clipMgmtData.playbackMode == \auto) { 1 } { 0 };
+            }),
         
         nil  // Stretch remaining space
     );
@@ -704,7 +1138,7 @@ if (JSONlib.isNil) {
         HLayout(
             Button()
                 .states_([["🔄 RELOAD", Color.black, Color.grey(0.8)]])
-                .action_({ ~loadClipsFromMelodyData.(); }),
+                .action_({ ~loadClipsFromStorage.(); }),
             Button()
                 .states_([["🗑 DELETE", Color.white, Color.red]])
                 .action_({
@@ -746,7 +1180,19 @@ if (JSONlib.isNil) {
             
             VLayout(
                 durationText = StaticText().string_("Duration: --").font_(Font.sansSerif(11)),
-                noteCountText = StaticText().string_("Notes: --").font_(Font.sansSerif(11))
+                noteCountText = StaticText().string_("Notes: --").font_(Font.sansSerif(11)),
+                HLayout(
+                    StaticText().string_("Loop Count:").minWidth_(80),
+                    loopCountField = NumberBox().value_(1).minWidth_(60).maxWidth_(60)
+                        .action_({ ~saveClipDetails.(); })
+                ),
+                HLayout(
+                    StaticText().string_("Loop Mode:").minWidth_(80),
+                    loopModeMenu = PopUpMenu()
+                        .items_(["Forward", "Reverse", "Ping-Pong", "Random"])
+                        .value_(0)
+                        .action_({ ~saveClipDetails.(); })
+                )
             ).spacing_(5),
             
             nil  // Stretch
@@ -778,19 +1224,24 @@ if (JSONlib.isNil) {
         clipList: clipList,
         recordButton: recordButton,
         playButton: playButton,
+        quantButton: quantButton,
         stopButton: stopButton,
         loadButton: loadButton,
         saveButton: saveButton,
+        sequenceButton: sequenceButton,
+        modeButton: modeButton,
         nameField: nameField,
         keyField: keyField,
         activeCheck: activeCheck,
         durationText: durationText,
         noteCountText: noteCountText,
+        loopCountField: loopCountField,
+        loopModeMenu: loopModeMenu,
         statusText: statusText
     );
     
     // Load existing clips
-    ~loadClipsFromMelodyData.();
+    ~loadClipsFromStorage.();
     
     // Check if clip system is loaded and show status
     {

@@ -173,8 +173,11 @@ data/
 
 ### Playback Controls
 - **▶️ PLAY Button** - Preview selected clips instantly
+- **🕐 QUANT Button** - Quantized/synchronized playback (beat-grid aligned)
 - **⏹ STOP Button** - Stop all clip playback
-- **Multiple playback methods** - Clip system integration + direct playback
+- **🎬 START/STOP Button** - Continuous sequence playback of active clips
+- **🔄 MANUAL/⏩ AUTO Button** - Toggle sequence advance mode
+- **Multiple playback methods** - Direct, quantized, and sequence playback
 - **VST integration** - Routes through existing VST system
 
 ### File Management
@@ -184,11 +187,13 @@ data/
 - **🗑 DELETE Button** - Remove clips with confirmation
 
 ### Clip Organization
-- **Visual clip list** - Shows duration, note count, and active status
-- **Editable details** - Name and active status
+- **Visual clip list** - Shows duration, note count, loop info, and active status
+- **Enhanced details** - Name, active status, loop count, and loop mode
+- **Loop count control** - Set finite loops (1-99) or infinite loops (0)
+- **Loop mode selection** - Forward, Reverse, Ping-Pong, Random playback
 - **Real-time updates** - Automatic UI refresh
 - **Selection tracking** - Detailed view of selected clip
-- **Status indicators** - 🎵 for clips, 🔇 for inactive
+- **Status indicators** - 🎵 for active clips, 🔇 for inactive, ∞ for infinite loops
 
 ### Usage
 ```supercollider

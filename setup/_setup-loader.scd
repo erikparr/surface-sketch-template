@@ -52,7 +52,7 @@ if (~setupAlreadyLoaded == true) {
                 
                 // Load clip system after setup is complete
                 {
-                    var clipLoaderPath = ~setupDir.dirname +/+ "sketch/clip-system/clip-loader.scd";
+                    var clipLoaderPath = ~setupDir.dirname +/+ "clip-system/clip-loader.scd";
                     if (File.exists(clipLoaderPath)) {
                         "Loading clip system...".postln;
                         clipLoaderPath.load;
