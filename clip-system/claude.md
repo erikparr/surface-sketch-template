@@ -30,15 +30,24 @@ setup/
 
 ### Data Structure
 ```supercollider
-// Recorded clip data (preserved timing)
-clipData: (
-    notePairs: [
-        (note: 65, startTime: 0.593, duration: 0.301, velocity: 79, channel: 0),
-        (note: 67, startTime: 1.195, duration: 0.303, velocity: 89, channel: 0),
-        // ... preserves exact recorded timing
-    ],
-    duration: 2.316,
-    metadata: (recordedAt: timestamp, noteCount: 3, eventCount: 6)
+// Enhanced clip data structure with advanced looping
+(
+    key: "clip-220625_143022",
+    name: "My Recorded Clip",
+    clipLoopCount: 3,        // Number of loops (0 = infinite)
+    loopMode: \pingpong,     // \forward, \reverse, \pingpong, \random
+    active: true,
+    isClip: true,
+    clipData: (
+        notePairs: [
+            (note: 65, startTime: 0.593, duration: 0.301, velocity: 79, channel: 0),
+            (note: 67, startTime: 1.195, duration: 0.303, velocity: 89, channel: 0),
+            // ... preserves exact recorded timing
+        ],
+        duration: 2.316,
+        eventCount: 6,
+        metadata: (recordedAt: timestamp, noteCount: 3, recordingDuration: 2.316)
+    )
 )
 ```
 
@@ -205,10 +214,25 @@ data/
 ~stopClipRecording.();           // Stop and process recording
 
 // Clip Management Functions
-~playSelectedClip.();            // Play selected clip
+~playSelectedClip.();            // Play selected clip (immediate)
+~playSelectedClipQuantized.(4);  // Play selected clip (quantized to 4 beats)
 ~stopAllClipPlayback.();         // Stop all playback
 ~saveSelectedClipToFile.();      // Save selected clip
 ~loadClipFromFile.();            // Load clip from file dialog
+
+// Sequence Functions
+~startClipSequence.();           // Start continuous sequence of active clips
+~stopClipSequence.();            // Stop sequence playback
+~toggleSequenceMode.();          // Toggle manual/auto advance mode
+~nextClipInSequence.();          // Manually advance to next clip
+~prevClipInSequence.();          // Manually go to previous clip
+
+// Loop Control Functions
+~updateClipLoopCount.(clipKey, newCount);  // Change loop count real-time
+~updateClipLoopMode.(clipKey, newMode);    // Change loop mode real-time
+~setInfiniteLoop.(clipKey);                // Set infinite looping
+~setLoopCount.(clipKey, count);            // Set specific loop count
+~setLoopMode.(clipKey, mode);              // Set loop mode (\forward, \reverse, \pingpong, \random)
 ```
 
 ## Integration Points
@@ -327,11 +351,48 @@ data/
 ~refreshClipSequence.();
 ```
 
+## Enhanced Looping System
+
+### Advanced Loop Modes
+- **Forward**: Normal sequential playback of recorded notes
+- **Reverse**: Notes play in reverse chronological order
+- **Ping-Pong**: Forward then backward (seamless bidirectional)
+- **Random**: Notes randomized each iteration for variation
+
+### Infinite Looping
+- **Set loop count to 0** for infinite loops
+- **Visual indicator**: ∞ symbol in clip list
+- **Real-time control**: Change loop count while playing
+- **Smart sequence handling**: Infinite clips play once in sequences
+
+### Quantized Playback
+- **Beat-grid synchronization** using TempoClock
+- **Configurable quantization** (4-beat, 8-beat, etc.)
+- **Precise timing** for live performance
+- **GUI integration** with dedicated QUANT button
+
+### Sequence Playback
+- **Continuous sequences** of active clips
+- **Manual mode**: Stay on current clip indefinitely
+- **Auto mode**: Advance automatically after completion
+- **Navigation controls**: Next/previous clip selection
+- **Real-time mode switching** during playback
+
+### Real-time Loop Control
+```supercollider
+// Change settings while clips are playing
+~setInfiniteLoop.("myClip");           // Switch to infinite
+~setLoopCount.("myClip", 5);           // Set 5 loops
+~setLoopMode.("myClip", \reverse);     // Switch to reverse mode
+~updateClipLoopCount.("myClip", 0);    // Real-time update with restart
+```
+
 ## Future Extensions
-- Multiple clip layering
-- Clip editing (trim, quantize)
-- Velocity scaling per clip
-- Note filtering by channel/range
+- Multiple clip layering and synchronization
+- Clip editing (trim, quantize, velocity scaling)
+- Note filtering by channel/range/velocity
 - MIDI file import/export
 - Visual waveform display
-- Drag-and-drop clip arrangement 
+- Drag-and-drop clip arrangement
+- Loop crossfading and seamless transitions
+- Tempo-synced loop lengths 
