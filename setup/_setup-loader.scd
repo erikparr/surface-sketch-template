@@ -49,17 +49,6 @@ if (~setupAlreadyLoaded == true) {
                 };
             } {
                 "All setup files loaded successfully!".postln;
-                
-                // Load clip system after setup is complete
-                {
-                    var clipLoaderPath = ~setupDir.dirname +/+ "clip-system/clip-loader.scd";
-                    if (File.exists(clipLoaderPath)) {
-                        "Loading clip system...".postln;
-                        clipLoaderPath.load;
-                    } {
-                        "Clip system not found at: %".format(clipLoaderPath).postln;
-                    };
-                }.defer(1.0); // Give setup time to settle
             };
         };
         
