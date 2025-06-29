@@ -110,6 +110,20 @@
 // │                        CC ENVELOPE SYSTEM                                  │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
+// Initialize bend envelope parameters
+~bendEnvelopeEnabled = false;
+~bendEnvelopeParams = (
+    start: 8192,      // Center position
+    peak: 10240,      // Bend up ~25%
+    end: 8192,        // Return to center
+    peakTime: 2.0,    // Time to reach peak
+    returnTime: 1.5,  // Time to return
+    loopDuration: 4.0 // Total loop duration
+);
+
+// Storage for active bend envelope synths
+~activeBendSynths = Dictionary.new;
+
 // Function to update expression range from MIDI knobs
 ~updateExpressionRangeFromKnobs = {
     // NEW: Parameter-centric approach - check if ANY row handles expression parameters
@@ -267,6 +281,11 @@
     }  {
         "CC Control disabled".postln;
     };
+    
+    // Also start bend envelopes if enabled
+    if (~bendEnvelopeEnabled) {
+        ~startBendEnvelopes.(melodyKey);
+    };
 };
 
 // Function to stop all CC envelopes
@@ -276,6 +295,109 @@
     };
     ~activeCCSynths.clear;
     "All CC envelopes stopped".postln;
+    
+    // Also stop bend envelopes
+    ~stopBendEnvelopes.();
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                        BEND ENVELOPE SYSTEM                                │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Function to update bend parameters from MIDI knobs
+~updateBendParametersFromKnobs = {
+    if (~midiController.notNil && ~bendEnvelopeEnabled) {
+        // Row 3 knobs for bend control:
+        // Knob 1 (pos 1): Bend amount (0-100%)
+        // Knob 2 (pos 2): Peak time
+        // Knob 3 (pos 3): Return time
+        
+        var bendAmount = ~midiController.getKnobRow3(1);  // 0-1
+        var peakTime = ~midiController.getKnobRow3(2).linlin(0, 1, 0.1, 5.0);
+        var returnTime = ~midiController.getKnobRow3(3).linlin(0, 1, 0.1, 5.0);
+        
+        // Convert bend amount to MIDI bend value
+        // 0 = no bend (8192), 1 = max bend up (16383)
+        ~bendEnvelopeParams.peak = (8192 + (bendAmount * 8191)).asInteger;
+        ~bendEnvelopeParams.peakTime = peakTime;
+        ~bendEnvelopeParams.returnTime = returnTime;
+        ~bendEnvelopeParams.loopDuration = peakTime + returnTime;
+        
+        ["Updated bend params: peak=%, peakTime=%, returnTime=%".format(
+            ~bendEnvelopeParams.peak, peakTime.round(0.01), returnTime.round(0.01)
+        )].postln;
+    };
+};
+
+// Function to start bend envelopes
+~startBendEnvelopes = { |melodyKey|
+    if (~bendEnvelopeEnabled.not) {
+        "Bend envelopes disabled".postln;
+        ^nil;
+    };
+    
+    // Update parameters from knobs
+    ~updateBendParametersFromKnobs.();
+    
+    // Free any existing bend synths
+    ~activeBendSynths.do { |synth|
+        synth.free;
+    };
+    ~activeBendSynths = Dictionary.new;
+    
+    // Create bend envelope synths for each VST
+    ~vstManager.getTargetInstances(~activeVSTGroup).keysValuesDo { |vstKey, vst, i|
+        var bendSynth;
+        
+        // Create looping bend envelope synth (using the existing SynthDef)
+        bendSynth = Synth(\BendEnvelopeLoop, [
+            \start, ~bendEnvelopeParams.start,
+            \peak, ~bendEnvelopeParams.peak,
+            \end, ~bendEnvelopeParams.end,
+            \peakTime, ~bendEnvelopeParams.peakTime,
+            \returnTime, ~bendEnvelopeParams.returnTime,
+            \loopDuration, ~bendEnvelopeParams.loopDuration,
+            \chanIndex, i
+        ]);
+        
+        // Store the synth
+        ~activeBendSynths[vstKey] = bendSynth;
+        
+        "Created bend envelope synth for % (chan %)".format(vstKey, i).postln;
+    };
+    
+    "Bend envelope synths started".postln;
+};
+
+// Function to stop all bend envelopes
+~stopBendEnvelopes = {
+    ~activeBendSynths.do { |synth|
+        synth.free;
+    };
+    ~activeBendSynths.clear;
+    
+    // Reset pitch bend to center on all VSTs
+    ~vstManager.getTargetInstances(~activeVSTGroup).keysValuesDo { |vstKey, vst|
+        vst.midi.bend(0, 8192); // Reset to center
+    };
+    
+    "All bend envelopes stopped and reset".postln;
+};
+
+// Toggle function for bend envelope mode
+~toggleBendEnvelope = { |enabled|
+    ~bendEnvelopeEnabled = enabled;
+    
+    if (enabled) {
+        "Bend envelope mode ENABLED".postln;
+        // If a melody is currently playing, start bend envelopes
+        if (~currentSequence.notNil) {
+            ~startBendEnvelopes.(~currentSequence[~currentLoopIndex]);
+        };
+    } {
+        "Bend envelope mode DISABLED".postln;
+        ~stopBendEnvelopes.();
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -286,6 +408,7 @@
 OSCdef(\noteOn).free;
 OSCdef(\noteOff).free;
 OSCdef(\releaseFermata).free;
+OSCdef(\bend).free;
 
 // OSC responder for note events
 OSCdef(\noteOn, { |msg, time, addr, recvPort|
@@ -339,7 +462,30 @@ OSCdef(\releaseFermata, { |msg, time, addr, recvPort|
         vst.midi.noteOff(0, note, 0);
         ["Released note:", note, "on VST:", vstName].postln;
     };
-}, '/note/release'); 
+}, '/note/release');
+
+// OSC responder for bend messages from bend envelope synths
+OSCdef(\bend, { |msg, time, addr, recvPort|
+    var chanIndex = msg[3].asInteger;
+    var bendValue = msg[4].asInteger;
+    var instances;
+    
+    if (~bendEnvelopeEnabled && bendValue.inclusivelyBetween(0, 16383)) {
+        instances = ~vstManager.getTargetInstances(~activeVSTGroup);
+        
+        // Apply bend to the VST at the corresponding index
+        if (instances.size > 0) {
+            var vstKeys = instances.keys.asArray.sort;
+            var vstIndex = chanIndex % vstKeys.size;
+            var vstKey = vstKeys[vstIndex];
+            var vst = instances[vstKey];
+            
+            if (vst.notNil) {
+                vst.midi.bend(0, bendValue);
+            };
+        };
+    };
+}, '/bend'); 
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                    MIDI CONTROL MAPPING INTEGRATION                        │

@@ -1,31 +1,307 @@
-# Surfacing Core Sketch System - Context Guide
+# Surfacing System Documentation
 
 ## Overview
 
-The Surfacing Core sketch system is a sophisticated live electronic music performance framework built in SuperCollider. It provides real-time control of VST instruments through MIDI controllers, with support for complex musical sequencing, dual-layer performance, and parameter mapping.
+The Surfacing system is a sophisticated live electronic music performance framework built in SuperCollider, designed for real-time control of VST instruments through MIDI controllers. It features complex musical sequencing, dual-layer performance capabilities, and intelligent parameter mapping.
 
-## Architecture Overview
+## How The System Works
+
+### Initialization Flow
+
+The system starts with `setup/_setup-loader.scd`, which orchestrates the entire initialization process:
+
+1. **Prevents Double-Loading**: Uses `~setupAlreadyLoaded` flag to ensure setup only runs once
+2. **Sequential Loading**: Files are loaded in dependency order with appropriate delays
+3. **Error Resilience**: Continues loading even if individual files fail
+4. **Asynchronous Handling**: Longer delays (5s) for MIDI and VST setup, shorter (0.2s) for others
+
+### File Loading Order & Dependencies
 
 ```
-Setup System (../setup/) → Sketch System (./sketch/)
-     ↓                           ↓
-VST Management → VST Targeting & Musical Implementation
-     ↓                           ↓
-MIDI Controller → Control Systems & Parameter Routing
-     ↓                           ↓
-Parameter Mapping → ProcMod Sequencing → Live Performance
+synths-setup.scd          → Defines SynthDefs (no dependencies)
+vstplugin-setup.scd       → Initializes VST system (needs synths)
+vst-management.scd        → Creates GUI (needs VST system)
+midi-setup.scd            → MIDI controller (needs VST manager)
+midi-control-mapping.scd  → Parameter mapping (needs MIDI controller)
+osc-setup.scd             → OSC handlers (needs VST manager)
 ```
 
-## Core Components
+## System Architecture
+
+### Core Components
+
+1. **Setup System** (`../setup/`)
+   - Modular initialization framework
+   - Manages VST plugins, MIDI controllers, OSC communication
+   - Provides GUI for VST management
+   - Implements advanced MIDI parameter mapping
+
+2. **Sketch System** (`sketch/`)
+   - Live performance engine
+   - Dual-layer independent control
+   - ProcMod-based musical sequencing
+   - Real-time parameter modulation
+
+3. **VSTManager** (`VSTManager/VSTManager.sc`)
+   - Singleton pattern for VST instance management
+   - Group-based organization
+   - Dynamic targeting during performance
+   - Program (preset) management
+
+4. **ProcMod** (`reference/procmod-reference/ProcMod.sc`)
+   - Process modulation framework
+   - Envelope-controlled execution
+   - Resource lifecycle management
+   - Model-View-Controller messaging
+
+## How Key Classes Work Together
+
+### Class Interaction Flow
+
+1. **VSTPlugin (UGen)** → Hosts VST in audio chain
+2. **VSTPluginController** → Controls VSTPlugin instance  
+3. **VSTManager** → Manages multiple controllers
+4. **MIDIController** → Routes MIDI to VSTManager
+5. **ProcMod** → Wraps processes with lifecycle management
+
+### Signal & Control Flow
+
+```
+Audio Input → VSTPlugin UGen → Audio Output
+     ↑              ↑
+     |              |
+SynthDef     VSTPluginController
+                    ↑
+                    |
+              VSTManager ← MIDIController ← MIDI Hardware
+                    ↑
+                    |
+              ProcMod System
+```
+
+## Key Classes
+
+### VSTPlugin (UGen)
+
+**Purpose**: Audio Unit Generator that hosts VST plugins in the signal chain
+
+**Key Features**:
+- Processes audio with VST effects/instruments
+- Supports multiple input/output buses
+- Parameter automation at control or audio rate
+- Bypass modes (hard/soft)
+
+**Usage in SynthDef**:
+```supercollider
+SynthDef(\vstHost, { |out=0|
+    var sig = VSTPlugin.ar(nil, 2, id: \vsti);
+    Out.ar(out, sig);
+}).add;
+```
+
+### VSTPluginController
+
+**Purpose**: Client-side control interface for VSTPlugin UGen
+
+**Key Features**:
+- Opens/closes VST plugins
+- Parameter control (set/get/map)
+- MIDI interface via `.midi` proxy
+- Preset/program management
+- GUI control (native or generic)
+
+**Relationship to VSTPlugin**:
+- Each VSTPluginController controls one VSTPlugin UGen
+- Communicates via OSC messages to the Server
+- Maintains parameter cache and state
+
+### VSTManager
+
+**Purpose**: Centralized management of VST plugin instances
+
+**Key Features**:
+- **Singleton Pattern**: Only one instance via `VSTManager.current`
+- **Group Management**: Organize VSTs into named groups
+- **Active Group**: One group active at a time for performance
+- **Instance Access**: Multiple ways to retrieve VST controllers
+
+**Important Methods**:
+```supercollider
+// Get all instances as name->controller dictionary
+~vstManager.getInstances()
+
+// Get instances by group (nil/"All" = all instances)
+~vstManager.getTargetInstances(groupName)
+
+// Add VST with group assignment
+~vstManager.addVST(name, synth, vstPath, editor, groupName)
+
+// Group management
+~vstManager.setActiveGroup(groupName)
+~vstManager.getActiveInstances()
+
+// Program management
+~vstManager.setProgramByName(vstName, programName)
+~vstManager.setProgramByNameAll(programName)  // Active group
+~vstManager.setProgramByNameAllInstances(programName)  // All VSTs
+```
+
+**Group System**:
+- VSTs belong to groups for organization
+- One "active group" for current performance focus
+- Special "All" syntax targets every instance
+- Groups can be created dynamically
+
+### ProcMod & ProcModR
+
+**Purpose**: Process modulation with envelope control and lifecycle management
+
+**Architecture**:
+- **Envelope-driven**: Process lifetime controlled by ASR envelope
+- **Group-based**: Each process gets its own Group node
+- **Resource Management**: Automatic cleanup of nodes, buses, responders
+- **State Tracking**: `isRunning`, `isReleasing` flags
+- **MVC Pattern**: Changes broadcast via `.changed()` method
+
+**How It Works**:
+1. Creates a Group for the process
+2. If envelope provided, creates envelope synth (`procmodenv_5216`)
+3. Executes user function with (group, envbus, server, procmod)
+4. Schedules release based on envelope duration
+5. Cleans up all resources on release/kill
+
+**Basic Usage**:
+```supercollider
+// Create and play
+p = ProcMod.play(
+    env: Env.asr(0.1, 1, 0.1),
+    amp: 1,
+    id: "myProcess",
+    function: { |group, envbus, server, procmod|
+        // Create synths in 'group'
+        // Read envelope from 'envbus' if needed
+    }
+);
+
+// Control during playback
+p.amp_(0.5);
+p.release;  // Graceful release
+p.kill;     // Immediate stop
+```
+
+**ProcModR** (Routing version) adds:
+- **Audio Bus Allocation**: `routebus` for internal routing
+- **Multi-channel Support**: 1-16 channels
+- **Recording**: Built-in recording to disk
+- **Processor Integration**: Can insert processors in signal chain
+
+**Key Differences**:
+- ProcMod: Simple process control
+- ProcModR: Audio routing + recording capabilities
+
+### MIDIController
+
+**Purpose**: Comprehensive MIDI input handling and routing
+
+**Architecture**:
+- **Preset System**: Controller layouts (MIDIMix, nanoKONTROL2)
+- **Snapshot System**: Save/load controller states
+- **Mapping System**: Route CCs to parameters
+- **Multi-mode Support**: Channel, instrument, velocity modes
+
+**Core Components**:
+1. **MIDI Handlers** (via MIDIFunc):
+   - noteOn/noteOff with multi-channel routing
+   - CC processing for knobs/sliders
+   - Pitch bend support
+
+2. **Value Storage**:
+   - `sliderValues`: Array[9] for sliders
+   - `knobValues`: Dictionary of CC->value
+   - `buttonStates`: Toggle states
+
+3. **Mapping Integration**:
+   - Checks if CC is mapped to row/parameter
+   - Routes through mapping system if enabled
+   - Falls back to direct value access
+
+**Usage Pattern**:
+```supercollider
+// Create controller
+~midi = MIDIController.new(vstList, oscAddr);
+
+// Set preset
+~midi.setControllerPreset(\midiMix);
+
+// Enable mapping mode
+~midi.setMappingMode(true);
+
+// Get values
+~midi.getSliderValue(0);      // Get slider 1
+~midi.getKnobRow1(1);         // Get row 1, knob 1
+~midi.getKnobValueByCC(16);   // Get by CC number
+```
+
+## Setup System Components
+
+### 1. Main Loader (`_setup-loader.scd`)
+- Prevents double-loading with `~setupAlreadyLoaded` flag
+- Loads components in dependency order
+- Handles asynchronous operations with appropriate delays
+- Continues loading even if individual files fail
+
+### 2. Synths Setup (`synths-setup.scd`)
+**SynthDefs Defined**:
+- VST hosting synths: `\insert`, `\insert2`, `\insert3`, `\vstHost`
+- Envelope synths: `\BendEnvelope`, `\ccEnvelope` (with loop variants)
+- Supports multiple VST instances with unique IDs
+- Implements looping envelopes with OSC output at 100Hz
+
+### 3. VST Plugin Setup (`vstplugin-setup.scd`)
+- Searches for VST plugins (excludes Komplete Kontrol)
+- Creates synth instances for VST hosting
+- Initializes VSTManager singleton
+- Loads specific VSTs (e.g., SWAM Bass Tuba instances)
+- Creates and manages VST groups
+
+### 4. VST Management GUI (`vst-management.scd`)
+**Features**:
+- Load VSTs from predefined list
+- Add/remove VST instances dynamically
+- Create and organize VST groups
+- Assign MIDI keyboard to groups
+- MIDI override controls (Expression, Velocity, Multi-Instrument Mode)
+
+### 5. MIDI Setup (`midi-setup.scd`)
+- Creates MIDIController instance
+- Configures for multi-channel operation
+- Sets MIDIMix controller preset
+- Integrates with VST Manager for dynamic targeting
+
+### 6. MIDI Control Mapping (`midi-control-mapping.scd`)
+**Architecture**:
+- **Control Templates**: Define parameter mappings
+- **Row Mappings**: Assign controller rows to VST groups
+- **Group Parameters**: Store per-group values
+- **State Persistence**: Save/load configurations
+
+### 7. OSC Setup (`osc-setup.scd`)
+**Handlers**:
+- `/bend` - Pitch bend routing
+- `/expression` - CC to first layer
+- `/expression2` - CC to second layer
+
+### 8. Clip Management (`clip-management.scd`)
+**Features**:
+- MIDI clip recording with timing preservation
+- ProcMod-based loop playback
+- Multiple loop modes (forward, reverse, ping-pong, random)
+- Quantized playback to beat grid
+- JSON-based file storage
+
+## Sketch System Components
 
 ### 1. Main Loader (`load-sketch.scd`)
-
-**Purpose**: Central orchestrator that bootstraps the entire performance system
-
-**Key Responsibilities**:
-- Loads setup system from `../setup/_setup-loader.scd`
-- Initializes global state variables and control parameters
-- Loads core modules in dependency order
 
 **Critical Global Variables**:
 ```supercollider
@@ -37,52 +313,39 @@ Parameter Mapping → ProcMod Sequencing → Live Performance
 ~repetitions = 1;
 
 // Active state tracking
-~activeCCSynths = Dictionary.new;     // Active CC envelope synths
-~activeNotes = Dictionary.new;        // Currently playing notes
-~activeVSTGroup = nil;                // Current VST group target
+~activeCCSynths = Dictionary.new;
+~activeNotes = Dictionary.new;
+~activeVSTGroup = nil;
 
 // Mode flags
 ~modes = (
-    noteOffset: false,        // Apply semitone offset to notes
-    fermata: true,           // Enable fermata (held notes) mode
-    melodyRestMode: true,    // Add rests between melodies
-    pauseNotesMode: false,   // Pause note playback
-    removeLast: false,       // Remove last note from patterns
-    velocityMultiply: false, // Apply velocity multipliers
-    manualLooping: true      // Manual vs automatic melody advance
+    noteOffset: false,
+    fermata: true,
+    melodyRestMode: true,
+    pauseNotesMode: false,
+    removeLast: false,
+    velocityMultiply: false,
+    manualLooping: true
 );
 
 // CC control parameters
 ~ccControl = (
     enabled: true,
-    expressionCC: 16,             // MIDI CC number for expression
-    expressionMin: 10,            // Minimum expression value
-    expressionMax: 120,           // Maximum expression value
-    expressionShape: \sin,        // Envelope curve shape
-    expressionPeakPos: 0.5,       // Peak position (0.0-1.0)
-    expressionDurationScalar: 1.0, // Duration multiplier
-    noteDuration: 0.2,            // Base note duration
-    noteRestTime: 0.2,            // Rest between notes
-    velocity: 100                 // MIDI velocity
+    expressionCC: 16,
+    expressionMin: 10,
+    expressionMax: 120,
+    expressionShape: \sin,
+    expressionPeakPos: 0.5,
+    expressionDurationScalar: 1.0,
+    noteDuration: 0.2,
+    noteRestTime: 0.2,
+    velocity: 100
 );
 ```
 
-**Module Loading Order**:
-1. `core-functions.scd` - Fundamental building blocks
-2. `vst-targeting.scd` - VST group management
-3. `control-systems.scd` - MIDI and OSC control
-4. `musical-implementation.scd` - ProcMod sequencing
-5. `initialization-startup.scd` - Final setup and instructions
-
 ### 2. Core Functions (`core-functions.scd`)
 
-**Purpose**: Fundamental building blocks for note processing and control
-
-**Key Features**:
-
-#### Parameter-Centric Routing
-Uses intelligent parameter routing that checks mapping system before falling back to direct MIDI reading:
-
+**Parameter-Centric Note Processing**:
 ```supercollider
 ~processNote = { |note, isFirstNote=false, isLastNote=false, melodyKey|
     var mappingHandlesVelocity = ~anyRowHandlesParameter.(\velocity);
@@ -98,407 +361,250 @@ Uses intelligent parameter routing that checks mapping system before falling bac
 };
 ```
 
-#### Utility Functions
-- `~switchCycle.(cycleNumber)` - Change musical development cycles
-- `~stopAllNotes.()` - Emergency stop all VST instances
-- `~setMode.(mode, value)` - Configure system modes
-- `~setRepetitions.(num)` - Set pattern repetition count
-
 ### 3. VST Targeting (`vst-targeting.scd`)
 
-**Purpose**: Dynamic routing to different VST groups for layered performance
-
-**Core Functions**:
-
-#### Direct Group Control
+**Direct Group Control**:
 ```supercollider
 ~setActiveVSTGroup.('Bass Tuba');    // Target specific group
 ~setActiveVSTGroup.("All");          // Target all instances
 ~useAllVSTs.();                      // Convenience function
 ```
 
-#### Live Performance Cycling
+**Live Performance Cycling**:
 ```supercollider
 ~nextVSTGroup.();     // Cycle to next group
 ~prevVSTGroup.();     // Cycle to previous group
 ~useVSTGroup.(0);     // Target by index
 ```
 
-#### Status and Information
-```supercollider
-~showVSTTargeting.();  // Display current targeting status
-~listVSTGroups.();     // Show all available groups with indices
-```
-
-**Key Features**:
-- Supports both Symbol and String group names
-- Handles "All" instances with nil internally
-- Provides cycling for live performance
-- Validates group existence before switching
-
 ### 4. Control Systems (`control-systems.scd`)
 
-**Purpose**: MIDI button controls, CC envelope system, and OSC responders
+**MIDI Button Controls** (via MIDIdef.noteOn):
+- Note 21: Toggle Melody Rest mode
+- Note 22: Previous Melody
+- Note 24: Toggle Fermata mode
+- Note 25: Toggle Pause Notes mode
+- Note 27: Next Melody
 
-**Key Components**:
-
-#### MIDI Button Controls
-```supercollider
-// Note 21: Toggle melody rest mode
-~toggleMelodyRest = MIDIdef.noteOn(\toggleMelodyRest, { |veloc, note, chan, src|
-    if (note == 21 && veloc > 0) {
-        ~modes.melodyRestMode = ~modes.melodyRestMode.not;
-        // Takes effect on next loop cycle
-    };
-}, 21);
-
-// Note 24: Toggle fermata mode  
-// Note 25: Toggle pause notes
-// Note 22: Previous melody
-// Note 27: Next melody
-```
-
-#### CC Envelope System
-Provides real-time expression control with parameter-aware routing:
-
-```supercollider
-~startCCEnvelopes = { |melodyKey|
-    // Check if mapping system handles expression parameters
-    var mappingHandlesExpressionMin = ~anyRowHandlesParameter.(\expressionMin);
-    var mappingHandlesExpressionMax = ~anyRowHandlesParameter.(\expressionMax);
-    
-    if (mappingHandlesExpressionMin.not && mappingHandlesExpressionMax.not) {
-        // Fallback: Read from MIDI knobs directly
-        ~ccControl.expressionMin = ~midiController.getKnobRow1(5).linlin(0, 1, 0, 127);
-        ~ccControl.expressionMax = ~midiController.getKnobRow1(6).linlin(0, 1, 0, 127);
-    };
-    
-    // Create expression control synths for each target VST
-    ~vstManager.getTargetInstances(~activeVSTGroup).keysValuesDo { |vstKey, vst, i|
-        var ccSynth = Synth(\ccEnvelope, [
-            \start, ~ccControl.expressionMin,
-            \peak, ~ccControl.expressionMax,
-            \end, ~ccControl.expressionMin,
-            \attackTime, attackTime,
-            \releaseTime, releaseTime,
-            \chanIndex, i,
-            \ccNum, ~ccControl.expressionCC
-        ]);
-        ~activeCCSynths[vstKey] = ccSynth;
-    };
-};
-```
-
-#### OSC Responders
-Handle note events and fermata releases:
-```supercollider
-OSCdef(\noteOn, { |msg, time, addr, recvPort|
-    var channel = msg[1].asInteger;
-    var note = msg[2].asInteger;
-    var velocity = msg[3].asInteger;
-    var duration = msg[4].asFloat;
-    var isFermata = msg[5].asInteger == 1;
-    
-    // Route to target VST instances
-    ~vstManager.getTargetInstances(~activeVSTGroup).keysValuesDo { |vstName, vst|
-        vst.midi.noteOn(0, note, velocity);
-        
-        if(duration.notNil && isFermata.not) {
-            SystemClock.sched(duration, {
-                vst.midi.noteOff(0, note, 0);
-            });
-        };
-    };
-}, '/note/on');
-```
+**CC Envelope System**: Parameter-aware expression control
+**OSC Responders**: `/note/on`, `/note/release`, `/layer2/trigger`
 
 ### 5. Musical Implementation (`musical-implementation.scd`)
 
-**Purpose**: ProcMod-based sequencing system for live performance
-
-#### ProcMod Integration
-
-**What is ProcMod?**
-ProcMod is a SuperCollider class for creating envelope-controlled musical processes. It provides:
-- **Envelope Control**: Uses EnvGen.kr with ASR (Attack-Sustain-Release) envelopes
-- **Function Execution**: Runs user-defined functions within controlled environments  
-- **Resource Management**: Handles synth groups, buses, and cleanup automatically
-- **Timing Control**: Supports custom tempos and time scaling
-
-**Key ProcMod Methods**:
-- `ProcMod.new(env, amp, id, group, addAction, target, function)` - Create instance
-- `.play()` - Start the process with envelope control
-- `.release()` - Release with envelope timing
-- `.kill()` - Immediate stop and cleanup
-- `.amp_(newamp)` - Real-time amplitude control
-
-#### Melody ProcMod Creation
-
-```supercollider
-~createMelodyProc = { |melodyKey, patternIndex=0|
-    var pattern = ~melodyDict[melodyKey].patterns[patternIndex];
-    var id = (melodyKey ++ "_" ++ patternIndex).asSymbol;
-    
-    // ASR envelope: quick attack, sustain at 1, quick release
-    var env = Env.asr(attackTime: 0.01, sustainLevel: 1.0, releaseTime: 0.1, curve: \lin);
-    
-    ProcMod.new(
-        env,          // ASR envelope for control
-        1.0,          // Amplitude
-        id,           // Unique identifier
-        nil,          // Group (create new)
-        0,            // addAction
-        1,            // target
-        
-        // Main function executed when ProcMod plays
-        { |group, envbus|
-            var task = Task({
-                // Parameter routing with mapping awareness
-                var mappingHandlesNoteDuration = ~anyRowHandlesParameter.(\noteDuration);
-                var mappingHandlesNoteRestTime = ~anyRowHandlesParameter.(\noteRestTime);
-                
-                if (mappingHandlesNoteDuration) {
-                    noteDuration = ~ccControl.noteDuration;
-                } {
-                    noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.005, 0.5);
-                };
-                
-                // Play through pattern with timing and expression control
-                ~repetitions.do { |repIndex|
-                    effectiveLength.do { |noteIndex|
-                        var note = pattern[noteIndex];
-                        var isFirstNote = (noteIndex == 0);
-                        var isLastNote = (noteIndex == (effectiveLength - 1));
-                        var isFermata = isLastNote && ~modes.fermata;
-                        
-                        // Process note (apply offset, velocity, etc.)
-                        var processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
-                        
-                        // Send via OSC to control systems
-                        NetAddr.localAddr.sendMsg('/note/on', 0, processedNote[0], processedNote[1],
-                            actualDuration, isFermata.asInteger,
-                            isFirstNote.asInteger, isLastNote.asInteger);
-                        
-                        // Trigger Layer 2 on first note
-                        if(isFirstNote) {
-                            NetAddr.localAddr.sendMsg('/layer2/trigger', melodyKey);
-                        };
-                        
-                        actualWaitTime.wait;
-                        noteIndex = noteIndex + 1;
-                    };
-                };
-                
-                // Handle fermata timing and melody rest
-                // ... (fermata and rest logic)
-            });
-            
-            task; // Return task for ProcMod to manage
-        }
-    );
-};
-```
-
-#### Continuous Loop System
-
-Provides automatic or manual melody sequencing:
-
-```supercollider
-~startContinuousLoopSequence = {
-    ~continuousLoopTask = Task({
-        inf.do { |iteration|
-            var melodyKey = ~currentSequence[~currentLoopIndex];
-            
-            // Start CC envelopes for expression control
-            ~startCCEnvelopes.value(melodyKey);
-            
-            // Create or retrieve ProcMod for this melody
-            if(~melodyProcs[melodyKey].isNil) {
-                ~melodyProcs[melodyKey] = ~createMelodyProc.value(melodyKey);
-            };
-            
-            // Play the melody
-            ~melodyProcs[melodyKey].play;
-            
-            // Wait for completion or manual advance
-            if(~modes.manualLooping.not) {
-                // Automatic progression
-                ~currentLoopIndex = (~currentLoopIndex + 1) % ~currentSequence.size;
-            };
-            
-            waitTime.wait;
-        };
-    });
-    
-    ~continuousLoopTask.play;
-    ~continuousLoopRunning = true;
-};
-```
+**ProcMod-Based Sequencing**:
+- Uses ASR envelopes for controlled processes
+- Executes user functions within managed environments
+- Handles resource cleanup automatically
+- Supports real-time parameter updates
 
 ### 6. Dual Layer System (`dual-layer-system.scd`)
 
-**Purpose**: Independent Layer 1 and Layer 2 with separate parameter control
+**Architecture**:
+- Complete state duplication for Layer 2
+- Row 1 MIDI → Layer 1, Row 2 MIDI → Layer 2
+- Independent VST targeting per layer
+- Synchronized or independent operation
 
-**Key Features**:
-- **Independent VST targeting**: `~activeVSTGroup` vs `~activeVSTGroup_2`
-- **Separate parameter sets**: `~ccControl` vs `~ccControl_2`
-- **Independent mode settings**: `~modes` vs `~modes_2`
-- **MIDI row mapping**: Row 1 → Layer 1, Row 2 → Layer 2
+## Performance System
 
-**Layer 2 Setup**:
+### Dual-Layer Architecture
+
+**Layer 1**:
+- MIDI Row 1 controls
+- Primary VST group targeting
+- OSC: `/note/on`, `/note/release`
+
+**Layer 2**:
+- MIDI Row 2 controls
+- Secondary VST group targeting
+- OSC: `/note/on2`, `/note/release2`
+
+### Parameter Control Flow
+
+1. **MIDI Input** → Controller knobs send CC data
+2. **Mapping System** → Checks if parameter is mapped to a row
+3. **Parameter Resolution**:
+   - If mapped: Use value from `~ccControl`
+   - If not mapped: Read MIDI controller directly
+4. **VST Targeting** → Send to appropriate group/instance
+5. **Real-time Update** → Parameters update during playback
+
+### Musical Sequencing
+
+**Melody System**:
+- Arrays of MIDI note numbers
+- Real-time transposition
+- Configurable rest periods
+- Fermata (hold) support
+
+**Timing Control**:
+- Note duration from MIDI or mapping
+- Rest duration control
+- BPM-based timing (default: 298)
+- Beat-synchronized events
+
+## Critical Global Variables
+
+### Setup System
+- `~vstManager` - Main VST manager instance
+- `~midiController` - MIDI controller interface
+- `~controlTemplates` - Parameter mapping templates
+- `~rowMappings` - MIDI row→VST group assignments
+- `~groupControlParams` - Per-group parameter storage
+
+### Sketch System
+- `~modes` - Performance mode flags
+- `~currentVSTGroupIndex` - Active group index
+- `~ccControl` - Current CC parameter values
+- `~activeCCSynths` - Running CC envelope synths
+- `~activeNotes` - Currently playing notes
+- `~melodies` - Loaded melodic patterns
+
+## Usage Patterns
+
+### Basic Performance Setup
+
 ```supercollider
-// Layer 2 state variables
-~activeVSTGroup_2 = nil;
-~ccControl_2 = (/* separate parameter set */);
-~modes_2 = (/* separate mode flags */);
+// 1. Load the sketch system
+(
+~projectPath = "/path/to/surfacing/sketch/";
+(~projectPath ++ "load-sketch.scd").load;
+)
 
-// Layer 2 VST targeting
-~setActiveVSTGroup_2 = { |groupName|
-    // Similar to Layer 1 but uses Layer 2 variables
-};
+// 2. VSTs and MIDI are auto-configured by setup
 
-// Layer 2 melody creation
-~createMelodyProc_2 = { |melodyKey, patternIndex=0|
-    // Uses Layer 2 parameters directly
-    noteDuration = ~ccControl_2.noteDuration;
-    noteRestTime = ~ccControl_2.noteRestTime;
-    // ... rest of Layer 2 implementation
-};
+// 3. Target a VST group
+~setActiveVSTGroup.("Tubas");
+
+// 4. Start performance
+~startContinuousLoopSequence.();
 ```
 
-### 7. Initialization & Startup (`initialization-startup.scd`)
-
-**Purpose**: Final setup and usage instructions
-
-**Key Actions**:
-- Loads active melodies: `~loadActiveMelodies.value`
-- Initializes ProcMods for current sequence
-- Displays comprehensive usage instructions
-
-## Parameter Routing Architecture
-
-### Parameter-Centric Approach
-
-The system uses intelligent parameter routing that prioritizes the mapping system:
-
-1. **Check Mapping System**: `~anyRowHandlesParameter.(\paramName)`
-2. **Use Mapped Value**: If mapping exists, use `~ccControl.paramName`
-3. **Fallback to Direct**: If no mapping, read MIDI knob directly
-
-### Integration with MIDI Control Mapping
-
-The sketch system integrates with the setup system's MIDI Control Mapping:
+### Parameter Mapping
 
 ```supercollider
-// Function from midi-control-mapping.scd
-~anyRowHandlesParameter = { |paramName|
-    var handled = false;
-    ~rowMappings.keysValuesDo { |rowNum, mapping|
-        if (mapping.enabled && mapping.template.notNil) {
-            var template = ~controlTemplates[mapping.template];
-            if (template.notNil) {
-                var hasParam = template.knobMappings.any { |knobMap|
-                    knobMap.param == paramName
-                };
-                if (hasParam) { handled = true; };
-            };
-        };
-    };
-    handled;
-};
+// Check if parameter is mapped
+if (~anyRowHandlesParameter.(\velocity)) {
+    velocity = ~ccControl.velocity;
+} else {
+    velocity = ~midiController.getKnobRow1(4).linlin(0, 1, 1, 127);
+}
 ```
 
-## Performance Control Flow
+### VST Program Changes
 
-### Typical Performance Session
+```supercollider
+// Change program for specific VST
+~vstManager.setProgramByName("Tuba1", "ff marcato");
 
-1. **System Initialization**:
-   ```supercollider
-   // Load the complete system
-   "path/to/sketch/load-sketch.scd".load;
-   ```
+// Change all in active group
+~vstManager.setProgramByNameAll("pp dolce");
 
-2. **VST Group Setup**:
-   ```supercollider
-   ~setActiveVSTGroup.('Bass Tuba');  // Target specific instrument group
-   ~showVSTTargeting.();              // Verify targeting
-   ```
-
-3. **Start Performance**:
-   ```supercollider
-   ~startContinuousLoopSequence.();   // Begin automatic sequencing
-   ```
-
-4. **Live Control**:
-   - MIDI buttons for mode toggles and melody navigation
-   - MIDI knobs for real-time parameter control (if no mapping active)
-   - MIDI mapping system for complex parameter routing
-
-5. **Emergency Stop**:
-   ```supercollider
-   ~stopAllNotes.();                  // Stop everything immediately
-   ```
-
-### MIDI Control Reference
-
-**Button Controls** (via MIDIdef.noteOn):
-- **Note 21**: Toggle Melody Rest mode
-- **Note 22**: Previous Melody  
-- **Note 24**: Toggle Fermata mode
-- **Note 25**: Toggle Pause Notes mode
-- **Note 27**: Next Melody
-
-**Slider Controls** (via MIDIController):
-- **Slider 1**: Note Duration (if not mapped)
-- **Slider 2**: Note Rest Time (if not mapped)  
-- **Slider 3**: Velocity (if not mapped)
-- **Slider 7**: Melody Rest Time
-- **Slider 8**: Temporal Accent
-
-**Knob Controls** (via MIDIController, if not mapped):
-- **Row 1, Pos 5**: Expression Min
-- **Row 1, Pos 6**: Expression Max
-- **Row 1, Pos 4**: Expression Duration Scalar
-
-## Key Design Patterns
-
-### 1. Parameter-Centric Architecture
-Instead of direct MIDI reading, the system:
-- Checks mapping system first
-- Uses mapped values when available  
-- Falls back to direct reading as backup
-
-### 2. Modular State Management
-- Global modes in `~modes` dictionary
-- Group-specific parameters in `~groupControlParams` 
-- Complete state duplication for dual layers
-
-### 3. ProcMod-Based Sequencing
-- Uses ASR envelopes for controlled musical processes
-- Integrates with SuperCollider's timing and resource management
-- Provides real-time parameter updates during playback
-
-### 4. OSC Communication
-- Internal OSC messages for note events: `/note/on`, `/note/release`
-- Layer triggering: `/layer2/trigger`  
-- Enables loose coupling between components
-
-### 5. Resource Management
-- Automatic cleanup of synths and buses
-- Proper handling of VST instances and MIDI responders
-- Safe shutdown procedures
-
-## File Dependencies
-
-```
-load-sketch.scd
-├── ../setup/_setup-loader.scd (Setup system)
-├── core-functions.scd (Note processing utilities)
-├── vst-targeting.scd (VST group management)  
-├── control-systems.scd (MIDI/OSC control)
-├── musical-implementation.scd (ProcMod sequencing)
-├── initialization-startup.scd (Final setup)
-└── dual-layer-system.scd (Advanced dual-layer system)
+// Change every VST instance
+~vstManager.setProgramByNameAllInstances("mf espressivo");
 ```
 
-This architecture provides a sophisticated, modular system for live electronic music performance with real-time parameter control, dual-layer sequencing, and flexible VST routing capabilities. 
+## Performance Modes
+
+- **Pause Notes**: Temporarily stop note generation
+- **Melody Rest**: Add pauses between phrases
+- **Fermata**: Hold specific notes longer
+- **Manual Advance**: Step through melodies manually
+
+## OSC Communication
+
+### Input Messages
+- `/note/on [freq, amp, dur, targetIndex]` - Trigger note
+- `/note/release [targetIndex]` - Release held note
+- `/bend [index, value]` - Pitch bend control
+- `/expression [index, value]` - Expression CC
+
+### Internal Communication
+- Components use OSC for loose coupling
+- Enables external control integration
+- Debug messages via SendTrig
+
+## Best Practices
+
+1. **Always use VSTManager** for VST access - don't store controllers directly
+2. **Check parameter mapping** before reading MIDI directly
+3. **Use ProcMod** for time-based processes requiring cleanup
+4. **Target groups** rather than individual VSTs for flexibility
+5. **Handle nil cases** when accessing VST instances
+
+## Troubleshooting
+
+### Common Issues
+
+1. **VSTs not responding**:
+   - Check VST is loaded: `~vstManager.getInstances()`
+   - Verify group assignment: `~vstManager.getGroupInstances(groupName)`
+   - Ensure synth is running
+
+2. **Parameter changes not working**:
+   - Check mapping system: `~rowMappings`
+   - Verify MIDI controller connection
+   - Look for parameter name mismatches
+
+3. **Timing issues**:
+   - Check `~bpm` setting
+   - Verify ProcMod envelopes
+   - Look for blocking operations in functions
+
+## System Integration Summary
+
+### How Everything Connects
+
+1. **Initialization Chain**:
+   ```
+   _setup-loader.scd → synths → VST plugins → VSTManager → MIDI → Mappings → OSC
+   ```
+
+2. **Runtime Signal Flow**:
+   ```
+   MIDI Hardware → MIDIController → Mapping System → VSTManager → VSTPluginController → VSTPlugin UGen → Audio
+   ```
+
+3. **Control Hierarchy**:
+   - **VSTPlugin**: Low-level audio processing
+   - **VSTPluginController**: Direct plugin control
+   - **VSTManager**: Group/instance management
+   - **MIDIController**: Hardware interface
+   - **ProcMod**: Process lifecycle wrapper
+
+4. **Key Integration Points**:
+   - VSTManager stores VSTPluginController references
+   - MIDIController gets VST list from VSTManager
+   - ProcMod wraps musical sequences that control VSTs
+   - Mapping system translates MIDI CCs to parameters
+   - OSC provides loose coupling between components
+
+### Design Patterns Used
+
+1. **Singleton**: VSTManager ensures single instance
+2. **Observer**: ProcMod broadcasts state changes
+3. **Facade**: VSTManager simplifies VST access
+4. **Strategy**: Pluggable mapping templates
+5. **Command**: ProcMod encapsulates operations
+
+## Extension Points
+
+The system is designed for extension:
+
+1. **New Parameters**: Add to `~controlTemplates`
+2. **Custom Modes**: Extend `~modes` dictionary
+3. **Additional Layers**: Follow dual-layer pattern
+4. **New Controllers**: Implement in control-systems.scd
+5. **Custom GUI**: Extend sketch-gui.scd
+
+## Performance Tips
+
+1. **Pre-load VST programs** before performance
+2. **Test MIDI mappings** with all parameters
+3. **Set appropriate BPM** for your music
+4. **Use groups** for quick VST set changes
+5. **Monitor CPU** with many VST instances
+
+---
+
+This system represents a professional approach to live electronic music, balancing flexibility with real-time performance requirements. The parameter-centric design and dual-layer architecture provide extensive control for complex musical performances.

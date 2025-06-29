@@ -71,6 +71,31 @@ if (~sketchGUIWindow.isNil) {
             };
         };
         
+        // Bend Envelope section
+        layout.add(StaticText().string_("BEND ENVELOPE").font_(Font.default.size_(12).bold_(true)));
+        
+        // Bend envelope toggle
+        if (~toggleBendEnvelope.notNil) {
+            var bendCheckbox = CheckBox()
+                .string_("Enable Bend Envelope")
+                .value_(~bendEnvelopeEnabled ? false)
+                .action_({ |cb|
+                    ~toggleBendEnvelope.(cb.value);
+                    "Bend envelope %".format(if(cb.value, "enabled", "disabled")).postln;
+                });
+            layout.add(bendCheckbox);
+            
+            // Bend parameter display (read-only info)
+            if (~bendEnvelopeParams.notNil) {
+                layout.add(StaticText()
+                    .string_("Control with Row 3 knobs:")
+                    .font_(Font.default.size_(10)));
+                layout.add(StaticText()
+                    .string_("K1: Bend amount | K2: Peak time | K3: Return time")
+                    .font_(Font.default.size_(10)));
+            };
+        };
+        
         // Set layout and show
         win.layout = layout;
         win.onClose = { ~sketchGUIWindow = nil; };
