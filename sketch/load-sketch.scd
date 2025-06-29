@@ -36,6 +36,7 @@
 ~activeCCSynths = Dictionary.new;
 ~activeNotes = Dictionary.new;
 ~lastFermataNote = nil;
+~lastFermataChord = nil;  // For chord mode fermata tracking
 ~sequenceTask = nil;
 ~loopingCCEnvelopes = false;
 ~activeVSTGroup = nil;
@@ -48,7 +49,8 @@
     pauseNotesMode: false,
     removeLast: false,
     velocityMultiply: false,
-    manualLooping: true    // false = progressive (auto-advance), true = manual (stay on current)
+    manualLooping: true,    // false = progressive (auto-advance), true = manual (stay on current)
+    chordProgression: false  // false = melody mode, true = chord mode
 );
 
 // CC control parameters
@@ -85,6 +87,9 @@
 
 "Loading Musical Implementation...".postln;
 (thisProcess.nowExecutingPath.dirname +/+ "musical-implementation.scd").load;
+
+"Loading Chord Progressions...".postln;
+(thisProcess.nowExecutingPath.dirname +/+ "chord-progressions.scd").load;
 
 "Loading Initialization & Startup...".postln;
 (thisProcess.nowExecutingPath.dirname +/+ "initialization-startup.scd").load;

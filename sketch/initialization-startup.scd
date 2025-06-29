@@ -61,10 +61,13 @@ Button Controls:
   CC 25: Toggle Pause Notes mode
   CC 45: Toggle Melody Rest mode
   Note 22: Previous Melody
+  Note 23: Toggle Chord Progression mode
+  Note 26: Next Chord (when in chord mode)
   Note 27: Next Melody
+  Note 28: Previous Chord (when in chord mode)
 
 Slider Controls:
-  1: Note Duration           (0.005 - 0.5 seconds)
+  1: Note Duration           (0.1 - 10.0 seconds)
   2: Note Rest Time          (0.0001 - 0.4 seconds)
   3: Velocity                (1 - 127)
   4: Melody Rest Time        (0.0 - 1.0 seconds)
@@ -98,6 +101,23 @@ Live Performance Cycling:
 Information & Status:
   ~showVSTTargeting.value;             // Show current targeting status
   ~listVSTGroups.value;                // List all available groups
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       CHORD PROGRESSION MODE                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Chord Functions:
+  ~listChordProgressions.();           // List available progressions
+  ~loadChordProgression.(key);         // Load a specific progression
+  ~showChordStatus.();                 // Show current chord info
+  ~nextChord.();                       // Navigate to next chord
+  ~previousChord.();                   // Navigate to previous chord
+
+Chord Mode:
+  - Enable with MIDI Note 23 or ~modes.chordProgression = true
+  - Each VST plays a different note of the chord
+  - Number of chord notes should match number of VSTs
+  - Bend envelopes work per-note on each chord voice
 ".postln;
 
 "

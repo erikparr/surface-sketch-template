@@ -88,6 +88,45 @@
     };
 }, 22);  // Note 22 for previous melody
 
+// Toggle Chord Progression mode (Note 23)
+~toggleChordMode.free;
+~toggleChordMode = MIDIdef.noteOn(\toggleChordMode, { |veloc, note, chan, src|
+    if (note == 23 && veloc > 0) {
+        // Toggle chord progression mode on every note-on
+        ~modes.chordProgression = ~modes.chordProgression.not;
+        ["MIDI Note 23: Chord Progression mode toggled to",
+            if(~modes.chordProgression, "ON", "OFF")].postln;
+        
+        if(~modes.chordProgression) {
+            ~showChordStatus.();
+        };
+    };
+}, 23);  // Note 23 for chord mode toggle
+
+// Next chord control (Note 26)
+~nextChordButton.free;
+~nextChordButton = MIDIdef.noteOn(\nextChordButton, { |veloc, note, chan, src|
+    if (note == 26 && veloc > 0) {
+        if (~modes.chordProgression) {
+            ~nextChord.();
+        } {
+            "MIDI Note 26: Chord mode is OFF - enable it first with Note 23".postln;
+        };
+    };
+}, 26);  // Note 26 for next chord
+
+// Previous chord control (Note 28)
+~prevChordButton.free;
+~prevChordButton = MIDIdef.noteOn(\prevChordButton, { |veloc, note, chan, src|
+    if (note == 28 && veloc > 0) {
+        if (~modes.chordProgression) {
+            ~previousChord.();
+        } {
+            "MIDI Note 28: Chord mode is OFF - enable it first with Note 23".postln;
+        };
+    };
+}, 28);  // Note 28 for previous chord
+
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        MELODY UTILITY FUNCTIONS                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
@@ -116,9 +155,9 @@
     start: 8192,      // Center position
     peak: 10240,      // Bend up ~25%
     end: 8192,        // Return to center
-    peakTime: 2.0,    // Time to reach peak
-    returnTime: 1.5,  // Time to return
-    loopDuration: 4.0 // Total loop duration
+    peakTimeRatio: 0.3,    // Ratio of note duration to reach peak
+    returnTimeRatio: 0.7,  // Ratio of note duration to return
+    bendAmount: 0.25  // Amount of bend (0-1, where 1 = max bend)
 );
 
 // Storage for active bend envelope synths
@@ -282,10 +321,7 @@
         "CC Control disabled".postln;
     };
     
-    // Also start bend envelopes if enabled
-    if (~bendEnvelopeEnabled) {
-        ~startBendEnvelopes.(melodyKey);
-    };
+    // No longer start continuous bend envelopes here - they are per-note now
 };
 
 // Function to stop all CC envelopes
@@ -309,22 +345,24 @@
     if (~midiController.notNil && ~bendEnvelopeEnabled) {
         // Row 3 knobs for bend control:
         // Knob 1 (pos 1): Bend amount (0-100%)
-        // Knob 2 (pos 2): Peak time
-        // Knob 3 (pos 3): Return time
+        // Knob 2 (pos 2): Peak time ratio (0.1-0.9 of note duration)
+        // Knob 3 (pos 3): Return time ratio (automatically calculated)
         
         var bendAmount = ~midiController.getKnobRow3(1);  // 0-1
-        var peakTime = ~midiController.getKnobRow3(2).linlin(0, 1, 0.1, 5.0);
-        var returnTime = ~midiController.getKnobRow3(3).linlin(0, 1, 0.1, 5.0);
+        var peakTimeRatio = ~midiController.getKnobRow3(2).linlin(0, 1, 0.1, 0.9);
+        var returnTimeRatio = 1.0 - peakTimeRatio;
+        
+        // Store bend amount directly
+        ~bendEnvelopeParams.bendAmount = bendAmount;
         
         // Convert bend amount to MIDI bend value
         // 0 = no bend (8192), 1 = max bend up (16383)
         ~bendEnvelopeParams.peak = (8192 + (bendAmount * 8191)).asInteger;
-        ~bendEnvelopeParams.peakTime = peakTime;
-        ~bendEnvelopeParams.returnTime = returnTime;
-        ~bendEnvelopeParams.loopDuration = peakTime + returnTime;
+        ~bendEnvelopeParams.peakTimeRatio = peakTimeRatio;
+        ~bendEnvelopeParams.returnTimeRatio = returnTimeRatio;
         
-        ["Updated bend params: peak=%, peakTime=%, returnTime=%".format(
-            ~bendEnvelopeParams.peak, peakTime.round(0.01), returnTime.round(0.01)
+        ["Updated bend params: amount=%, peakRatio=%, returnRatio=%".format(
+            bendAmount.round(0.01), peakTimeRatio.round(0.01), returnTimeRatio.round(0.01)
         )].postln;
     };
 };
@@ -384,16 +422,52 @@
     "All bend envelopes stopped and reset".postln;
 };
 
+// Function to start per-note bend envelope
+~startNoteBend = { |vstKey, vstIndex, noteDuration|
+    var bendSynth, peakTime, returnTime;
+    
+    if (~bendEnvelopeEnabled.not) {
+        ^nil;
+    };
+    
+    // Update parameters from knobs
+    ~updateBendParametersFromKnobs.();
+    
+    // Calculate actual times based on note duration and ratios
+    peakTime = noteDuration * ~bendEnvelopeParams.peakTimeRatio;
+    returnTime = noteDuration * ~bendEnvelopeParams.returnTimeRatio;
+    
+    // Create non-looping bend envelope synth (using the standard BendEnvelope)
+    bendSynth = Synth(\BendEnvelope, [
+        \start, ~bendEnvelopeParams.start,
+        \peak, ~bendEnvelopeParams.peak,
+        \end, ~bendEnvelopeParams.end,
+        \peakTime, peakTime,
+        \returnTime, returnTime,
+        \chanIndex, vstIndex
+    ]);
+    
+    // Store the synth temporarily
+    ~activeBendSynths[vstKey ++ "_" ++ UniqueID.next] = bendSynth;
+    
+    // Schedule cleanup after note duration
+    SystemClock.sched(noteDuration, {
+        bendSynth.free;
+        nil;
+    });
+    
+    "Per-note bend started for % (duration: %s, peak: %s, return: %s)".format(
+        vstKey, noteDuration.round(0.01), peakTime.round(0.01), returnTime.round(0.01)
+    ).postln;
+};
+
 // Toggle function for bend envelope mode
 ~toggleBendEnvelope = { |enabled|
     ~bendEnvelopeEnabled = enabled;
     
     if (enabled) {
-        "Bend envelope mode ENABLED".postln;
-        // If a melody is currently playing, start bend envelopes
-        if (~currentSequence.notNil) {
-            ~startBendEnvelopes.(~currentSequence[~currentLoopIndex]);
-        };
+        "Bend envelope mode ENABLED (per-note)".postln;
+        // No longer start continuous bend envelopes
     } {
         "Bend envelope mode DISABLED".postln;
         ~stopBendEnvelopes.();
@@ -405,10 +479,12 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Clear any existing OSC responders
+"Clearing existing OSC responders...".postln;
 OSCdef(\noteOn).free;
 OSCdef(\noteOff).free;
 OSCdef(\releaseFermata).free;
 OSCdef(\bend).free;
+"OSC responders cleared".postln;
 
 // OSC responder for note events
 OSCdef(\noteOn, { |msg, time, addr, recvPort|
@@ -419,34 +495,134 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
     var isFermata = msg[5].asInteger == 1;
     var isFirstNote = msg[6].asInteger == 1;
     var isLastNote = msg[7].asInteger == 1;
+    var instances, currentChord;
+
+    "=== OSC HANDLER ENTRY ===".postln;
+    ["Full OSC message:", msg].postln;
 
     // Apply note offset if mode is enabled
     if(~modes.noteOffset) {
-        note = (note + ~noteOffset).clip(0, 1);
+        note = (note + ~noteOffset).clip(0, 127);
     };
 
     ["OSC Received:", "channel:", channel, "note:", note, "vel:", velocity,
      "dur:", duration, "fermata:", isFermata, "first:", isFirstNote, "last:", isLastNote].postln;
 
-    // Play note on all VST instances
-    ~vstManager.getTargetInstances(~activeVSTGroup).keysValuesDo { |vstName, vst|
-        ["Playing on VST:", vstName].postln;
-        vst.midi.noteOn(0, note, velocity);
+    ["DEBUG: activeVSTGroup:", ~activeVSTGroup].postln;
+    instances = ~vstManager.getTargetInstances(~activeVSTGroup);
+    ["DEBUG: Retrieved instances:", instances, "size:", instances.size].postln;
+    
+    // Check if we're in chord mode
+    ["DEBUG: Chord mode check - chordProgression:", ~modes.chordProgression, "currentChordProgression:", ~currentChordProgression.notNil].postln;
+    
+    if(~modes.chordProgression && ~currentChordProgression.notNil) {
+        currentChord = ~getCurrentChord.();
+        ["DEBUG: Got current chord:", currentChord].postln;
+        
+        // Skip validation for now - debug VST instances
+        ["DEBUG: Skipping validation, proceeding to VST instances"].postln;
+        
+        // Debug VST instances
+        ["DEBUG: CHORD MODE - Found % VST instances".format(instances.size)].postln;
+        if (instances.size == 0) {
+            ["ERROR: No VST instances found! Check ~activeVSTGroup and VST setup"].postln;
+            ["DEBUG: Available VST groups:", ~vstManager.getGroupNames].postln;
+            ["DEBUG: All VST instances:", ~vstManager.getInstances.keys].postln;
+        };
+        
+        instances.keysValuesDo { |vstName, vst|
+            ["DEBUG: VST instance:", vstName, "controller:", vst, "midi:", vst.midi].postln;
+        };
+        
+        // Play chord notes distributed across VST instances
+        instances.keysValuesDo { |vstName, vst, i|
+            var chordNote;
+            
+            ["DEBUG: CHORD DISTRIBUTION - Processing VST % (index %) of % total".format(vstName, i, instances.size)].postln;
+            ["DEBUG: Current chord size:", currentChord.size, "chord:", currentChord].postln;
+            
+            if(i < currentChord.size) {
+                chordNote = currentChord[i];
+                
+                // Apply note offset if enabled
+                if(~modes.noteOffset) {
+                    chordNote = (chordNote + ~noteOffset).clip(0, 127);
+                    ["DEBUG: Applied note offset, new note:", chordNote].postln;
+                };
+                
+                ["DEBUG: MIDI SEND - About to play chord note:", chordNote, "on VST:", vstName, "(voice", i, ") velocity:", velocity].postln;
+                
+                try {
+                    vst.midi.noteOn(0, chordNote, velocity);
+                    ["DEBUG: MIDI SUCCESS - noteOn sent to", vstName].postln;
+                } { |error|
+                    ["ERROR: MIDI FAILED - could not send noteOn to", vstName, "error:", error].postln;
+                };
+                
+                // Start per-note bend if enabled and duration is provided
+                if(~bendEnvelopeEnabled && duration.notNil) {
+                    ["DEBUG: Starting bend envelope for", vstName].postln;
+                    ~startNoteBend.(vstName, i, duration);
+                } {
+                    ["DEBUG: No bend envelope (enabled:", ~bendEnvelopeEnabled, "duration:", duration, ")"].postln;
+                };
+                
+                // Schedule note off if duration is provided AND it's not a fermata note
+                if(duration.notNil && isFermata.not) {
+                    ["DEBUG: Scheduling noteOff in", duration, "seconds for", vstName].postln;
+                    SystemClock.sched(duration, {
+                        try {
+                            vst.midi.noteOff(0, chordNote, 0);
+                            ["DEBUG: Auto-released chord note:", chordNote, "on VST:", vstName].postln;
+                        } { |error|
+                            ["ERROR: Could not release note on", vstName, "error:", error].postln;
+                        };
+                        nil;
+                    });
+                } {
+                    if(isFermata) {
+                        ["DEBUG: Fermata chord note:", chordNote, "on VST:", vstName, "- will be released manually"].postln;
+                        // Store all chord notes for fermata release
+                        ~lastFermataChord = ~lastFermataChord ? [];
+                        ~lastFermataChord = ~lastFermataChord.add([vstName, chordNote]);
+                    } {
+                        ["DEBUG: No duration provided, note will not auto-release"].postln;
+                    };
+                };
+            } {
+                ["DEBUG: Skipping VST", vstName, "- index", i, ">=", currentChord.size, "(not enough notes in chord)"].postln;
+            };
+        };
+        
+        ["DEBUG: CHORD MODE - Finished processing all VST instances"].postln;
+    } {
+        // Melody mode - play same note on all VST instances
+        instances.keysValuesDo { |vstName, vst, i|
+            ["Playing on VST:", vstName].postln;
+            vst.midi.noteOn(0, note, velocity);
+            
+            // Start per-note bend if enabled and duration is provided
+            if(~bendEnvelopeEnabled && duration.notNil) {
+                ~startNoteBend.(vstName, i, duration);
+            };
 
-        // Schedule note off if duration is provided AND it's not a fermata note
-        if(duration.notNil && isFermata.not) {
-            SystemClock.sched(duration, {
-                vst.midi.noteOff(0, note, 0);
-                ["Auto-released note:", note, "on VST:", vstName, "(normal duration)"].postln;
-                nil;
-            });
-        } {
-            if(isFermata) {
-                ["Fermata note:", note, "on VST:", vstName, "- will be released manually"].postln;
+            // Schedule note off if duration is provided AND it's not a fermata note
+            if(duration.notNil && isFermata.not) {
+                SystemClock.sched(duration, {
+                    vst.midi.noteOff(0, note, 0);
+                    ["Auto-released note:", note, "on VST:", vstName, "(normal duration)"].postln;
+                    nil;
+                });
+            } {
+                if(isFermata) {
+                    ["Fermata note:", note, "on VST:", vstName, "- will be released manually"].postln;
+                };
             };
         };
     };
 }, '/note/on');
+
+"✓ OSC responder for '/note/on' created successfully".postln;
 
 // Add a new OSC responder for releasing fermata notes
 OSCdef(\releaseFermata, { |msg, time, addr, recvPort|
@@ -455,12 +631,32 @@ OSCdef(\releaseFermata, { |msg, time, addr, recvPort|
     note = msg[1].asInteger;
     instances = ~vstManager.getTargetInstances(~activeVSTGroup);
 
-    ["Releasing fermata note:", note].postln;
-
-    // Release the note on all VST instances
-    instances.keysValuesDo { |vstName, vst|
-        vst.midi.noteOff(0, note, 0);
-        ["Released note:", note, "on VST:", vstName].postln;
+    // Check if we're in chord mode and have fermata chord notes stored
+    if(~modes.chordProgression && ~lastFermataChord.notNil) {
+        ["Releasing fermata chord"].postln;
+        
+        // Release each chord note on its respective VST
+        ~lastFermataChord.do { |noteInfo|
+            var vstName = noteInfo[0];
+            var chordNote = noteInfo[1];
+            var vst = instances[vstName];
+            
+            if(vst.notNil) {
+                vst.midi.noteOff(0, chordNote, 0);
+                ["Released chord note:", chordNote, "on VST:", vstName].postln;
+            };
+        };
+        
+        // Clear the fermata chord storage
+        ~lastFermataChord = nil;
+    } {
+        // Melody mode - release same note on all VST instances
+        ["Releasing fermata note:", note].postln;
+        
+        instances.keysValuesDo { |vstName, vst|
+            vst.midi.noteOff(0, note, 0);
+            ["Released note:", note, "on VST:", vstName].postln;
+        };
     };
 }, '/note/release');
 

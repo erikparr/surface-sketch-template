@@ -63,7 +63,7 @@
                     noteDuration = ~ccControl.noteDuration;
                     "✓ MAPPING SYSTEM: noteDuration = % (from ~ccControl)".format(noteDuration).postln;
                 } {
-                    noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.005, 0.5);
+                    noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.1, 10.0);
                     "⚠ FALLBACK: noteDuration = % (direct from knob 2)".format(noteDuration).postln;
                 };
                 
@@ -253,6 +253,49 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         CHORD PLAYBACK                                     │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Function to play a single chord
+~playChord = {
+    var currentChord, noteDuration, velocity, instances;
+    
+    if(~currentChordProgression.isNil || ~getCurrentChord.().isNil) {
+        "No chord progression loaded".postln;
+        ^nil;
+    };
+    
+    currentChord = ~getCurrentChord.();
+    instances = ~vstManager.getTargetInstances(~activeVSTGroup);
+    
+    // Get timing parameters
+    if(~midiController.notNil) {
+        noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.1, 10.0);
+        velocity = ~midiController.getKnobRow1(4).linlin(0, 1, 1, 127).asInteger;
+    } {
+        noteDuration = 1.0;  // Default 1 second
+        velocity = 100;
+    };
+    
+    // Apply velocity multiplier for this chord if available
+    if(~currentChordProgression.velocityMultipliers.notNil) {
+        var multiplier = ~currentChordProgression.velocityMultipliers[~currentChordIndex];
+        if(multiplier.notNil) {
+            velocity = (velocity * multiplier).asInteger.clip(1, 127);
+        };
+    };
+    
+    ["Playing chord", ~currentChordIndex + 1, ":", currentChord, "duration:", noteDuration, "velocity:", velocity].postln;
+    
+    // Send the chord via OSC (the OSC handler will distribute notes)
+    // Use first chord note as the "note" parameter for compatibility
+    NetAddr.localAddr.sendMsg('/note/on', 0, currentChord[0], velocity, noteDuration, 0, 1, 0);
+    
+    // Return the duration for timing
+    noteDuration;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                      CONTINUOUS LOOP SEQUENCE                              │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -267,8 +310,25 @@
     ~currentLoopIteration = 0;
     ~continuousLoopRunning = true;
 
-    ["Starting continuous loop sequence with", ~currentSequence.size, "melodies"].postln;
-    ["Current melody index:", ~currentLoopIndex, "- Melody:", ~currentSequence[~currentLoopIndex]].postln;
+    // Check if we're in chord progression mode
+    if(~modes.chordProgression) {
+        if(~currentChordProgression.isNil) {
+            "ERROR: Chord progression mode enabled but no chord progression loaded!".postln;
+            "Use ~loadChordProgression.(key) to load a progression first.".postln;
+            ~listChordProgressions.();
+            ^nil;
+        };
+        ["Starting continuous loop in CHORD mode with progression:", ~currentChordProgression.name].postln;
+        ["Current chord:", ~currentChordIndex + 1, "of", ~currentChordProgression.chords.size].postln;
+    } {
+        if(~currentSequence.isNil || (~currentSequence.size == 0)) {
+            "ERROR: Melody mode but no melody sequence loaded!".postln;
+            "Load melodies first.".postln;
+            ^nil;
+        };
+        ["Starting continuous loop sequence with", ~currentSequence.size, "melodies"].postln;
+        ["Current melody index:", ~currentLoopIndex, "- Melody:", ~currentSequence[~currentLoopIndex]].postln;
+    };
 
     // Create a task to manage the continuous loop sequence
     ~continuousLoopTask = Task({
@@ -298,9 +358,40 @@
                     isPaused = false;
                 };
 
-                // Get the current melody to play based on current index
-                currentLoopKey = ~currentSequence[~currentLoopIndex];
-                loopCount = ~melodyDict[currentLoopKey].loopCount ? 1; // Default to 1 if not specified
+                // Handle chord mode vs melody mode
+                if(~modes.chordProgression) {
+                    // CHORD MODE
+                    var chordDuration, restTime;
+                    
+                    // Play current chord
+                    chordDuration = ~playChord.();
+                    
+                    if(chordDuration.notNil) {
+                        // Get rest time between chords
+                        if(~midiController.notNil) {
+                            restTime = ~midiController.getKnobRow1(3).linlin(0, 1, 0.0001, 0.4);
+                        } {
+                            restTime = 0.2;  // Default rest
+                        };
+                        
+                        // Wait for chord duration plus rest time
+                        (chordDuration + restTime).wait;
+                        
+                        // Advance to next chord if not in manual mode
+                        if(~modes.manualLooping.not) {
+                            ~nextChord.();
+                        };
+                        
+                        ~currentLoopIteration = ~currentLoopIteration + 1;
+                    } {
+                        // Error playing chord, wait briefly
+                        0.5.wait;
+                    };
+                } {
+                    // MELODY MODE (original code)
+                    // Get the current melody to play based on current index
+                    currentLoopKey = ~currentSequence[~currentLoopIndex];
+                    loopCount = ~melodyDict[currentLoopKey].loopCount ? 1; // Default to 1 if not specified
 
                 // Show current melody info
                 ["Playing melody: % (% of %) - iteration %".format(
@@ -399,6 +490,7 @@
                         ["Auto-advancing to next melody:", ~currentSequence[~currentLoopIndex]].postln;
                     };
                 };
+                }; // End of melody mode
             };
         };
     }).play;
