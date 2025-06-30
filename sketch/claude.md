@@ -38,7 +38,8 @@ osc-setup.scd             → OSC handlers (needs VST manager)
 
 2. **Sketch System** (`sketch/`)
    - Live performance engine
-   - Dual-layer independent control
+   - Chord progression and melody modes
+   - Per-note bend envelopes synchronized to note duration
    - ProcMod-based musical sequencing
    - Real-time parameter modulation
 
@@ -316,16 +317,19 @@ p.kill;     // Immediate stop
 ~activeCCSynths = Dictionary.new;
 ~activeNotes = Dictionary.new;
 ~activeVSTGroup = nil;
+~lastFermataChord = nil;  // For chord mode fermata tracking
 
 // Mode flags
 ~modes = (
     noteOffset: false,
-    fermata: true,
-    melodyRestMode: true,
+    fermata: false,
+    melodyRestMode: false,
     pauseNotesMode: false,
     removeLast: false,
     velocityMultiply: false,
-    manualLooping: true
+    manualLooping: true,    // false = progressive (auto-advance), true = manual (stay on current)
+    chordProgression: false,  // false = melody mode, true = chord mode
+    sustainMode: false      // true = disable noteOff messages, false = normal noteOff behavior
 );
 
 // CC control parameters
@@ -341,6 +345,11 @@ p.kill;     // Immediate stop
     noteRestTime: 0.2,
     velocity: 100
 );
+
+// Chord progression variables
+~currentChordProgression = nil;
+~currentChordIndex = 0;
+~chords = Dictionary.new;
 ```
 
 ### 2. Core Functions (`core-functions.scd`)
@@ -382,12 +391,17 @@ p.kill;     // Immediate stop
 **MIDI Button Controls** (via MIDIdef.noteOn):
 - Note 21: Toggle Melody Rest mode
 - Note 22: Previous Melody
+- Note 23: Toggle Chord Progression mode
 - Note 24: Toggle Fermata mode
 - Note 25: Toggle Pause Notes mode
+- Note 26: Next Chord (when in chord mode)
 - Note 27: Next Melody
+- Note 28: Previous Chord (when in chord mode)
+- Note 29: Toggle Sustain mode (disable noteOff messages)
 
 **CC Envelope System**: Parameter-aware expression control
-**OSC Responders**: `/note/on`, `/note/release`, `/layer2/trigger`
+**Bend Envelope System**: Per-note bend envelopes synchronized to note duration
+**OSC Responders**: `/note/on`, `/note/release`, `/bend`
 
 ### 5. Musical Implementation (`musical-implementation.scd`)
 
@@ -397,7 +411,41 @@ p.kill;     // Immediate stop
 - Handles resource cleanup automatically
 - Supports real-time parameter updates
 
-### 6. Dual Layer System (`dual-layer-system.scd`)
+**Note Duration System**:
+- Expanded range: 0.1 - 10.0 seconds (updated from 0.005-0.5)
+- MIDI control via slider or parameter mapping
+- Code: `noteDuration = ~midiController.getKnobRow1(2).linlin(0, 1, 0.1, 10.0);`
+
+**Chord Progression Mode**:
+- Toggle with MIDI Note 23 or `~modes.chordProgression = true`
+- Distributes chord notes across VST instances
+- Each VST plays a different note of the current chord
+- Navigation with MIDI Notes 26 (next) and 28 (previous)
+
+### 6. Chord Progressions (`chord-progressions.scd`)
+
+**Chord System**:
+- Default progression: Simple Triads
+- Chord structures: `[[60, 64, 67], [57, 60, 64], [65, 69, 72], [67, 71, 74]]`
+- Functions: `~nextChord()`, `~previousChord()`, `~showChordStatus()`
+- Load progressions: `~loadChordProgression.(key)`
+
+**Key Functions**:
+```supercollider
+~getCurrentChord.();              // Get current chord notes
+~validateChordVSTMatch.();        // Check chord/VST compatibility
+~listChordProgressions.();        // Show available progressions
+```
+
+### 7. Bend Envelope System
+
+**Per-Note Bend Envelopes**:
+- Synchronized to note duration (replaces looping envelopes)
+- Function: `~startNoteBend.(vstKey, vstIndex, noteDuration)`
+- Timing ratios: `peakTimeRatio` and `returnTimeRatio` based on note duration
+- Automatic cleanup after note completion
+
+### 8. Dual Layer System (`dual-layer-system.scd`)
 
 **Architecture**:
 - Complete state duplication for Layer 2
@@ -453,12 +501,16 @@ p.kill;     // Immediate stop
 - `~groupControlParams` - Per-group parameter storage
 
 ### Sketch System
-- `~modes` - Performance mode flags
+- `~modes` - Performance mode flags (including `chordProgression` and `sustainMode`)
 - `~currentVSTGroupIndex` - Active group index
 - `~ccControl` - Current CC parameter values
 - `~activeCCSynths` - Running CC envelope synths
+- `~activeBendSynths` - Per-note bend envelope synths
 - `~activeNotes` - Currently playing notes
 - `~melodies` - Loaded melodic patterns
+- `~currentChordProgression` - Active chord progression
+- `~currentChordIndex` - Current position in chord progression
+- `~lastFermataChord` - Stored fermata chord notes for release
 
 ## Usage Patterns
 
@@ -510,14 +562,15 @@ if (~anyRowHandlesParameter.(\velocity)) {
 - **Melody Rest**: Add pauses between phrases
 - **Fermata**: Hold specific notes longer
 - **Manual Advance**: Step through melodies manually
+- **Chord Progression**: Distribute chord notes across VST instances
+- **Sustain Mode**: Disable automatic noteOff messages (notes play until manually stopped)
 
 ## OSC Communication
 
 ### Input Messages
-- `/note/on [freq, amp, dur, targetIndex]` - Trigger note
-- `/note/release [targetIndex]` - Release held note
-- `/bend [index, value]` - Pitch bend control
-- `/expression [index, value]` - Expression CC
+- `/note/on [channel, note, velocity, duration, isFermata, isFirstNote, isLastNote]` - Trigger note with full context
+- `/note/release [note]` - Release fermata notes (handles both melody and chord modes)
+- `/bend [chanIndex, bendValue]` - Pitch bend control from envelope synths
 
 ### Internal Communication
 - Components use OSC for loose coupling

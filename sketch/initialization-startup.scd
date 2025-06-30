@@ -65,6 +65,7 @@ Button Controls:
   Note 26: Next Chord (when in chord mode)
   Note 27: Next Melody
   Note 28: Previous Chord (when in chord mode)
+  Note 29: Toggle Sustain mode (disable noteOff messages)
 
 Slider Controls:
   1: Note Duration           (0.1 - 10.0 seconds)

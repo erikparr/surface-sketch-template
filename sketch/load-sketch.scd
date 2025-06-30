@@ -50,7 +50,8 @@
     removeLast: false,
     velocityMultiply: false,
     manualLooping: true,    // false = progressive (auto-advance), true = manual (stay on current)
-    chordProgression: false  // false = melody mode, true = chord mode
+    chordProgression: false,  // false = melody mode, true = chord mode
+    sustainMode: false      // true = disable noteOff messages, false = normal noteOff behavior
 );
 
 // CC control parameters

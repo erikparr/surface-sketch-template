@@ -127,6 +127,17 @@
     };
 }, 28);  // Note 28 for previous chord
 
+// Toggle Sustain mode (Note 29)
+~toggleSustainMode.free;
+~toggleSustainMode = MIDIdef.noteOn(\toggleSustainMode, { |veloc, note, chan, src|
+    if (note == 29 && veloc > 0) {
+        // Toggle sustain mode on every note-on
+        ~modes.sustainMode = ~modes.sustainMode.not;
+        ["MIDI Note 29: Sustain mode toggled to",
+            if(~modes.sustainMode, "ON (notes will not auto-release)", "OFF (normal auto-release)")].postln;
+    };
+}, 29);  // Note 29 for sustain mode toggle
+
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        MELODY UTILITY FUNCTIONS                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
@@ -567,8 +578,8 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
                     ["DEBUG: No bend envelope (enabled:", ~bendEnvelopeEnabled, "duration:", duration, ")"].postln;
                 };
                 
-                // Schedule note off if duration is provided AND it's not a fermata note
-                if(duration.notNil && isFermata.not) {
+                // Schedule note off if duration is provided AND it's not a fermata note AND sustain mode is off
+                if(duration.notNil && isFermata.not && ~modes.sustainMode.not) {
                     ["DEBUG: Scheduling noteOff in", duration, "seconds for", vstName].postln;
                     SystemClock.sched(duration, {
                         try {
@@ -586,7 +597,11 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
                         ~lastFermataChord = ~lastFermataChord ? [];
                         ~lastFermataChord = ~lastFermataChord.add([vstName, chordNote]);
                     } {
-                        ["DEBUG: No duration provided, note will not auto-release"].postln;
+                        if(~modes.sustainMode) {
+                            ["DEBUG: Sustain mode ON - note will not auto-release"].postln;
+                        } {
+                            ["DEBUG: No duration provided, note will not auto-release"].postln;
+                        };
                     };
                 };
             } {
@@ -606,8 +621,8 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
                 ~startNoteBend.(vstName, i, duration);
             };
 
-            // Schedule note off if duration is provided AND it's not a fermata note
-            if(duration.notNil && isFermata.not) {
+            // Schedule note off if duration is provided AND it's not a fermata note AND sustain mode is off
+            if(duration.notNil && isFermata.not && ~modes.sustainMode.not) {
                 SystemClock.sched(duration, {
                     vst.midi.noteOff(0, note, 0);
                     ["Auto-released note:", note, "on VST:", vstName, "(normal duration)"].postln;
@@ -616,6 +631,10 @@ OSCdef(\noteOn, { |msg, time, addr, recvPort|
             } {
                 if(isFermata) {
                     ["Fermata note:", note, "on VST:", vstName, "- will be released manually"].postln;
+                } {
+                    if(~modes.sustainMode) {
+                        ["Sustain mode ON - melody note will not auto-release"].postln;
+                    };
                 };
             };
         };
