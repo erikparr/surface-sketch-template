@@ -1,0 +1,1 @@
+understand the sytem fully. put on your thinking cap and understand  @setup/ and all related files and @sketch/  and all related files. turn on  │ │   "ULTRATHINK" mode and understand the system. understand              @VSTManager/VSTManager.sc @reference/procmod-reference/ProcMod.sc    @etc/MIDIController/MIDIController.sc

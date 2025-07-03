@@ -51,7 +51,8 @@
     velocityMultiply: false,
     manualLooping: true,    // false = progressive (auto-advance), true = manual (stay on current)
     chordProgression: false,  // false = melody mode, true = chord mode
-    sustainMode: false      // true = disable noteOff messages, false = normal noteOff behavior
+    sustainMode: false,      // true = disable noteOff messages, false = normal noteOff behavior
+    keyboardMode: false     // true = keyboard triggering with bend envelopes, false = sequence playback
 );
 
 // CC control parameters
@@ -95,6 +96,8 @@
 "Loading Initialization & Startup...".postln;
 (thisProcess.nowExecutingPath.dirname +/+ "initialization-startup.scd").load;
 
+"Loading Keyboard Mode Manager...".postln;
+(thisProcess.nowExecutingPath.dirname +/+ "keyboard-mode-manager-v2.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                      POST-INITIALIZATION SETUP                             │

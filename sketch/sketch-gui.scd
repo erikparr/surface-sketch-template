@@ -65,7 +65,25 @@ if (~sketchGUIWindow.isNil) {
                     .string_(key.asString)
                     .value_(value)
                     .action_({ |cb|
-                        ~modes[key] = cb.value;
+                        // Special handling for keyboard mode
+                        if (key == \keyboardMode) {
+                            {
+                                if (cb.value) {
+                                    if(~enableKeyboardMode.notNil) {
+                                        ~enableKeyboardMode.value;
+                                    } {
+                                        "Keyboard mode not initialized".error;
+                                    };
+                                } {
+                                    if(~disableKeyboardMode.notNil) {
+                                        ~disableKeyboardMode.value;
+                                    };
+                                };
+                            }.defer(0.01);  // Defer to avoid GUI thread issues
+                        } {
+                            // Normal mode handling
+                            ~modes[key] = cb.value;
+                        };
                         "Mode % set to %".format(key, cb.value).postln;
                     });
                 modeCheckboxes[key] = checkbox;

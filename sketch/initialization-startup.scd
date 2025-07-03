@@ -126,4 +126,25 @@ Chord Mode:
 // ~setActiveVSTGroup.(\"Tuba\");
 // ~setActiveVSTGroup.(\"Trumpet\");
 // ~setActiveVSTGroup.(\"All\");
+".postln;
+
+"
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          KEYBOARD MODE                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Real-time keyboard triggering with ProcMod and per-note bend envelopes:
+
+Control:
+  ~enableKeyboardMode.()               // Enable keyboard mode
+  ~disableKeyboardMode.()              // Disable keyboard mode  
+  ~toggleKeyboardMode.()               // Toggle keyboard mode
+  MIDI Note 30                         // Toggle via MIDI button
+
+Behavior:
+  - First note triggers 10-second ProcMod
+  - Each note gets independent bend envelope
+  - Notes sustain for ProcMod duration (ignore note-off)
+  - CC envelope triggers once per ProcMod
+  - Stops sequence playback when enabled
 ".postln; 

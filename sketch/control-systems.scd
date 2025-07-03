@@ -138,6 +138,21 @@
     };
 }, 29);  // Note 29 for sustain mode toggle
 
+// Toggle Keyboard mode (Note 30)
+~toggleKeyboardModeButton.free;
+~toggleKeyboardModeButton = MIDIdef.noteOn(\toggleKeyboardModeButton, { |veloc, note, chan, src|
+    if (note == 30 && veloc > 0) {
+        if(~modes.keyboardMode) {
+            ~keyboardMode.disable();
+        } {
+            ~keyboardMode.enable();
+        };
+        ["MIDI Note 30: Keyboard mode toggled to", 
+            if(~modes.keyboardMode, "ON", "OFF"),
+            "- When ON, keyboard triggers ProcMod with bend envelopes"].postln;
+    };
+}, 30);  // Note 30 for keyboard mode toggle
+
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        MELODY UTILITY FUNCTIONS                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
