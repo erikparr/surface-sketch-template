@@ -15,40 +15,42 @@
 // Track last button state to implement toggle logic
 ~lastButtonState = Dictionary.new;
 
-// Toggle Melody Rest mode (Note 21)
+// Toggle Melody Rest mode (Mute 1 - Note 1)
 ~toggleMelodyRest.free;
 ~toggleMelodyRest = MIDIdef.noteOn(\toggleMelodyRest, { |veloc, note, chan, src|
-    if (note == 21 && veloc > 0) {
+    if (note == 1 && veloc > 0) {
         // Toggle the melody rest mode on every note-on
         ~modes.melodyRestMode = ~modes.melodyRestMode.not;
-        ["MIDI Note 21: Melody Rest toggled to",
+        ["MIDI Mute 1: Melody Rest toggled to",
             if(~modes.melodyRestMode, "ON", "OFF"),
             "- Will take effect on next loop cycle"].postln;
     };
-}, 21);  // Note 21 for melody rest toggle
+}, 1);  // Mute 1 button
 
-// Toggle Fermata mode (Note 24)
+// Toggle Fermata mode (Mute 2 - Note 4)
 ~toggleFermata.free;
 ~toggleFermata = MIDIdef.noteOn(\toggleFermata, { |veloc, note, chan, src|
-    if (note == 24 && veloc > 0) {
+    if (note == 4 && veloc > 0) {
         // Toggle the fermata mode on every note-on
         ~modes.fermata = ~modes.fermata.not;
+        ["MIDI Mute 2: Fermata toggled to",
+            if(~modes.fermata, "ON", "OFF")].postln;
     };
-}, 24);  // Note 24 for fermata toggle
+}, 4);  // Mute 2 button
 
-// Add pause notes toggle control (Note 25)
+// Toggle Pause Notes (Mute 3 - Note 7)
 ~togglePauseNotes.free;
 ~togglePauseNotes = MIDIdef.noteOn(\togglePauseNotes, { |veloc, note, chan, src|
-    if (note == 25 && veloc > 0) {
+    if (note == 7 && veloc > 0) {
         // Toggle the pause notes mode on every note-on
         ~modes.pauseNotesMode = ~modes.pauseNotesMode.not;
-        ["MIDI Note 25: Pause Notes toggled to",
+        ["MIDI Mute 3: Pause Notes toggled to",
             if(~modes.pauseNotesMode, "ON", "OFF"),
             "- Will take effect on next loop cycle"].postln;
     };
-}, 25);  // Note 25 for the button
+}, 7);  // Mute 3 button
 
-// Add next melody control (Note 27) - repurposed from cycle control
+// Next melody control (Solo - Note 27)
 ~nextMelody.free;
 ~nextMelody = MIDIdef.noteOn(\nextMelody, { |veloc, note, chan, src|
     if (note == 27 && veloc > 0) {
@@ -58,17 +60,17 @@
             // Fallback to original behavior if dual layer system not loaded
             if (~currentSequence.notNil && ~currentSequence.size > 0) {
                 ~currentLoopIndex = (~currentLoopIndex + 1) % ~currentSequence.size;
-                "MIDI Note 27: Next melody - Index: %, Melody: %".format(
+                "MIDI Solo: Next melody - Index: %, Melody: %".format(
                     ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
                 ).postln;
             } {
-                "MIDI Note 27: No melody sequence available".postln;
+                "MIDI Solo: No melody sequence available".postln;
             };
         };
     };
-}, 27);  // Note 27 for next melody
+}, 27);  // Solo button
 
-// Add previous melody control (Note 22) - repurposed from cycle control  
+// Previous melody control (Mute 8 - Note 22)
 ~prevMelody.free;
 ~prevMelody = MIDIdef.noteOn(\prevMelody, { |veloc, note, chan, src|
     if (note == 22 && veloc > 0) {
@@ -78,80 +80,80 @@
             // Fallback to original behavior if dual layer system not loaded
             if (~currentSequence.notNil && ~currentSequence.size > 0) {
                 ~currentLoopIndex = (~currentLoopIndex - 1).wrap(0, ~currentSequence.size - 1);
-                "MIDI Note 22: Previous melody - Index: %, Melody: %".format(
+                "MIDI Mute 8: Previous melody - Index: %, Melody: %".format(
                     ~currentLoopIndex, ~currentSequence[~currentLoopIndex]
                 ).postln;
             } {
-                "MIDI Note 22: No melody sequence available".postln;
+                "MIDI Mute 8: No melody sequence available".postln;
             };
         };
     };
-}, 22);  // Note 22 for previous melody
+}, 22);  // Mute 8 button
 
-// Toggle Chord Progression mode (Note 23)
+// Toggle Chord Progression mode (Mute 4 - Note 10)
 ~toggleChordMode.free;
 ~toggleChordMode = MIDIdef.noteOn(\toggleChordMode, { |veloc, note, chan, src|
-    if (note == 23 && veloc > 0) {
+    if (note == 10 && veloc > 0) {
         // Toggle chord progression mode on every note-on
         ~modes.chordProgression = ~modes.chordProgression.not;
-        ["MIDI Note 23: Chord Progression mode toggled to",
+        ["MIDI Mute 4: Chord Progression mode toggled to",
             if(~modes.chordProgression, "ON", "OFF")].postln;
         
         if(~modes.chordProgression) {
             ~showChordStatus.();
         };
     };
-}, 23);  // Note 23 for chord mode toggle
+}, 10);  // Mute 4 button
 
-// Next chord control (Note 26)
+// Next chord control (Bank Right - Note 26)
 ~nextChordButton.free;
 ~nextChordButton = MIDIdef.noteOn(\nextChordButton, { |veloc, note, chan, src|
     if (note == 26 && veloc > 0) {
         if (~modes.chordProgression) {
             ~nextChord.();
         } {
-            "MIDI Note 26: Chord mode is OFF - enable it first with Note 23".postln;
+            "MIDI Bank Right: Chord mode is OFF - enable it first with Mute 4".postln;
         };
     };
-}, 26);  // Note 26 for next chord
+}, 26);  // Bank Right button
 
-// Previous chord control (Note 28)
+// Previous chord control (Bank Left - Note 25)
 ~prevChordButton.free;
 ~prevChordButton = MIDIdef.noteOn(\prevChordButton, { |veloc, note, chan, src|
-    if (note == 28 && veloc > 0) {
+    if (note == 25 && veloc > 0) {
         if (~modes.chordProgression) {
             ~previousChord.();
         } {
-            "MIDI Note 28: Chord mode is OFF - enable it first with Note 23".postln;
+            "MIDI Bank Left: Chord mode is OFF - enable it first with Mute 4".postln;
         };
     };
-}, 28);  // Note 28 for previous chord
+}, 25);  // Bank Left button
 
-// Toggle Sustain mode (Note 29)
+// Toggle Sustain mode (Mute 5 - Note 13)
 ~toggleSustainMode.free;
 ~toggleSustainMode = MIDIdef.noteOn(\toggleSustainMode, { |veloc, note, chan, src|
-    if (note == 29 && veloc > 0) {
+    if (note == 13 && veloc > 0) {
         // Toggle sustain mode on every note-on
         ~modes.sustainMode = ~modes.sustainMode.not;
-        ["MIDI Note 29: Sustain mode toggled to",
+        ["MIDI Mute 5: Sustain mode toggled to",
             if(~modes.sustainMode, "ON (notes will not auto-release)", "OFF (normal auto-release)")].postln;
     };
-}, 29);  // Note 29 for sustain mode toggle
+}, 13);  // Mute 5 button
 
-// Toggle Keyboard mode (Note 30)
+// Toggle Keyboard mode (Rec Arm 1 - Note 3)
 ~toggleKeyboardModeButton.free;
 ~toggleKeyboardModeButton = MIDIdef.noteOn(\toggleKeyboardModeButton, { |veloc, note, chan, src|
-    if (note == 30 && veloc > 0) {
+    if (note == 3 && veloc > 0) {
         if(~modes.keyboardMode) {
-            ~keyboardMode.disable();
+            ~disableKeyboardMode.();
         } {
-            ~keyboardMode.enable();
+            ~enableKeyboardMode.();
         };
-        ["MIDI Note 30: Keyboard mode toggled to", 
+        ["MIDI Rec Arm 1: Keyboard mode toggled to", 
             if(~modes.keyboardMode, "ON", "OFF"),
             "- When ON, keyboard triggers ProcMod with bend envelopes"].postln;
     };
-}, 30);  // Note 30 for keyboard mode toggle
+}, 3);  // Rec Arm 1 button
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        MELODY UTILITY FUNCTIONS                            │

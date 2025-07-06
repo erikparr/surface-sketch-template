@@ -70,13 +70,13 @@ if (~sketchGUIWindow.isNil) {
                             {
                                 if (cb.value) {
                                     if(~enableKeyboardMode.notNil) {
-                                        ~enableKeyboardMode.value;
+                                        ~enableKeyboardMode.();
                                     } {
                                         "Keyboard mode not initialized".error;
                                     };
                                 } {
                                     if(~disableKeyboardMode.notNil) {
-                                        ~disableKeyboardMode.value;
+                                        ~disableKeyboardMode.();
                                     };
                                 };
                             }.defer(0.01);  // Defer to avoid GUI thread issues
@@ -91,6 +91,21 @@ if (~sketchGUIWindow.isNil) {
             };
             // Store reference to update chord checkbox later
             ~modeCheckboxes = modeCheckboxes;
+        };
+        
+        // Keyboard Mode Duration Display
+        if (~modes[\keyboardMode]) {
+            layout.add(StaticText()
+                .string_("Keyboard Mode Settings:")
+                .font_(Font.default.size_(10).bold_(true)));
+            
+            layout.add(StaticText()
+                .string_("Row 3, K4: ProcMod Duration (1-30s)")
+                .font_(Font.default.size_(9)));
+            
+            layout.add(StaticText()
+                .string_("Row 3, K5: Envelope Loop Ratio (10-100%)")
+                .font_(Font.default.size_(9)));
         };
         
         // Bend Envelope section

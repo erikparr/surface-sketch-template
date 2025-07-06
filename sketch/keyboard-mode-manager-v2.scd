@@ -24,7 +24,8 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
     enabled: false,
     currentProcMod: nil,
     procModStartTime: nil,
-    procModDuration: 10,
+    procModDuration: 10,  // Adjustable 1-30 seconds via MIDI
+    ccEnvelopeLoopRatio: 0.5,  // Default 50% - controls envelope loop duration as ratio of ProcMod
     activeNotes: Dictionary.new,
     keyboardMIDIFuncs: nil,
     ccEnvelopeSynth: nil
@@ -98,6 +99,12 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
 ~handleKeyboardNoteOn = { |pitch, velocity|
     var targetVSTs, vstIndex, bendSynth;
     
+    // Ignore control notes (MIDI notes 27 and below are reserved for buttons)
+    if(pitch <= 27) {
+        "Keyboard Mode: Ignoring control note %".format(pitch).postln;
+        ^nil;
+    };
+    
     "Keyboard Mode: handleKeyboardNoteOn called".postln;
     "Keyboard Mode: Current state - procMod: %, startTime: %".format(
         ~keyboardModeState.currentProcMod, 
@@ -146,7 +153,8 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
         "Keyboard Mode: Sending to all VSTs".postln;
     };
     
-    // Create per-note bend envelope
+    
+    // Create per-note bend envelope (will use remaining ProcMod time)
     bendSynth = ~createKeyboardBendEnvelope.(pitch, vstIndex);
     
     // Store note data
@@ -154,7 +162,8 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
         vstIndex: vstIndex,
         bendSynth: bendSynth,
         startTime: Process.elapsedTime,
-        velocity: velocity
+        velocity: velocity,
+        targetVSTs: targetVSTs  // Store for release
     );
     
     // Send note to VST(s)
@@ -205,6 +214,23 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
 
 // Create new ProcMod
 ~createKeyboardProcMod = {
+    // Read ProcMod duration from MIDI controller if available
+    if(~midiController.notNil) {
+        // Read from Row 3, Knob 4 (CC 21) - map to 1-30 seconds
+        var knobValue = ~midiController.getKnobRow3(4).linlin(0, 127, 0, 1);
+        ~keyboardModeState.procModDuration = knobValue.linlin(0, 1, 1, 30);
+        "Keyboard Mode: ProcMod duration set to % seconds".format(
+            ~keyboardModeState.procModDuration.round(0.1)
+        ).postln;
+        
+        // Read from Row 3, Knob 5 (CC 50) - map to 10-100% loop ratio
+        knobValue = ~midiController.getKnobRow3(5).linlin(0, 127, 0, 1);
+        ~keyboardModeState.ccEnvelopeLoopRatio = knobValue.linlin(0, 1, 0.1, 1.0);
+        "Keyboard Mode: CC envelope loop ratio set to %% of ProcMod duration".format(
+            (~keyboardModeState.ccEnvelopeLoopRatio * 100).round(0.1)
+        ).postln;
+    };
+    
     "Keyboard Mode: Creating new ProcMod...".postln;
     
     // Clean up previous
@@ -212,31 +238,44 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
         ~keyboardModeState.currentProcMod.release;
     };
     
-    // Create new ProcMod
+    // Create new ProcMod with dynamic duration
     ~keyboardModeState.currentProcMod = ProcMod.play(
-        env: Env([0, 1, 1, 0], [0.01, 9.98, 0.01]),
+        env: Env([0, 1, 1, 0], 
+            [0.01, ~keyboardModeState.procModDuration - 0.02, 0.01]),
         amp: 1,
         id: "keyboard_" ++ Date.getDate.stamp,
         function: { |group, envbus, server, procmod|
             "Keyboard Mode: ProcMod function executing...".postln;
             
-            // Simple CC envelope
+            // Looping CC envelope
             if(~ccControl.enabled) {
                 // Try to use existing synth def if available
-                if(SynthDescLib.global[\ccEnvelope].notNil) {
-                    ~keyboardModeState.ccEnvelopeSynth = Synth(\ccEnvelope, [
+                if(SynthDescLib.global[\ccEnvelopeLoop].notNil) {
+                    var loopDuration = ~keyboardModeState.procModDuration * ~keyboardModeState.ccEnvelopeLoopRatio;
+                    var attackTime = loopDuration * 0.5;  // 50% of loop for attack
+                    var releaseTime = loopDuration * 0.5;  // 50% of loop for release
+                    
+                    "Keyboard Mode: Creating looping CC envelope - duration: %s (% loops in %s ProcMod)".format(
+                        loopDuration.round(0.01),
+                        (~keyboardModeState.procModDuration / loopDuration).round(0.1),
+                        ~keyboardModeState.procModDuration.round(0.1)
+                    ).postln;
+                    
+                    ~keyboardModeState.ccEnvelopeSynth = Synth(\ccEnvelopeLoop, [
                         \start, ~ccControl.expressionMin,
                         \peak, ~ccControl.expressionMax,
                         \end, ~ccControl.expressionMin,
-                        \attackTime, ~keyboardModeState.procModDuration * 0.5,
-                        \releaseTime, ~keyboardModeState.procModDuration * 0.5,
+                        \loopDuration, loopDuration,
+                        \delayTime, 0,  // No delay
+                        \attackTime, attackTime,
+                        \releaseTime, releaseTime,
                         \chanIndex, 0,
                         \ccNum, ~ccControl.expressionCC,
                         \attackCurve, \sin,
                         \releaseCurve, \sin
                     ], group);
                 } {
-                    "Keyboard Mode: WARNING - ccEnvelope SynthDef not found, CC envelope disabled".warn;
+                    "Keyboard Mode: WARNING - ccEnvelopeLoop SynthDef not found, CC envelope disabled".warn;
                 };
             };
         },
@@ -254,43 +293,112 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
 
 // Create bend envelope
 ~createKeyboardBendEnvelope = { |pitch, vstIndex|
-    var bendSynth, remainingDuration;
-    var bendAmount = ~bendEnvelopeParams.bendAmount ? 2;
+    var bendSynth, bendAmount, bendDuration, knobValue;
     
-    // Check if procModStartTime exists
-    if(~keyboardModeState.procModStartTime.notNil) {
-        remainingDuration = ~keyboardModeState.procModDuration - 
-            (Process.elapsedTime - ~keyboardModeState.procModStartTime);
-        remainingDuration = remainingDuration.max(0.1);
+    // Read bend amount directly from MIDI controller if available
+    if(~midiController.notNil) {
+        // Read from Row 3, Knob 1 (CC 18) - returns 0-127
+        knobValue = ~midiController.getKnobRow3(1).linlin(0, 127, 0, 1);  // Normalize to 0-1
+        // Map: 0 = -1 octave, 0.5 = no bend, 1 = +1 octave
+        bendAmount = (knobValue - 0.5) * 2;  // Convert to -1 to +1 range
+        "Keyboard Mode: MIDI knob: %, Bend amount: % octaves".format(
+            knobValue.round(0.01), bendAmount.round(0.01)
+        ).postln;
     } {
-        // Default to full duration if no start time yet
-        remainingDuration = ~keyboardModeState.procModDuration;
+        // Fall back to stored parameter or default (0 = no bend)
+        bendAmount = 0;
     };
+    
+    // Use loop ratio to calculate bend envelope loop duration
+    bendDuration = ~keyboardModeState.procModDuration * ~keyboardModeState.ccEnvelopeLoopRatio;
+    "Keyboard Mode: Bend envelope loop duration: % seconds (% loops in %s ProcMod)".format(
+        bendDuration.round(0.01),
+        (~keyboardModeState.procModDuration / bendDuration).round(0.1),
+        ~keyboardModeState.procModDuration.round(0.1)
+    ).postln;
     
     if(~bendEnvelopeEnabled) {
         if(SynthDescLib.global[\BendEnvelopeLoop].notNil) {
             var bendCenter = 8192;  // MIDI pitch bend center (no bend)
-            // bendAmount is in semitones, convert to pitch bend units
-            // 8192 units = 12 semitones (1 octave), so 682.67 units per semitone
-            var bendRange = (bendAmount * 8192 / 12).round.asInteger;
+            // bendAmount is now -1 to +1, multiply by 8192 for full octave range
+            var bendRange = (bendAmount * 8192).round.asInteger;  
+            var peakTimeRatio, returnTimeRatio, peakValue;
+            
+            // Read peak time ratio from Row 3, Knob 2 if available
+            if(~midiController.notNil) {
+                peakTimeRatio = ~midiController.getKnobRow3(2).linlin(0, 1, 0.1, 0.9);
+                returnTimeRatio = 1.0 - peakTimeRatio;
+                "Keyboard Mode: Peak time ratio: %, Return time ratio: %".format(
+                    peakTimeRatio.round(0.01), returnTimeRatio.round(0.01)
+                ).postln;
+            } {
+                peakTimeRatio = 0.5;
+                returnTimeRatio = 0.5;
+            };
+            
+            peakValue = bendCenter + bendRange;
+            "Keyboard Mode: Bend calc - center: %, range: %, peak before clip: %".format(
+                bendCenter, bendRange, peakValue
+            ).postln;
+            
+            peakValue = peakValue.clip(0, 16383);
+            "Keyboard Mode: Peak after clip: %".format(peakValue).postln;
             
             bendSynth = Synth(\BendEnvelopeLoop, [
                 \start, bendCenter,
-                \peak, (bendCenter + bendRange).clip(0, 16383),  // Ensure we stay in valid MIDI range
+                \peak, peakValue,
                 \end, bendCenter,
-                \loopDuration, remainingDuration,
-                \peakTime, 0.5 * remainingDuration,
-                \returnTime, 0.5 * remainingDuration,
+                \loopDuration, bendDuration,
+                \peakTime, peakTimeRatio * bendDuration,
+                \returnTime, returnTimeRatio * bendDuration,
                 \chanIndex, vstIndex ? 0
             ]);
             
-            "Keyboard Mode: Bend envelope created for pitch % (duration: %s)".format(pitch, remainingDuration.round(0.01)).postln;
+            "Keyboard Mode: Bend envelope created for pitch % (duration: %s)".format(pitch, bendDuration.round(0.01)).postln;
         } {
             "Keyboard Mode: WARNING - BendEnvelopeLoop SynthDef not found, bend envelope disabled".warn;
         };
     };
     
     bendSynth;
+};
+
+// Release individual note
+~releaseKeyboardNote = { |pitch|
+    var noteData, targetVSTs;
+    
+    noteData = ~keyboardModeState.activeNotes[pitch];
+    
+    if(noteData.notNil) {
+        // Free bend envelope
+        if(noteData.bendSynth.notNil) {
+            noteData.bendSynth.free;
+        };
+        
+        
+        // Send note off to VST(s)
+        targetVSTs = noteData.targetVSTs;
+        if(targetVSTs.notNil) {
+            if(noteData.vstIndex.isNil) {
+                targetVSTs.do { |vst, key|
+                    if(vst.notNil && vst.respondsTo(\midi)) {
+                        vst.midi.noteOff(0, pitch, 0);
+                    };
+                };
+            } {
+                var vstKeys = targetVSTs.keys.asArray.sort;
+                var vstKey = vstKeys[noteData.vstIndex];
+                var vst = targetVSTs[vstKey];
+                if(vst.notNil && vst.respondsTo(\midi)) {
+                    vst.midi.noteOff(0, pitch, 0);
+                };
+            };
+        };
+        
+        // Remove from active notes
+        ~keyboardModeState.activeNotes.removeAt(pitch);
+        "Keyboard Mode: Released note %".format(pitch).postln;
+    };
 };
 
 // Release all notes
@@ -301,30 +409,10 @@ if(SynthDescLib.global[\procmodenv_5216].isNil) {
         Dictionary.new 
     };
     
-    ~keyboardModeState.activeNotes.keysValuesDo { |pitch, noteData|
-        // Free bend envelope
-        if(noteData.bendSynth.notNil) {
-            noteData.bendSynth.free;
-        };
-        
-        // Send note off
-        if(noteData.vstIndex.isNil) {
-            targetVSTs.do { |vst, key|
-                if(vst.notNil && vst.respondsTo(\midi)) {
-                    vst.midi.noteOff(0, pitch, 0);
-                };
-            };
-        } {
-            var vstKeys = targetVSTs.keys.asArray.sort;
-            var vstKey = vstKeys[noteData.vstIndex];
-            var vst = targetVSTs[vstKey];
-            if(vst.notNil && vst.respondsTo(\midi)) {
-                vst.midi.noteOff(0, pitch, 0);
-            };
-        };
+    // Release each note individually
+    ~keyboardModeState.activeNotes.keys.do { |pitch|
+        ~releaseKeyboardNote.(pitch);
     };
-    
-    ~keyboardModeState.activeNotes.clear;
     "Keyboard Mode: Released all notes".postln;
 };
 
