@@ -255,7 +255,7 @@
     "Initializing MIDI Control Mapping integration...".postln;
     
     // Set up the parameter callback
-    ~updateGroupParameterCallback.();
+    // ~updateGroupParameterCallback.();
     
     // Try to refresh MIDI setup integration if available
     if(~refreshMIDIControlMappingIntegration.notNil) {
