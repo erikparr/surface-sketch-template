@@ -41,7 +41,9 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
         // ~vstManager.addVST("Euphonium 02", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
 
         // Create a group for all VSTs
-        ~vstManager.createGroup('Bass Tuba', ["Bass Tuba 01", "Bass Tuba 02", "Bass Tuba 03"]);
+        ~vstManager.createGroup('Layer1', ["Bass Tuba 01"]);
+        ~vstManager.createGroup('Layer2', ["Bass Tuba 02"]);
+        ~vstManager.createGroup('Layer3', ["Bass Tuba 03"]);
         // ~vstManager.createGroup('Euphonium', ["Euphonium 01", "Euphonium 02"]);
 
         // Explicitly schedule a group UI refresh
