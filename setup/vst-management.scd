@@ -430,6 +430,8 @@
             ~vstManager.addToGroup(groupName, instanceName);
             statusText.string = "Added % to group: %".format(instanceName, groupName);
             ~refreshVSTManagerGroupsUI.();
+            // Also refresh layers GUI if available
+            if (~refreshLayerVSTGroups.notNil) { ~refreshLayerVSTGroups.() };
         } {
             statusText.string = "Please select both an instance and a group";
         };
@@ -455,6 +457,8 @@
             ~vstManager.createGroup(newGroupName, groupMembers);
             newGroupNameField.string = ""; // Clear the text field
             ~refreshVSTManagerGroupsUI.();
+            // Also refresh layers GUI if available
+            if (~refreshLayerVSTGroups.notNil) { ~refreshLayerVSTGroups.() };
         } {
             statusText.string = "Please enter a group name";
         };

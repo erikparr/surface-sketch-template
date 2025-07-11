@@ -1,1 +1,0 @@
-now lets dig in to how everything works. start with the setup files: @_setup-loader.scd @synths-setup.scd @vstplugin-setup.scd @osc-setup.scd @midi-setup.scd . and important classes @VSTPlugin.schelp @VSTPluginController.schelp @VSTManager.sc @MIDIController.sc . then go through @surfacing.scd and understand how it works. 

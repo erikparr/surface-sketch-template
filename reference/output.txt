@@ -1,121 +1,705 @@
--> a Routine
-=== TEST 1: Working Approach (Manual Synth Creation) ===
-Created synth: Synth('vstHost' : 1158)
-VSTManager: VST loaded: Test1_Manual
-Test1 callback executed - controller: a VSTPluginController
-Test1 controller isOpen: true
-VSTManager: Updated  127  parameters for  Test1_Manual
-VST 'Test1_Manual' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test1_Manual, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-[PASS] Test 'Test1_WorkingApproach': SUCCESS - VST loaded successfully via manual synth creation
-=== TEST 2: GUI Approach (VSTManager Creates Synth) ===
-Created synth: Synth('vstHost' : 1159)
-VSTManager: VST loaded: Test2_GUI
-Test2 callback executed - controller: a VSTPluginController
-Test2 controller isOpen: true
-VSTManager: Updated  127  parameters for  Test2_GUI
-VST 'Test2_GUI' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test2_GUI, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (11 -...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-[PASS] Test 'Test2_GUIApproach': SUCCESS - VST loaded successfully via GUI approach
-=== TEST 3: Editor Timing Test ===
-VSTManager: VST loaded: Test3_EditorTiming
-Test3 callback - attempting to open editor...
-Test3: Controller is open, opening editor immediately
-VSTManager: Updated  127  parameters for  Test3_EditorTiming
-VST 'Test3_EditorTiming' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test3_EditorTiming, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0....etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-[PASS] Test 'Test3_EditorTiming': SUCCESS - Editor timing test completed
-=== TEST 4: Multiple VST Loading Test ===
-VSTManager: VST loaded: Test4_Multi2
-Test4 VST 2 callback executed
-VSTManager: VST loaded: Test4_Multi1
-Test4 VST 1 callback executed
-VSTManager: VST loaded: Test4_Multi0
-Test4 VST 0 callback executed
-VSTManager: Updated  127  parameters for  Test4_Multi2
-VSTManager: Updated  127  parameters for  Test4_Multi1
-VSTManager: Updated  127  parameters for  Test4_Multi0
-VST 'Test4_Multi0' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test4_Multi0, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-VST 'Test4_Multi1' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test4_Multi1, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-VST 'Test4_Multi2' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test4_Multi2, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0.5), (1...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-[PASS] Test 'Test4_MultipleVSTs': SUCCESS - All 3 VSTs loaded successfully
-=== TEST 5: Callback Debugging Test ===
-VSTManager: VST loaded: Test5_CallbackDebug
-=== CALLBACK DEBUG ===
-Callback executed at: 0.040864542000008 seconds
-Controller: a VSTPluginController
-Controller class: VSTPluginController
-Controller isOpen: true
-Controller info: VSTPluginDesc( SWAM Bass Tuba )
-Controller synth: Synth('vstHost' : 1164)
-======================
-VSTManager: Updated  127  parameters for  Test5_CallbackDebug
-VST 'Test5_CallbackDebug' state:
-  - Instance exists: true
-  - Controller exists: true
-  - Controller isOpen: true
-  - Synth: ('name': Test5_CallbackDebug, 'controller': a VSTPluginController, 'path': /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3, 'params': Dictionary[(63 -> 0.0), (5 -> 0.0), (48 -> 0.5), (104 -> 0.24238094687462), (35 -> 0.40000000596046), 
-  (124 -> 1.0), (86 -> 0.38461545109749), (75 -> 0.0), (40 -> 0.51091068983078), (105 -> 0.375), 
-  (64 -> 0.25), (66 -> 0.25), (78 -> 0.0), (79 -> 1.0), (60 -> 0.25), 
-  (114 -> 0.0), (28 -> 0.5), (4 -> 0.5), (71 -> 0.0), (81 -> 0.0), 
-  (110 -> 0.0), (14 -> 1.0), (47 -> 0...etc...
-  - Path: /Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
-[PASS] Test 'Test5_CallbackDebugging': SUCCESS - Callback executed: true, Load success: true, Callback delay: 0.040864542000008s
-=== TEST SUMMARY ===
-[PASS] Test1_WorkingApproach: VST loaded successfully via manual synth creation
-[PASS] Test4_MultipleVSTs: All 3 VSTs loaded successfully
-[PASS] Test2_GUIApproach: VST loaded successfully via GUI approach
-[PASS] Test5_CallbackDebugging: Callback executed: true, Load success: true, Callback delay: 0.040864542000008s
-[PASS] Test3_EditorTiming: Editor timing test completed
+compiling class library...
+	Found 865 primitives.
+	Compiling directory '/Applications/SuperCollider.app/Contents/Resources/SCClassLibrary'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/Extensions'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Tendency'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/TabbedView2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/XML'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Ctk'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JoshMisc'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JSONlib'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Singleton'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/FreeAfter'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Connection'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Collapse'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/WindowViewRecall'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/UnitTest2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Deferred'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Log'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/wslib'
+	numentries = 1723697 / 37441320 = 0.046
+	9222 method selectors, 4060 classes
+	method table size 33210136 bytes, big table size 299530560
+	Number of Symbols 22446
+	Byte Code Size 891739
+	compiled 854 files in 0.89 seconds
+
+Info: 2 methods are currently overwritten by extensions. To see which, execute:
+MethodOverride.printAll
+
+compile done
+localhost : setting clientID to 0.
+internal : setting clientID to 0.
+Class tree inited in 0.01 seconds
+Ctk init class runs
+
+
+*** Welcome to SuperCollider 3.14.0-dev. *** For help press Cmd-D.
+Booting server 'localhost' on address 127.0.0.1:57110.
+VSTPlugin 0.6
+SCDoc: Indexing help-files...
+exception in GraphDef_Load: name too long (> 31 chars): ��A
+while reading file: '/Users/erikparr/Library/Application Support/SuperCollider/synthdefs/BendEnvelopeLoop.scsyndef'Number of Devices: 3
+   0 : "SB242Y"
+   1 : "Mac Studio Speakers"
+   2 : "Babyface Pro (70798404)"
+
+"Babyface Pro (70798404)" Input Device
+   Streams: 1
+      0  channels 14
+
+"Babyface Pro (70798404)" Output Device
+   Streams: 1
+      0  channels 14
+
+SC_AudioDriver: sample rate = 48000.000000, driver's block size = 512
+SuperCollider 3 server ready.
+SCDoc: Indexed 2285 documents in 0.82 seconds
+Requested notification messages from server 'localhost'
+localhost: server process's maxLogins (1) matches with my options.
+localhost: keeping clientID (0) as confirmed by server process.
+Shared memory server interface initialized
+MIDI Sources:
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+MIDI Destinations:
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+[MIDIEndPoint("USB MIDI Device", "USB MIDI Device"), MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)"), MIDIEndPoint("Keystation 61 MK3", "(Transport)"), MIDIEndPoint("MIDI Mix", "MIDI Mix")]
+Loading setup...
+Loading setup file: synths-setup.scd
+Loading Dependent Layer System...
+Initializing dependent layer system...
+Dependent layers initialized with default VST groups
+Dependent layers playback system loaded
+Dependent layers control system loaded
+Dependent layers GUI loaded
+
+=== Dependent Layer System Loaded Successfully ===
+Available functions:
+  ~createLayersGUI.()     - Open the control interface
+  ~startLayers.()         - Start all configured layers
+  ~stopLayers.()          - Stop all layers
+  ~printLayerStatus.()    - Show current configuration
+
+Quick start:
+  ~setLayerMelody.(\layer1, \yourMelody)
+  ~setLayerMelody.(\layer2, \anotherMelody)
+  ~startLayers.()
+===============================================
+
+=== Layer GUI Debug ===
+~vstManager available: false
 ===================
+VSTManager not available
+Loading setup file: vstplugin-setup.scd
+Searching for VST plugins...
+VST plugin search complete.
+VSTManager: Initializing... Server: %
+VSTManager: Performing initial VST search...
+WARNING: keyword arg 'completion' not found in call to Meta_VSTPlugin:search
+VSTManager: Initialization complete.
+VSTManager initialized.
+VSTManager is ready for use.
+Starting VST instance loading...
+Waiting for VST search to complete (5 seconds)...
+WARNING: already searching!
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST'...
+read cache file /Users/erikparr/Library/Application Support/vstplugin/sc/cache_amd64.ini
+found 0 plugins
+searching in '/Library/Audio/Plug-Ins/VST'...
+/Library/Audio/Plug-Ins/VST/Analog Lab V.vst
+/Library/Audio/Plug-Ins/VST/ARP 2600 V3.vst
+/Library/Audio/Plug-Ins/VST/Augmented STRINGS.vst
+/Library/Audio/Plug-Ins/VST/Augmented VOICES.vst
+/Library/Audio/Plug-Ins/VST/B-3 V2.vst
+/Library/Audio/Plug-Ins/VST/Buchla Easel V.vst
+/Library/Audio/Plug-Ins/VST/Clavinet V.vst
+/Library/Audio/Plug-Ins/VST/CMI V.vst
+/Library/Audio/Plug-Ins/VST/CS-80 V4.vst
+/Library/Audio/Plug-Ins/VST/CZ V.vst
+/Library/Audio/Plug-Ins/VST/DX7 V.vst
+/Library/Audio/Plug-Ins/VST/Emulator II V.vst
+/Library/Audio/Plug-Ins/VST/Farfisa V.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp.vst
+/Library/Audio/Plug-Ins/VST/iZotope Trash 2.vst
+/Library/Audio/Plug-Ins/VST/Jun-6 V.vst
+/Library/Audio/Plug-Ins/VST/Jup-8 V4.vst
+/Library/Audio/Plug-Ins/VST/Kontakt.vst
+/Library/Audio/Plug-Ins/VST/KORG MS-20 V.vst
+/Library/Audio/Plug-Ins/VST/Matrix-12 V2.vst
+/Library/Audio/Plug-Ins/VST/Mellotron V.vst
+/Library/Audio/Plug-Ins/VST/Mini V3.vst
+/Library/Audio/Plug-Ins/VST/Modular V3.vst
+/Library/Audio/Plug-Ins/VST/Omnisphere.vst
+/Library/Audio/Plug-Ins/VST/OP-Xa V.vst
+/Library/Audio/Plug-Ins/VST/Piano V3.vst
+/Library/Audio/Plug-Ins/VST/Pigments.vst
+/Library/Audio/Plug-Ins/VST/Prophet-5 V.vst
+/Library/Audio/Plug-Ins/VST/Prophet-VS V.vst
+/Library/Audio/Plug-Ins/VST/SEM V2.vst
+/Library/Audio/Plug-Ins/VST/Solina V2.vst
+/Library/Audio/Plug-Ins/VST/SQ80 V.vst
+/Library/Audio/Plug-Ins/VST/Stage-73 V2.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Baritone Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Tuba.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Cello 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Contrabassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM English Horn 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Euphonium.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn Bb.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn F.vst
+/Library/Audio/Plug-Ins/VST/SWAM Oboe 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Soprano Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet C.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tuba Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Viola 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Violin 3.vst
+/Library/Audio/Plug-Ins/VST/Synclavier V.vst
+/Library/Audio/Plug-Ins/VST/Synthi V.vst
+/Library/Audio/Plug-Ins/VST/ValhallaFreqEcho.vst
+/Library/Audio/Plug-Ins/VST/ValhallaShimmer_x64.vst
+/Library/Audio/Plug-Ins/VST/Vocoder V.vst
+/Library/Audio/Plug-Ins/VST/VOX Continental V2.vst
+/Library/Audio/Plug-Ins/VST/Wurli V2.vst
+found 80 plugins
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST3'...
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/adelay.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again-sampleaccurate.vst3
+	[1/2] AGain Sample Accurate
+	[2/2] Advanced Tutorial
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again.vst3
+	[1/2] AGain VST3
+	[2/2] AGain SideChain VST3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/againsimple.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/BasicVST.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/channelcontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/dataexchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/hostchecker.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/legacymidiccout.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/mda-vst3.vst3
+	[1/34] mda RezFilter
+	[2/34] mda Thru-Zero Flanger
+	[3/34] mda Ambience
+	[4/34] mda Delay
+	[5/34] mda EPiano
+	[6/34] mda DubDelay
+	[7/34] mda Sub-Bass Synthesizer
+	[8/34] mda Dither
+	[9/34] mda Detune
+	[10/34] mda RePsycho!
+	[11/34] mda Round Panner
+	[12/34] mda Combo
+	[13/34] mda DeEsser
+	[14/34] mda Tracker
+	[15/34] mda Image
+	[16/34] mda TalkBox
+	[17/34] mda Leslie
+	[18/34] mda Loudness
+	[19/34] mda MultiBand
+	[20/34] mda BeatBox
+	[21/34] mda RingMod
+	[22/34] mda TestTone
+	[23/34] mda Degrade
+	[24/34] mda Shepard
+	[25/34] mda Stereo Simulator
+	[26/34] mda Dynamics
+	[27/34] mda Splitter
+	[28/34] mda Limiter
+	[29/34] mda Piano
+	[30/34] mda Overdrive
+	[31/34] mda Bandisto
+	[32/34] mda JX10
+	[33/34] mda DX10
+	[34/34] mda SpecMeter
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/multiple-program-changes.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressionsynth.vst3
+	[1/2] Note Expression Synth
+	[2/2] Note Expression Synth With UI
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressiontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/panner.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/pitchnames.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/prefetchable.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/programchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/syncdelay.vst3
+found 54 plugins
+searching in '/Library/Audio/Plug-Ins/VST3'...
+'/Library/Audio/Plug-Ins/VST3/Analog Lab V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/ARP 2600 V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented STRINGS.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented VOICES.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/B-3 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Buchla Easel V.vst3
+'/Library/Audio/Plug-Ins/VST3/Clavinet V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CMI V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CS-80 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/CZ V.vst3
+'/Library/Audio/Plug-Ins/VST3/DX7 V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Emulator II V.vst3
+'/Library/Audio/Plug-Ins/VST3/Eventide/Physion Mk II.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Eventide/SplitEQ.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Farfisa V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Contrast.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Equalize.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM EqualizeMono.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Shift.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Warp.vst3
+/Library/Audio/Plug-Ins/VST3/iZotope Trash 2.vst3
+'/Library/Audio/Plug-Ins/VST3/Jun-6 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Jup-8 V4.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Kontakt 7.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Kontakt.vst3
+'/Library/Audio/Plug-Ins/VST3/KORG MS-20 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MagicBlur.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MagicDelay.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFilter.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFusion.vst3
+'/Library/Audio/Plug-Ins/VST3/MagicPitch.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Matrix-12 V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mellotron V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mini V3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MMM.vst3
+/Library/Audio/Plug-Ins/VST3/MMMm.vst3
+/Library/Audio/Plug-Ins/VST3/Modular V3.vst3
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 DualMonoIn VST3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 VST3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Neutone FX.vst3
+/Library/Audio/Plug-Ins/VST3/Neutone Morpho.vst3
+/Library/Audio/Plug-Ins/VST3/Omnisphere.vst3
+'/Library/Audio/Plug-Ins/VST3/OP-Xa V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Piano V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Pigments.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-5 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-VS V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/QuantumDelay.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/QuantumDistortion.vst3
+/Library/Audio/Plug-Ins/VST3/QuantumFilter.vst3
+/Library/Audio/Plug-Ins/VST3/Rift Feedback Lite.vst3
+/Library/Audio/Plug-Ins/VST3/SEM V2.vst3
+'/Library/Audio/Plug-Ins/VST3/SimpleVST.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Solina V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/SQ80 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Stage-73 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Baritone Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Cello 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Contrabassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM English Horn 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn Bb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn F.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Oboe 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Soprano Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet C.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Viola 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Violin 3.vst3
+'/Library/Audio/Plug-Ins/VST3/Synclavier V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Synthi V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/ValhallaFreqEcho.vst3
+/Library/Audio/Plug-Ins/VST3/ValhallaShimmer.vst3
+/Library/Audio/Plug-Ins/VST3/Vocoder V.vst3
+'/Library/Audio/Plug-Ins/VST3/VOX Continental V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Wurli V2.vst3' is black-listed.
+found 59 plugins
+Loading setup file: vst-management.scd
+Updating VST manager UI...
+VST Manager: Group selector refreshed.
+ERROR: Failed to read tmp file!
+Loading setup file: midi-setup.scd
+MIDI setup function defined. Call ~initMIDISetup.() when VST Manager is ready.
+Loading setup file: midi-control-mapping.scd
+Loading MIDI Control Mapping system...
+Setting up control templates...
+Control templates defined: Set[expressionControl, timingControl]
+Row mappings initialized: (1: ('template': expressionControl, 'enabled': true), 2: ('template': expressionControl, 'enabled': false), 3: ('template': timingControl, 'enabled': false))
+Group control params dictionary created
+Checking mapping data directory: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/data
+Mapping data directory exists
+Mapping data path set to: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/data/midi-control-mappings.scd
+Defining parameter management functions...
+~getGroupParams function defined
+Defining row management functions...
+Row management functions defined
+Defining MIDIController integration functions...
+Defining state persistence functions...
+State persistence functions defined
+Defining GUI creation function...
+~createMIDIControlMappingGUI function defined
+Defining status and initialization functions...
+~showMIDIControlMappingStatus function defined
+Attempting to load saved mappings...
+Attempting to load MIDI control mappings...
+Checking file path: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/data/midi-control-mappings.scd
+File object created
+MIDI Control mappings file not found at /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/data/midi-control-mappings.scd
+Load function returning: false
+Load attempt completed, continuing initialization...
+Initializing MIDI Control Mapping integration...
+MIDI setup integration not available yet
+MIDI Control Mapping integration initialized
+MIDI Control Mapping system initialized with unified MIDIController integration
+Row 1 defaults to current ~ccControl behavior
+
+Available functions:
+• ~createMIDIControlMappingGUI.() - Open the control interface
+• ~showMIDIControlMappingStatus.() - See current mappings and system status
+• ~disconnectMIDIRow.(rowNum) - Disconnect specific row programmatically
+• ~clearAllMIDIRows.() - Clear all rows
+• ~refreshMIDIControllerMappings.() - Refresh MIDIController configuration
+
+GUI Features:
+• Remove buttons - Disconnect individual rows instantly
+• Clear All button - Clear all mappings
+• Status display - Shows active mappings
+MIDI Control Mapping setup complete!
+Use ~createMIDIControlMappingGUIWhenReady.() to create GUI when MIDIController is ready
+Loading setup file: osc-setup.scd
+Loading setup file: melody-management.scd
+All setup files loaded successfully!
+Adding VST instances...
+VSTManager: Group 'Layer1' created with members: [Bass Tuba 01]
+VSTManager: Group 'Layer2' created with members: [Bass Tuba 02]
+VSTManager: Group 'Layer3' created with members: [Bass Tuba 03]
+VST instances added. Waiting for initialization to complete...
+VSTs loaded, updating UI...
+Updating all VST manager UIs...
+Updating VST manager UI...
+Calling ~initMIDISetup.() now that VST Manager is ready...
+~initMIDISetup called #1 times
+Before cleanup: 1 total MIDIFuncs
+After cleanup: 1 total MIDIFuncs
+Initializing MIDI controller with VST instances...
+Current working directory: /
+User home directory: /Users/erikparr
+Using project path: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light
+Using snapshot directory: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+Directory already exists: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+Successfully set MIDI controller to MIDIMix preset
+midiMix: Akai MIDIMix
+Setting up MIDI Control Mapping integration...
+MIDI Control Mapping system detected, enabling integration...
+Group parameter callback configured
+MIDI Control Mapping integration complete
+Calling function to create MIDI Control Mapping GUI...
+MIDIController is ready, creating MIDI Control Mapping GUI...
+VSTManager setup complete with 3 SWAM instrument instances
+VST Manager: Group selector refreshed.
+Creating MIDI Control Mapping GUI...
+Dependencies available, proceeding with GUI creation...
+MIDI Control Mapping GUI created successfully
+VST groups detected! Auto-refreshing...
+Refreshed VST group menus with 3 groups
+VSTManager: VST loaded: Bass Tuba 01
+VSTManager: VST loaded: Bass Tuba 02
+VSTManager: VST loaded: Bass Tuba 03
+VSTManager: Updated  127  parameters for  Bass Tuba 01
+VSTManager: Updated  127  parameters for  Bass Tuba 02
+VSTManager: Updated  127  parameters for  Bass Tuba 03
+Loading melody data...
+Loading melody data from: /Users/erikparr/surfacing/surfacing/layers/../setup/../data/melody-data.json
+Successfully loaded melody data
+updateMelodyList called, melody count: 64
+First melody example: ('pattern': [89, 84, 81, 77, 89], 'name': Tuba Melody II, 'key': set2, 'loopCount': 1, 
+  'active': true, 'velocityFirst': 1.5, 'velocityLast': 0.5)
+OSC keyOn responder setup for melody capture (listening on all addresses)
+Opening VST editors...
+VST editors opened.
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 03'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 02'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 01'
+Set program 'control-group-1' on 0 of 3 total VST instances
+Loading JSON melody file for layer layer1: /Users/erikparr/surfacing/surfacing/data/melody-data.json
+Added melody set2 (Tuba Melody IIs) to ~melodyDict
+Added melody set3 (Tuba Melody IIIs) to ~melodyDict
+Added melody set4 (Tuba Melody IVs) to ~melodyDict
+Added melody set5 (Tuba Melody Vs) to ~melodyDict
+Added melody set6 (Tuba Melody VIs) to ~melodyDict
+Added melody set7 (Tuba Melody VIIs) to ~melodyDict
+Added melody set8 (Tuba Melody VIIIs) to ~melodyDict
+Added melody set9 (Tuba Melody IXs) to ~melodyDict
+Added melody set2a (Tuba Melody IXs) to ~melodyDict
+Added melody set2b (Tuba Melody IXs) to ~melodyDict
+Added melody set2c (Tuba Melody IXs) to ~melodyDict
+Added melody set2d (Tuba Melody IXs) to ~melodyDict
+Added melody set3a (Tuba Melody IXs) to ~melodyDict
+Added melody set4a (Tuba Melody IXs) to ~melodyDict
+Added melody set4b (Tuba Melody IXs) to ~melodyDict
+Added melody set4c (Tuba Melody IXs) to ~melodyDict
+Added melody set4d (Tuba Melody IXs) to ~melodyDict
+Added melody set4e (Tuba Melody IXs) to ~melodyDict
+Added melody set4f (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1b (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bA (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bB (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1c (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2b (Tuba Melody IXs) to ~melodyDict
+Added melody part2a (Tuba Melody Xs) to ~melodyDict
+Added melody part2b (Tuba Melody XIs) to ~melodyDict
+Added melody part3x (Tuba Melody Xs) to ~melodyDict
+Added melody part3a (Tuba Melody Xs) to ~melodyDict
+Added melody part3b (Tuba Melody Xs) to ~melodyDict
+Added melody part3c (Tuba Melody Xs) to ~melodyDict
+Added melody part3d (Tuba Melody Xs) to ~melodyDict
+Added melody part3e (Tuba Melody Xs) to ~melodyDict
+Added melody part3f (Tuba Melody Xs) to ~melodyDict
+Added melody part3g (Tuba Melody Xs) to ~melodyDict
+Added melody part4a (Tuba Melody XIIs) to ~melodyDict
+Added melody part4b (Tuba Melody XIIs) to ~melodyDict
+Added melody part4c (Tuba Melody XIIs) to ~melodyDict
+Added melody part5a (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5b (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5c (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5d (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5e (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5f (Tuba Melody XIVs) to ~melodyDict
+Added melody part5g (Tuba Melody XIVs) to ~melodyDict
+Added melody part5h (Tuba Melody XIVs) to ~melodyDict
+Added melody loop1 (Tuba Melody XIs) to ~melodyDict
+Added melody loop1a (Tuba Melody XIs) to ~melodyDict
+Added melody loop2 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop3 (Tuba Melody XIIIs) to ~melodyDict
+Added melody loop4 (Tuba Melody XIVs) to ~melodyDict
+Added melody loop5 (Tuba Melody XVs) to ~melodyDict
+Added melody loop6 (Tuba Melody XVIs) to ~melodyDict
+Added melody loop7 (Tuba Melody XVIIs) to ~melodyDict
+Added melody loop8 (Tuba Melody XVIIIs) to ~melodyDict
+Added melody loop9 (Tuba Melody XIs) to ~melodyDict
+Added melody loop9a (Tuba Melody XIs) to ~melodyDict
+Added melody loop10 (Tuba Melody XIs) to ~melodyDict
+Added melody loop10a (Tuba Melody XIs) to ~melodyDict
+Added melody loop11 (Tuba Melody XIs) to ~melodyDict
+Added melody loop11a (Tuba Melody XIs) to ~melodyDict
+Added melody loop12 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop12a (Tuba Melody XIIs) to ~melodyDict
+Added melody set2 to ~melodyDict
+Layer layer1 melody set to set2
+Loaded 64 melodies from file. Layer layer1 set to use melody: set2
+Loading JSON melody file for layer layer2: /Users/erikparr/surfacing/surfacing/data/melody-data.json
+Added melody set2 (Tuba Melody IIs) to ~melodyDict
+Added melody set3 (Tuba Melody IIIs) to ~melodyDict
+Added melody set4 (Tuba Melody IVs) to ~melodyDict
+Added melody set5 (Tuba Melody Vs) to ~melodyDict
+Added melody set6 (Tuba Melody VIs) to ~melodyDict
+Added melody set7 (Tuba Melody VIIs) to ~melodyDict
+Added melody set8 (Tuba Melody VIIIs) to ~melodyDict
+Added melody set9 (Tuba Melody IXs) to ~melodyDict
+Added melody set2a (Tuba Melody IXs) to ~melodyDict
+Added melody set2b (Tuba Melody IXs) to ~melodyDict
+Added melody set2c (Tuba Melody IXs) to ~melodyDict
+Added melody set2d (Tuba Melody IXs) to ~melodyDict
+Added melody set3a (Tuba Melody IXs) to ~melodyDict
+Added melody set4a (Tuba Melody IXs) to ~melodyDict
+Added melody set4b (Tuba Melody IXs) to ~melodyDict
+Added melody set4c (Tuba Melody IXs) to ~melodyDict
+Added melody set4d (Tuba Melody IXs) to ~melodyDict
+Added melody set4e (Tuba Melody IXs) to ~melodyDict
+Added melody set4f (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1b (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bA (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bB (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1c (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2b (Tuba Melody IXs) to ~melodyDict
+Added melody part2a (Tuba Melody Xs) to ~melodyDict
+Added melody part2b (Tuba Melody XIs) to ~melodyDict
+Added melody part3x (Tuba Melody Xs) to ~melodyDict
+Added melody part3a (Tuba Melody Xs) to ~melodyDict
+Added melody part3b (Tuba Melody Xs) to ~melodyDict
+Added melody part3c (Tuba Melody Xs) to ~melodyDict
+Added melody part3d (Tuba Melody Xs) to ~melodyDict
+Added melody part3e (Tuba Melody Xs) to ~melodyDict
+Added melody part3f (Tuba Melody Xs) to ~melodyDict
+Added melody part3g (Tuba Melody Xs) to ~melodyDict
+Added melody part4a (Tuba Melody XIIs) to ~melodyDict
+Added melody part4b (Tuba Melody XIIs) to ~melodyDict
+Added melody part4c (Tuba Melody XIIs) to ~melodyDict
+Added melody part5a (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5b (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5c (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5d (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5e (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5f (Tuba Melody XIVs) to ~melodyDict
+Added melody part5g (Tuba Melody XIVs) to ~melodyDict
+Added melody part5h (Tuba Melody XIVs) to ~melodyDict
+Added melody loop1 (Tuba Melody XIs) to ~melodyDict
+Added melody loop1a (Tuba Melody XIs) to ~melodyDict
+Added melody loop2 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop3 (Tuba Melody XIIIs) to ~melodyDict
+Added melody loop4 (Tuba Melody XIVs) to ~melodyDict
+Added melody loop5 (Tuba Melody XVs) to ~melodyDict
+Added melody loop6 (Tuba Melody XVIs) to ~melodyDict
+Added melody loop7 (Tuba Melody XVIIs) to ~melodyDict
+Added melody loop8 (Tuba Melody XVIIIs) to ~melodyDict
+Added melody loop9 (Tuba Melody XIs) to ~melodyDict
+Added melody loop9a (Tuba Melody XIs) to ~melodyDict
+Added melody loop10 (Tuba Melody XIs) to ~melodyDict
+Added melody loop10a (Tuba Melody XIs) to ~melodyDict
+Added melody loop11 (Tuba Melody XIs) to ~melodyDict
+Added melody loop11a (Tuba Melody XIs) to ~melodyDict
+Added melody loop12 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop12a (Tuba Melody XIIs) to ~melodyDict
+Added melody set2 to ~melodyDict
+Layer layer2 melody set to set2
+Loaded 64 melodies from file. Layer layer2 set to use melody: set2
+Loading JSON melody file for layer layer3: /Users/erikparr/surfacing/surfacing/data/melody-data.json
+Added melody set2 (Tuba Melody IIs) to ~melodyDict
+Added melody set3 (Tuba Melody IIIs) to ~melodyDict
+Added melody set4 (Tuba Melody IVs) to ~melodyDict
+Added melody set5 (Tuba Melody Vs) to ~melodyDict
+Added melody set6 (Tuba Melody VIs) to ~melodyDict
+Added melody set7 (Tuba Melody VIIs) to ~melodyDict
+Added melody set8 (Tuba Melody VIIIs) to ~melodyDict
+Added melody set9 (Tuba Melody IXs) to ~melodyDict
+Added melody set2a (Tuba Melody IXs) to ~melodyDict
+Added melody set2b (Tuba Melody IXs) to ~melodyDict
+Added melody set2c (Tuba Melody IXs) to ~melodyDict
+Added melody set2d (Tuba Melody IXs) to ~melodyDict
+Added melody set3a (Tuba Melody IXs) to ~melodyDict
+Added melody set4a (Tuba Melody IXs) to ~melodyDict
+Added melody set4b (Tuba Melody IXs) to ~melodyDict
+Added melody set4c (Tuba Melody IXs) to ~melodyDict
+Added melody set4d (Tuba Melody IXs) to ~melodyDict
+Added melody set4e (Tuba Melody IXs) to ~melodyDict
+Added melody set4f (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1b (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bA (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1bB (Tuba Melody IXs) to ~melodyDict
+Added melody bridge1c (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2a (Tuba Melody IXs) to ~melodyDict
+Added melody bridge2b (Tuba Melody IXs) to ~melodyDict
+Added melody part2a (Tuba Melody Xs) to ~melodyDict
+Added melody part2b (Tuba Melody XIs) to ~melodyDict
+Added melody part3x (Tuba Melody Xs) to ~melodyDict
+Added melody part3a (Tuba Melody Xs) to ~melodyDict
+Added melody part3b (Tuba Melody Xs) to ~melodyDict
+Added melody part3c (Tuba Melody Xs) to ~melodyDict
+Added melody part3d (Tuba Melody Xs) to ~melodyDict
+Added melody part3e (Tuba Melody Xs) to ~melodyDict
+Added melody part3f (Tuba Melody Xs) to ~melodyDict
+Added melody part3g (Tuba Melody Xs) to ~melodyDict
+Added melody part4a (Tuba Melody XIIs) to ~melodyDict
+Added melody part4b (Tuba Melody XIIs) to ~melodyDict
+Added melody part4c (Tuba Melody XIIs) to ~melodyDict
+Added melody part5a (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5b (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5c (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5d (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5e (Tuba Melody XIIIs) to ~melodyDict
+Added melody part5f (Tuba Melody XIVs) to ~melodyDict
+Added melody part5g (Tuba Melody XIVs) to ~melodyDict
+Added melody part5h (Tuba Melody XIVs) to ~melodyDict
+Added melody loop1 (Tuba Melody XIs) to ~melodyDict
+Added melody loop1a (Tuba Melody XIs) to ~melodyDict
+Added melody loop2 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop3 (Tuba Melody XIIIs) to ~melodyDict
+Added melody loop4 (Tuba Melody XIVs) to ~melodyDict
+Added melody loop5 (Tuba Melody XVs) to ~melodyDict
+Added melody loop6 (Tuba Melody XVIs) to ~melodyDict
+Added melody loop7 (Tuba Melody XVIIs) to ~melodyDict
+Added melody loop8 (Tuba Melody XVIIIs) to ~melodyDict
+Added melody loop9 (Tuba Melody XIs) to ~melodyDict
+Added melody loop9a (Tuba Melody XIs) to ~melodyDict
+Added melody loop10 (Tuba Melody XIs) to ~melodyDict
+Added melody loop10a (Tuba Melody XIs) to ~melodyDict
+Added melody loop11 (Tuba Melody XIs) to ~melodyDict
+Added melody loop11a (Tuba Melody XIs) to ~melodyDict
+Added melody loop12 (Tuba Melody XIIs) to ~melodyDict
+Added melody loop12a (Tuba Melody XIIs) to ~melodyDict
+Added melody set2 to ~melodyDict
+Layer layer3 melody set to set2
+Loaded 64 melodies from file. Layer layer3 set to use melody: set2
+Added melody set6 to ~melodyDict
+Layer layer1 melody set to set6
+Added melody set7 to ~melodyDict
+Layer layer2 melody set to set7
+Added melody set8 to ~melodyDict
+Layer layer3 melody set to set8
+Starting 3 active layers...
+
+=== Layer Status ===
+Layer layer2: set7 → Layer2
+Layer layer3: set8 → Layer3
+Layer layer1: set6 → Layer1
+Active layers: 3
+Total duration: 0 seconds
+Playing: false
+==================
+
+Maximum duration across layers: 2.0 seconds
+=== Starting dependent layers ===
+Parent group: 1004, Max duration: 2.0 seconds
+Created task for layer2
+Created task for layer3
+Created task for layer1
+Starting 3 layer tasks simultaneously
+Layer layer2 starting: melody set7 → VST group Layer2
+Warning: ~setActiveVSTGroup not available, layer will use current VST targeting
+Layer layer2 playing set7 for 2.0 seconds
+Layer layer3 starting: melody set8 → VST group Layer3
+Warning: ~setActiveVSTGroup not available, layer will use current VST targeting
+Layer layer3 playing set8 for 1.6 seconds
+Layer layer1 starting: melody set6 → VST group Layer1
+Warning: ~setActiveVSTGroup not available, layer will use current VST targeting
+Layer layer1 playing set6 for 2.0 seconds
+*** ERROR: SynthDef procmodenv_5216 not found
+FAILURE IN SERVER /s_new SynthDef not found
+FAILURE IN SERVER /n_setn Node 1005 not found
+Layer layer3 playing set8 for 0.4 seconds
+Layer layer2 completed
+Layer layer1 completed
+Layer layer3 completed
+All layers completed

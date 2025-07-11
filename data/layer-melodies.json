@@ -1,0 +1,39 @@
+{
+    "melodies": [
+      
+        {
+            "active": true,
+            "key": "layer1",
+            "loopCount": 1,
+            "name": "Tuba Melody III",
+            "pattern": [90, 85, 82, 75, 90],
+            "velocityFirst": 1.5,
+            "velocityLast": 0.5
+        },
+        {
+            "active": true,
+            "key": "layer2",
+            "loopCount": 1,
+            "name": "Tuba Melody III",
+            "pattern": [85, 82, 75],
+            "velocityFirst": 1.5,
+            "velocityLast": 0.5
+        },
+        {
+            "active": true,
+            "key": "layer3",
+            "loopCount": 1,
+            "name": "Tuba Melody III",
+            "pattern": [90, 90],
+            "velocityFirst": 1.5,
+            "velocityLast": 0.5
+        }
+
+    ],
+    "settings": {
+        "defaultNamePrefix": "melody",
+        "nextSequenceNumber": 1,
+        "selectedMelodyIndex": 0,
+        "windowSize": [600, 400]
+    }
+} 
