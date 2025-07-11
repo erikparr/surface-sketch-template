@@ -15,6 +15,7 @@
 ~layers = (
     parentProc: nil,              // Parent ProcMod instance
     configs: Dictionary.new,      // Layer configurations
+    layerProcs: Dictionary.new,   // Child ProcMod instances for each layer
     state: (
         isPlaying: false,
         totalDuration: 0,

@@ -28,27 +28,33 @@
         { |parentGroup, envbus|
             var mainTask = Task({
                 var maxDuration = ~calculateMaxDuration.();
-                var layerTasks = [];
+                var layerProcs = [];
                 var activeLayerCount = 0;
                 
                 "=== Starting dependent layers ===".postln;
                 "Parent group: %, Max duration: % seconds".format(parentGroup, maxDuration).postln;
                 
-                // Create tasks for each enabled layer
+                // Clear any existing layer ProcMods
+                ~layers.layerProcs.clear;
+                
+                // Create ProcMods for each enabled layer
                 ~layers.configs.keysValuesDo { |layerName, config|
                     if (config.enabled and: { config.melodyList.size > 0 }) {
-                        var task = ~createLayerTask.(layerName, config, parentGroup, maxDuration);
-                        layerTasks = layerTasks.add(task);
+                        var proc = ~createLayerProcMod.(layerName, config, parentGroup, maxDuration);
+                        ~layers.layerProcs[layerName] = proc;
+                        layerProcs = layerProcs.add(proc);
                         activeLayerCount = activeLayerCount + 1;
-                        "Created task for %".format(layerName).postln;
+                        "Created ProcMod for %".format(layerName).postln;
                     };
                 };
                 
                 if (activeLayerCount > 0) {
-                    "Starting % layer tasks simultaneously".format(activeLayerCount).postln;
+                    "Starting % layer ProcMods simultaneously".format(activeLayerCount).postln;
                     
-                    // Start all tasks at the same time
-                    layerTasks.do(_.play);
+                    // Start all ProcMods at the same time
+                    layerProcs.do { |proc|
+                        proc.play;
+                    };
                     
                     // Wait for the longest layer to complete
                     maxDuration.wait;
@@ -63,23 +69,101 @@
             mainTask
         },
         
-        // Release function
+        // Release function - executes after ProcMod has fully released
         { |parentGroup, envbus|
             "Parent ProcMod released".postln;
+            
+            // Clear layer procs dictionary
+            ~layers.layerProcs.clear;
         },
         
-        // onRelease function
+        // onRelease function - executes when release is triggered
         { |parentGroup, envbus|
             "Parent ProcMod releasing...".postln;
+            
+            // Release all child ProcMods
+            ~layers.layerProcs.do { |proc|
+                if (proc.notNil and: { proc.isRunning }) {
+                    "Releasing child ProcMod: %".format(proc.id).postln;
+                    proc.release;
+                };
+            };
         }
     );
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                         LAYER TASK CREATION                                │
+// │                         LAYER PROCMOD CREATION                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Create a task for an individual layer
+// Create a ProcMod for an individual layer
+~createLayerProcMod = { |layerName, config, parentGroup, maxDuration|
+    var env = Env.asr(0.05, 1.0, 0.05, \lin);  // ASR envelope for layer
+    var id = (layerName.asString ++ "_" ++ Date.getDate.stamp).asSymbol;
+    var melodyKey = config.melodyList[0];  // Always play first melody (no auto-progression)
+    
+    ProcMod.new(
+        env,          // ASR envelope
+        1.0,          // Amplitude (can be individually controlled)
+        id,           // Unique ID
+        nil,          // Group (create new)
+        0,            // addAction (head)
+        parentGroup,  // Target is parent's group
+        
+        // Main function - returns a Task
+        { |group, envbus|
+            var task = Task({
+                var currentTime = 0;
+                
+                "Layer % starting: melody % → VST group %".format(
+                    layerName, melodyKey, config.vstGroup
+                ).postln;
+                
+                // Play the melody repeatedly until max duration
+                while { currentTime < maxDuration } {
+                    var melodyDuration = ~calculateMelodyDuration.(melodyKey);
+                    var remainingTime = maxDuration - currentTime;
+                    var playDuration = min(melodyDuration, remainingTime);
+                    
+                    "Layer % playing % for % seconds".format(
+                        layerName, melodyKey, playDuration
+                    ).postln;
+                    
+                    // Play the melody segment
+                    ~playLayerMelodySegment.(melodyKey, layerName, playDuration, group);
+                    
+                    // Wait for this segment to complete
+                    playDuration.wait;
+                    
+                    currentTime = currentTime + playDuration;
+                };
+                
+                "Layer % completed".format(layerName).postln;
+            });
+            
+            // Return the task
+            task
+        },
+        
+        // Release function - executes after ProcMod has fully released
+        { |group, envbus|
+            "Layer % ProcMod released".format(layerName).postln;
+            
+            // Remove from layer procs dictionary
+            ~layers.layerProcs[layerName] = nil;
+        },
+        
+        // onRelease function - executes when release is triggered
+        { |group, envbus|
+            "Releasing layer % ProcMod...".format(layerName).postln;
+            
+            // Could add per-layer cleanup here if needed
+            // For example, releasing any stuck notes for this layer
+        }
+    );
+};
+
+// Keep the old task creation function for backwards compatibility temporarily
 ~createLayerTask = { |layerName, config, parentGroup, maxDuration|
     Task({
         var currentTime = 0;

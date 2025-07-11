@@ -40,8 +40,11 @@
     if (~layers.state.isPlaying) {
         "Stopping all layers...".postln;
         
-        ~layers.parentProc.release;
-        ~layers.parentProc = nil;
+        // The parent's onRelease function will handle releasing child ProcMods
+        if (~layers.parentProc.notNil) {
+            ~layers.parentProc.release;
+            ~layers.parentProc = nil;
+        };
         
         ~layers.state.isPlaying = false;
         ~layers.state.startTime = nil;
@@ -54,8 +57,22 @@
 
 // Emergency stop
 ~killLayers = {
-    ~layers.parentProc.kill;
-    ~layers.parentProc = nil;
+    if (~layers.parentProc.notNil) {
+        // Kill all child ProcMods first
+        ~layers.layerProcs.do { |proc|
+            if (proc.notNil and: { proc.isRunning }) {
+                "Killing child ProcMod: %".format(proc.id).postln;
+                proc.kill;
+            };
+        };
+        
+        // Then kill parent
+        ~layers.parentProc.kill;
+        ~layers.parentProc = nil;
+    };
+    
+    // Clear layer procs dictionary
+    ~layers.layerProcs.clear;
     
     ~layers.state.isPlaying = false;
     ~layers.state.startTime = nil;
