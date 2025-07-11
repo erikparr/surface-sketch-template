@@ -12,9 +12,12 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Create the parent ProcMod that manages all layers
-~createLayersParentProc = {
+~createLayersParentProc = { |duration|
     var env = Env.asr(0.05, 1.0, 0.05, \lin);  // Short fade in/out as requested
     var id = ("layersParent_" ++ Date.getDate.stamp).asSymbol;
+    
+    // Use provided duration or calculate from current settings
+    duration = duration ?? { 4.0 };  // Default to 10 seconds if not specified
     
     ProcMod.new(
         env,          // ASR envelope
@@ -27,12 +30,11 @@
         // Main function - returns a Task
         { |parentGroup, envbus|
             var mainTask = Task({
-                var maxDuration = ~calculateMaxDuration.();
                 var layerProcs = [];
                 var activeLayerCount = 0;
                 
                 "=== Starting dependent layers ===".postln;
-                "Parent group: %, Max duration: % seconds".format(parentGroup, maxDuration).postln;
+                "Parent group: %, Duration: % seconds".format(parentGroup, duration).postln;
                 
                 // Clear any existing layer ProcMods
                 ~layers.layerProcs.clear;
@@ -40,7 +42,7 @@
                 // Create ProcMods for each enabled layer
                 ~layers.configs.keysValuesDo { |layerName, config|
                     if (config.enabled and: { config.melodyList.size > 0 }) {
-                        var proc = ~createLayerProcMod.(layerName, config, parentGroup, maxDuration);
+                        var proc = ~createLayerProcMod.(layerName, config, parentGroup, duration);
                         ~layers.layerProcs[layerName] = proc;
                         layerProcs = layerProcs.add(proc);
                         activeLayerCount = activeLayerCount + 1;
@@ -56,10 +58,10 @@
                         proc.play;
                     };
                     
-                    // Wait for the longest layer to complete
-                    maxDuration.wait;
+                    // Wait for the parent duration
+                    duration.wait;
                     
-                    "All layers completed".postln;
+                    "All layers completed after % seconds".format(duration).postln;
                 } {
                     "No active layers to play".warn;
                 };
@@ -97,7 +99,7 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Create a ProcMod for an individual layer
-~createLayerProcMod = { |layerName, config, parentGroup, maxDuration|
+~createLayerProcMod = { |layerName, config, parentGroup, parentDuration|
     var env = Env.asr(0.05, 1.0, 0.05, \lin);  // ASR envelope for layer
     var id = (layerName.asString ++ "_" ++ Date.getDate.stamp).asSymbol;
     var melodyKey = config.melodyList[0];  // Always play first melody (no auto-progression)
@@ -113,32 +115,53 @@
         // Main function - returns a Task
         { |group, envbus|
             var task = Task({
-                var currentTime = 0;
+                var pattern, noteCount, noteInterval;
                 
-                "Layer % starting: melody % → VST group %".format(
-                    layerName, melodyKey, config.vstGroup
+                // Get melody pattern and calculate timing
+                pattern = ~melodyDict[melodyKey].patterns[0];
+                noteCount = pattern.size;
+                noteInterval = parentDuration / noteCount;
+                
+                "Layer %: % notes, interval: % seconds, total: % seconds".format(
+                    layerName, noteCount, noteInterval.round(0.001), parentDuration
                 ).postln;
                 
-                // Play the melody repeatedly until max duration
-                while { currentTime < maxDuration } {
-                    var melodyDuration = ~calculateMelodyDuration.(melodyKey);
-                    var remainingTime = maxDuration - currentTime;
-                    var playDuration = min(melodyDuration, remainingTime);
+                // Play each note at calculated intervals
+                noteCount.do { |noteIndex|
+                    var note = pattern[noteIndex];
+                    var noteTime = noteIndex * noteInterval;
+                    var isFirstNote = (noteIndex == 0);
+                    var isLastNote = (noteIndex == (noteCount - 1));
+                    var processedNote, velocity;
                     
-                    "Layer % playing % for % seconds".format(
-                        layerName, melodyKey, playDuration
+                    // Process note for velocity, offset, etc.
+                    if (~processNote.notNil) {
+                        processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
+                    } {
+                        processedNote = [note, 100];  // Fallback
+                    };
+                    
+                    "Layer % note % at time %s: note % vel %".format(
+                        layerName, noteIndex + 1, noteTime.round(0.001), 
+                        processedNote[0], processedNote[1]
                     ).postln;
                     
-                    // Play the melody segment
-                    ~playLayerMelodySegment.(melodyKey, layerName, playDuration, group);
+                    // Send note via OSC
+                    NetAddr.localAddr.sendMsg(
+                        '/layer/note/on',
+                        layerName,
+                        processedNote[0],  // note
+                        processedNote[1],  // velocity
+                        0.2  // Note duration (could be configurable)
+                    );
                     
-                    // Wait for this segment to complete
-                    playDuration.wait;
-                    
-                    currentTime = currentTime + playDuration;
+                    // Wait until next note time (except for last note)
+                    if (noteIndex < (noteCount - 1)) {
+                        noteInterval.wait;
+                    };
                 };
                 
-                "Layer % completed".format(layerName).postln;
+                "Layer % completed all % notes".format(layerName, noteCount).postln;
             });
             
             // Return the task

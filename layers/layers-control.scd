@@ -12,21 +12,26 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Start all layers
-~startLayers = {
+~startLayers = { |duration|
     if (~layers.state.isPlaying) {
         "Layers already playing".warn;
     } {
         var activeCount = ~getActiveLayerCount.();
         
         if (activeCount > 0) {
-            "Starting % active layers...".format(activeCount).postln;
+            if (duration.notNil) {
+                "Starting % active layers for % seconds...".format(activeCount, duration).postln;
+            } {
+                "Starting % active layers with default duration...".format(activeCount).postln;
+            };
             
-            // Create and play parent ProcMod
-            ~layers.parentProc = ~createLayersParentProc.();
+            // Create and play parent ProcMod with optional duration
+            ~layers.parentProc = ~createLayersParentProc.(duration);
             ~layers.parentProc.play;
             
             ~layers.state.isPlaying = true;
             ~layers.state.startTime = Main.elapsedTime;
+            ~layers.state.totalDuration = duration ?? 10.0;  // Store the duration
             
             ~printLayerStatus.();
         } {
