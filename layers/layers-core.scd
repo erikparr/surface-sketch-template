@@ -16,10 +16,11 @@
     parentProc: nil,              // Parent ProcMod instance
     configs: Dictionary.new,      // Layer configurations
     layerProcs: Dictionary.new,   // Child ProcMod instances for each layer
+    timingData: Dictionary.new,   // Pre-calculated timing info
     state: (
-        isPlaying: false,
         totalDuration: 0,
-        startTime: nil
+        startTime: nil,
+        loopingMode: false        // Single source of truth for looping
     )
 );
 
@@ -161,6 +162,8 @@
     };
     "Active layers: %".format(~getActiveLayerCount.()).postln;
     "Total duration: % seconds".format(~layers.state.totalDuration).postln;
-    "Playing: %".format(~layers.state.isPlaying).postln;
+    "Playing: %".format(
+        ~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }
+    ).postln;
     "==================\n".postln;
 };

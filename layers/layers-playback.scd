@@ -8,19 +8,50 @@
 */
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         INITIALIZATION                                     │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Ensure ProcMod SynthDef is available on the server
+~ensureProcModSynthDef = {
+    // The ProcMod class uses a writeDefs flag to ensure the SynthDef is only created once
+    // However, .add only adds to SynthDescLib, not to the server
+    // We need to ensure it's sent to the server
+    
+    if (SynthDescLib.global[\procmodenv_5216].isNil) {
+        // Force ProcMod to create its SynthDef by creating a temporary instance
+        var temp = ProcMod.new(Env.asr(0.01, 1, 0.01), 1.0, \temp);
+        temp = nil;  // Clean up
+    };
+    
+    // Now send the SynthDef to the server if it exists
+    if (SynthDescLib.global[\procmodenv_5216].notNil) {
+        SynthDescLib.global[\procmodenv_5216].send(Server.default);
+        "ProcMod SynthDef sent to server".postln;
+    } {
+        "Warning: ProcMod SynthDef not found in SynthDescLib".warn;
+    };
+};
+
+// Ensure SynthDef is available when layers system loads
+~ensureProcModSynthDef.();
+
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         PARENT PROCMOD CREATION                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Create the parent ProcMod that manages all layers
 ~createLayersParentProc = { |duration|
-    var env = Env.asr(0.05, 1.0, 0.05, \lin);  // Short fade in/out as requested
+    // Use an envelope with a release node to keep it sustained
+    var env = Env.asr(0.05, 1.0, 0.05, \lin, releaseNode: 1);  // Release node at sustain
     var id = ("layersParent_" ++ Date.getDate.stamp).asSymbol;
     
     // Use provided duration or calculate from current settings
     duration = duration ?? { 4.0 };  // Default to 10 seconds if not specified
     
+    
     ProcMod.new(
-        env,          // ASR envelope
+        env,          // ASR envelope with release node
         1.0,          // Amplitude
         id,           // Unique ID
         nil,          // Group (create new)
@@ -30,40 +61,92 @@
         // Main function - returns a Task
         { |parentGroup, envbus|
             var mainTask = Task({
-                var layerProcs = [];
-                var activeLayerCount = 0;
+                var loopCount = 0;
                 
-                "=== Starting dependent layers ===".postln;
-                "Parent group: %, Duration: % seconds".format(parentGroup, duration).postln;
-                
-                // Clear any existing layer ProcMods
-                ~layers.layerProcs.clear;
-                
-                // Create ProcMods for each enabled layer
+                // Calculate timing once for all layers and store in shared structure
                 ~layers.configs.keysValuesDo { |layerName, config|
                     if (config.enabled and: { config.melodyList.size > 0 }) {
-                        var proc = ~createLayerProcMod.(layerName, config, parentGroup, duration);
-                        ~layers.layerProcs[layerName] = proc;
-                        layerProcs = layerProcs.add(proc);
-                        activeLayerCount = activeLayerCount + 1;
-                        "Created ProcMod for %".format(layerName).postln;
+                        var melodyKey = config.melodyList[0];
+                        var pattern = ~melodyDict[melodyKey].patterns[0];
+                        var noteCount = pattern.size;
+                        
+                        ~layers.timingData[layerName] = (
+                            melodyKey: melodyKey,
+                            noteCount: noteCount,
+                            noteInterval: duration / noteCount,
+                            duration: duration
+                        );
                     };
                 };
                 
-                if (activeLayerCount > 0) {
-                    "Starting % layer ProcMods simultaneously".format(activeLayerCount).postln;
+                while { ~layers.state.loopingMode or: { loopCount == 0 } } {
+                    var layerProcs = [];
+                    var activeLayerCount = 0;
                     
-                    // Start all ProcMods at the same time
-                    layerProcs.do { |proc|
-                        proc.play;
+                    loopCount = loopCount + 1;
+                    if (~layers.state.loopingMode) {
+                        "=== Starting dependent layers (loop %) ===".format(loopCount).postln;
+                    } {
+                        "=== Starting dependent layers ===".postln;
+                    };
+                    "Parent group: %, Duration: % seconds".format(parentGroup, duration).postln;
+                    
+                    // Only create ProcMods on first iteration or if they're not running
+                    if (loopCount == 1) {
+                        // First iteration - create all ProcMods
+                        ~layers.configs.keysValuesDo { |layerName, config|
+                            if (config.enabled and: { config.melodyList.size > 0 }) {
+                                var proc = ~createLayerProcMod.(layerName, config, parentGroup);
+                                ~layers.layerProcs[layerName] = proc;
+                                layerProcs = layerProcs.add(proc);
+                                activeLayerCount = activeLayerCount + 1;
+                                "Created ProcMod for %".format(layerName).postln;
+                            };
+                        };
+                    } {
+                        // Subsequent iterations - reuse existing ProcMods
+                        ~layers.layerProcs.keysValuesDo { |layerName, proc|
+                            if (proc.notNil) {
+                                layerProcs = layerProcs.add(proc);
+                                activeLayerCount = activeLayerCount + 1;
+                            };
+                        };
+                        "Reusing % existing layer ProcMods".format(activeLayerCount).postln;
                     };
                     
-                    // Wait for the parent duration
-                    duration.wait;
+                    if (activeLayerCount > 0) {
+                        if (loopCount == 1) {
+                            "Starting % layer ProcMods simultaneously".format(activeLayerCount).postln;
+                            
+                            // Start all ProcMods only on first iteration
+                            layerProcs.do { |proc|
+                                proc.play;
+                            };
+                        };
+                        
+                        // Wait for the parent duration
+                        duration.wait;
+                        
+                        // Don't release child ProcMods - they loop internally
+                        
+                        if (~layers.state.loopingMode) {
+                            "Parent loop % completed after % seconds - continuing...".format(loopCount, duration).postln;
+                        } {
+                            "All layers completed after % seconds".format(duration).postln;
+                        };
+                    } {
+                        "No active layers to play".warn;
+                        // Exit the loop by setting looping mode to false
+                        ~layers.state.loopingMode = false;
+                    };
                     
-                    "All layers completed after % seconds".format(duration).postln;
-                } {
-                    "No active layers to play".warn;
+                    // Add a small delay between loops to ensure clean transitions
+                    if (~layers.state.loopingMode) {
+                        0.2.wait;  // Small delay before next loop to sync with children
+                        "Parent starting loop %...".format(loopCount + 1).postln;
+                    } {
+                        "Parent stopping - looping mode is off".postln;
+                    };
                 };
             });
             
@@ -90,6 +173,8 @@
                     proc.release;
                 };
             };
+            
+            // Don't set isPlaying to false here - let control functions handle it
         }
     );
 };
@@ -99,13 +184,14 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Create a ProcMod for an individual layer
-~createLayerProcMod = { |layerName, config, parentGroup, parentDuration|
-    var env = Env.asr(0.05, 1.0, 0.05, \lin);  // ASR envelope for layer
+~createLayerProcMod = { |layerName, config, parentGroup|
     var id = (layerName.asString ++ "_" ++ Date.getDate.stamp).asSymbol;
     var melodyKey = config.melodyList[0];  // Always play first melody (no auto-progression)
+    var env = Env.asr(0.01, 1.0, 0.01, \lin);  // Quick attack/release envelope for child layers
+    var timing = ~layers.timingData[layerName];  // Get pre-calculated timing
     
     ProcMod.new(
-        env,          // ASR envelope
+        env,          // All ProcMods need an envelope
         1.0,          // Amplitude (can be individually controlled)
         id,           // Unique ID
         nil,          // Group (create new)
@@ -115,53 +201,76 @@
         // Main function - returns a Task
         { |group, envbus|
             var task = Task({
-                var pattern, noteCount, noteInterval;
+                var pattern, noteCount, noteInterval, parentDuration;
+                var iterationCount = 0;
                 
-                // Get melody pattern and calculate timing
+                // Get melody pattern and timing from shared data
                 pattern = ~melodyDict[melodyKey].patterns[0];
-                noteCount = pattern.size;
-                noteInterval = parentDuration / noteCount;
+                noteCount = timing.noteCount;
+                noteInterval = timing.noteInterval;
+                parentDuration = timing.duration;
                 
                 "Layer %: % notes, interval: % seconds, total: % seconds".format(
                     layerName, noteCount, noteInterval.round(0.001), parentDuration
                 ).postln;
                 
-                // Play each note at calculated intervals
-                noteCount.do { |noteIndex|
-                    var note = pattern[noteIndex];
-                    var noteTime = noteIndex * noteInterval;
-                    var isFirstNote = (noteIndex == 0);
-                    var isLastNote = (noteIndex == (noteCount - 1));
-                    var processedNote, velocity;
+                // Loop the melody based on shared looping state
+                while { ~layers.state.loopingMode or: { iterationCount == 0 } } {
+                    iterationCount = iterationCount + 1;
                     
-                    // Process note for velocity, offset, etc.
-                    if (~processNote.notNil) {
-                        processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
-                    } {
-                        processedNote = [note, 100];  // Fallback
+                    // Play each note at calculated intervals
+                    noteCount.do { |noteIndex|
+                        var note = pattern[noteIndex];
+                        var noteTime = noteIndex * noteInterval;
+                        var isFirstNote = (noteIndex == 0);
+                        var isLastNote = (noteIndex == (noteCount - 1));
+                        var processedNote, velocity;
+                        
+                        // Process note for velocity, offset, etc.
+                        if (~processNote.notNil) {
+                            processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
+                        } {
+                            processedNote = [note, 100];  // Fallback
+                        };
+                        
+                        if (iterationCount == 1) {  // Only log first iteration
+                            "Layer % note % at time %s: note % vel %".format(
+                                layerName, noteIndex + 1, noteTime.round(0.001), 
+                                processedNote[0], processedNote[1]
+                            ).postln;
+                        };
+                        
+                        // Play note directly (no OSC indirection)
+                        ~playLayerNote.(
+                            layerName,
+                            processedNote[0],  // note
+                            processedNote[1],  // velocity
+                            0.2  // Note duration (could be configurable)
+                        );
+                        
+                        // Wait until next note time
+                        if (noteIndex < (noteCount - 1)) {
+                            noteInterval.wait;
+                        } {
+                            // For last note, wait the remaining time to complete the full duration
+                            var remainingTime = parentDuration - (noteIndex * noteInterval);
+                            remainingTime.wait;
+                        };
                     };
                     
-                    "Layer % note % at time %s: note % vel %".format(
-                        layerName, noteIndex + 1, noteTime.round(0.001), 
-                        processedNote[0], processedNote[1]
-                    ).postln;
+                    if (iterationCount == 1) {  // Only log first iteration
+                        "Layer % completed all % notes".format(layerName, noteCount).postln;
+                    };
                     
-                    // Send note via OSC
-                    NetAddr.localAddr.sendMsg(
-                        '/layer/note/on',
-                        layerName,
-                        processedNote[0],  // note
-                        processedNote[1],  // velocity
-                        0.2  // Note duration (could be configurable)
-                    );
-                    
-                    // Wait until next note time (except for last note)
-                    if (noteIndex < (noteCount - 1)) {
-                        noteInterval.wait;
+                    // Check if we should continue looping (single source of truth)
+                    if (~layers.state.loopingMode) {
+                        // Small gap before next iteration
+                        0.1.wait;
+                        "Layer % starting iteration %".format(layerName, iterationCount + 1).postln;
+                    } {
+                        "Layer % stopping - looping mode is off".format(layerName).postln;
                     };
                 };
-                
-                "Layer % completed all % notes".format(layerName, noteCount).postln;
             });
             
             // Return the task
@@ -276,8 +385,7 @@
                     noteIndex = noteCount;  // Force exit
                 } {
                     // Send truncated note
-                    NetAddr.localAddr.sendMsg(
-                        '/layer/note/on',
+                    ~playLayerNote.(
                         layerName,
                         processedNote[0],  // note
                         processedNote[1],  // velocity
@@ -286,8 +394,7 @@
                 };
             } {
                 // Normal note playback
-                NetAddr.localAddr.sendMsg(
-                    '/layer/note/on',
+                ~playLayerNote.(
                     layerName,
                     processedNote[0],  // note
                     processedNote[1],  // velocity
@@ -304,16 +411,11 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                         OSC RESPONDERS                                     │
+// │                         DIRECT NOTE PLAYBACK                               │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Layer-specific note handler
-OSCdef(\layerNoteOn, { |msg, time, addr, recvPort|
-    var layerName = msg[1].asSymbol;
-    var note = msg[2].asInteger;
-    var velocity = msg[3].asInteger;
-    var duration = msg[4].asFloat;
-    
+// Direct function to play a note on a layer's VST group
+~playLayerNote = { |layerName, note, velocity, duration|
     // Get the VST group for this layer
     var config = ~layers.configs[layerName];
     var vstGroup = config.vstGroup;
@@ -321,13 +423,6 @@ OSCdef(\layerNoteOn, { |msg, time, addr, recvPort|
     // Route to appropriate VST instances (if vstManager exists)
     if (~vstManager.notNil) {
         var instances = ~vstManager.getTargetInstances(vstGroup);
-        
-        // Debug: Show which instances we're targeting
-        if (instances.size > 0) {
-            "Layer % → VST group '%' (%  instances: %)".format(
-                layerName, vstGroup, instances.size, instances.keys.asArray
-            ).postln;
-        };
         
         instances.do { |vst|
             vst.midi.noteOn(0, note, velocity);
@@ -342,6 +437,6 @@ OSCdef(\layerNoteOn, { |msg, time, addr, recvPort|
     } {
         "Warning: ~vstManager not available, cannot route note to VST".postln;
     };
-}, '/layer/note/on');
+};
 
 "Dependent layers playback system loaded".postln;

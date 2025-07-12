@@ -66,6 +66,21 @@
     transportSection.add(stopButton);
     layout.add(transportSection);
     
+    // Looping mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Loop Mode")
+            .value_(~layers.state.loopingMode)
+            .action_({ |cb|
+                ~layers.state.loopingMode = cb.value;
+                statusText.string = if (cb.value) {
+                    "Loop mode: ON"
+                } {
+                    "Loop mode: OFF"
+                };
+            })
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘
@@ -291,7 +306,7 @@
         var activeCount = ~getActiveLayerCount.();
         var statusString;
         
-        if (~layers.state.isPlaying) {
+        if (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) {
             var playTime = ~getLayersPlayTime.();
             statusString = "Playing: % layers, Time: %s".format(
                 activeCount, 

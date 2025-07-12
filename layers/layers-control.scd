@@ -13,7 +13,7 @@
 
 // Start all layers
 ~startLayers = { |duration|
-    if (~layers.state.isPlaying) {
+    if (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) {
         "Layers already playing".warn;
     } {
         var activeCount = ~getActiveLayerCount.();
@@ -29,7 +29,6 @@
             ~layers.parentProc = ~createLayersParentProc.(duration);
             ~layers.parentProc.play;
             
-            ~layers.state.isPlaying = true;
             ~layers.state.startTime = Main.elapsedTime;
             ~layers.state.totalDuration = duration ?? 10.0;  // Store the duration
             
@@ -42,7 +41,7 @@
 
 // Stop all layers
 ~stopLayers = {
-    if (~layers.state.isPlaying) {
+    if (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) {
         "Stopping all layers...".postln;
         
         // The parent's onRelease function will handle releasing child ProcMods
@@ -51,7 +50,6 @@
             ~layers.parentProc = nil;
         };
         
-        ~layers.state.isPlaying = false;
         ~layers.state.startTime = nil;
         
         "All layers stopped".postln;
@@ -76,10 +74,10 @@
         ~layers.parentProc = nil;
     };
     
-    // Clear layer procs dictionary
+    // Clear layer procs dictionary and timing data
     ~layers.layerProcs.clear;
+    ~layers.timingData.clear;
     
-    ~layers.state.isPlaying = false;
     ~layers.state.startTime = nil;
     
     "All layers killed".postln;
@@ -186,7 +184,7 @@
 
 // Get current playback time
 ~getLayersPlayTime = {
-    if (~layers.state.isPlaying) {
+    if (~layers.state.startTime.notNil) {
         Main.elapsedTime - ~layers.state.startTime
     } {
         0
