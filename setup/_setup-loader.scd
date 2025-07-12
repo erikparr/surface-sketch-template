@@ -15,7 +15,7 @@ if (~setupAlreadyLoaded == true) {
             "vstplugin-setup.scd",       // 2. Then VST manager and plugins
             "vst-management.scd",        // 3. Then VST management UI
             "midi-setup.scd",            // 4. Then MIDI setup (depends on VST manager)
-            "midi-control-mapping.scd",  // 5. Then MIDI control mapping (depends on MIDI controller)
+            // "midi-control-mapping.scd",  // 5. Then MIDI control mapping (depends on MIDI controller)
             "osc-setup.scd",             // 6. Then OSC setup (depends on VST manager)
             "melody-management.scd"      // 7. Finally melody management (depends on VST manager)
         ];

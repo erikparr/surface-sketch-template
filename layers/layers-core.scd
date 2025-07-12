@@ -20,7 +20,8 @@
     state: (
         totalDuration: 0,
         startTime: nil,
-        loopingMode: false        // Single source of truth for looping
+        loopingMode: false,       // Single source of truth for looping
+        manualControl: false      // Enable MIDI knob control for duration and other parameters
     )
 );
 

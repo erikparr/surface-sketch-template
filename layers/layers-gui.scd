@@ -81,6 +81,17 @@
             })
     );
     
+    // Manual control mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Manual Control (MIDI Knob Duration)")
+            .value_(~layers.state.manualControl)
+            .action_({ |cb|
+                ~setLayersManualControl.(cb.value);
+                updateStatus.(); // Use updateStatus to show consistent formatting
+            })
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘
@@ -312,8 +323,20 @@
                 activeCount, 
                 playTime.round(0.1)
             );
+            
+            // Add duration info if manual control is active
+            if (~layers.state.manualControl) {
+                var duration = ~getLayersDurationFromKnob.();
+                statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+            };
         } {
             statusString = "Ready: % layers configured".format(activeCount);
+            
+            // Show duration when not playing if manual control is active
+            if (~layers.state.manualControl) {
+                var duration = ~getLayersDurationFromKnob.();
+                statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+            };
         };
         
         statusText.string = statusString;

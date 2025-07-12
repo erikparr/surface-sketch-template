@@ -63,33 +63,52 @@
             var mainTask = Task({
                 var loopCount = 0;
                 
-                // Calculate timing once for all layers and store in shared structure
-                ~layers.configs.keysValuesDo { |layerName, config|
-                    if (config.enabled and: { config.melodyList.size > 0 }) {
-                        var melodyKey = config.melodyList[0];
-                        var pattern = ~melodyDict[melodyKey].patterns[0];
-                        var noteCount = pattern.size;
-                        
-                        ~layers.timingData[layerName] = (
-                            melodyKey: melodyKey,
-                            noteCount: noteCount,
-                            noteInterval: duration / noteCount,
-                            duration: duration
-                        );
-                    };
-                };
+                // Timing will be calculated at the start of each loop iteration
                 
                 while { ~layers.state.loopingMode or: { loopCount == 0 } } {
                     var layerProcs = [];
                     var activeLayerCount = 0;
+                    var currentDuration;
                     
                     loopCount = loopCount + 1;
+                    
+                    // Determine duration at the START of each loop (like sketch system)
+                    if (~layers.state.manualControl) {
+                        // Manual control: read fresh value from knob each iteration
+                        currentDuration = ~getLayersDurationFromKnob.();
+                        "Loop %: Using MIDI knob duration: % seconds".format(
+                            loopCount, currentDuration.round(0.01)
+                        ).postln;
+                    } {
+                        // Normal mode: use provided duration
+                        currentDuration = duration;
+                        "Loop %: Using fixed duration: % seconds".format(
+                            loopCount, currentDuration.round(0.01)
+                        ).postln;
+                    };
+                    
+                    // Calculate timing for all layers with current duration
+                    ~layers.configs.keysValuesDo { |layerName, config|
+                        if (config.enabled and: { config.melodyList.size > 0 }) {
+                            var melodyKey = config.melodyList[0];
+                            var pattern = ~melodyDict[melodyKey].patterns[0];
+                            var noteCount = pattern.size;
+                            
+                            ~layers.timingData[layerName] = (
+                                melodyKey: melodyKey,
+                                noteCount: noteCount,
+                                noteInterval: currentDuration / noteCount,
+                                duration: currentDuration
+                            );
+                        };
+                    };
+                    
                     if (~layers.state.loopingMode) {
                         "=== Starting dependent layers (loop %) ===".format(loopCount).postln;
                     } {
                         "=== Starting dependent layers ===".postln;
                     };
-                    "Parent group: %, Duration: % seconds".format(parentGroup, duration).postln;
+                    "Parent group: %, Duration: % seconds".format(parentGroup, currentDuration).postln;
                     
                     // Only create ProcMods on first iteration or if they're not running
                     if (loopCount == 1) {
@@ -124,15 +143,15 @@
                             };
                         };
                         
-                        // Wait for the parent duration
-                        duration.wait;
+                        // Wait for the current duration
+                        currentDuration.wait;
                         
                         // Don't release child ProcMods - they loop internally
                         
                         if (~layers.state.loopingMode) {
-                            "Parent loop % completed after % seconds - continuing...".format(loopCount, duration).postln;
+                            "Parent loop % completed after % seconds - continuing...".format(loopCount, currentDuration).postln;
                         } {
-                            "All layers completed after % seconds".format(duration).postln;
+                            "All layers completed after % seconds".format(currentDuration).postln;
                         };
                     } {
                         "No active layers to play".warn;
@@ -204,19 +223,32 @@
                 var pattern, noteCount, noteInterval, parentDuration;
                 var iterationCount = 0;
                 
-                // Get melody pattern and timing from shared data
+                // Get melody pattern (doesn't change)
                 pattern = ~melodyDict[melodyKey].patterns[0];
-                noteCount = timing.noteCount;
-                noteInterval = timing.noteInterval;
-                parentDuration = timing.duration;
-                
-                "Layer %: % notes, interval: % seconds, total: % seconds".format(
-                    layerName, noteCount, noteInterval.round(0.001), parentDuration
-                ).postln;
+                noteCount = pattern.size;
                 
                 // Loop the melody based on shared looping state
                 while { ~layers.state.loopingMode or: { iterationCount == 0 } } {
+                    var currentTiming;
+                    
                     iterationCount = iterationCount + 1;
+                    
+                    // Read fresh timing data at the start of each iteration
+                    currentTiming = ~layers.timingData[layerName];
+                    if (currentTiming.notNil) {
+                        noteInterval = currentTiming.noteInterval;
+                        parentDuration = currentTiming.duration;
+                    } {
+                        // Fallback if timing data not available
+                        parentDuration = 4.0;
+                        noteInterval = parentDuration / noteCount;
+                    };
+                    
+                    if (iterationCount == 1) {  // Only log first iteration
+                        "Layer %: % notes, interval: % seconds, total: % seconds".format(
+                            layerName, noteCount, noteInterval.round(0.001), parentDuration
+                        ).postln;
+                    };
                     
                     // Play each note at calculated intervals
                     noteCount.do { |noteIndex|

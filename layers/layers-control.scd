@@ -17,20 +17,34 @@
         "Layers already playing".warn;
     } {
         var activeCount = ~getActiveLayerCount.();
+        var effectiveDuration;
         
         if (activeCount > 0) {
+            // Determine effective duration
             if (duration.notNil) {
+                effectiveDuration = duration;
                 "Starting % active layers for % seconds...".format(activeCount, duration).postln;
             } {
-                "Starting % active layers with default duration...".format(activeCount).postln;
+                // Use knob value if in manual control mode, otherwise default
+                if (~layers.state.manualControl) {
+                    effectiveDuration = ~getLayersDurationFromKnob.();
+                    "Starting % active layers with MIDI knob duration: % seconds...".format(
+                        activeCount, effectiveDuration
+                    ).postln;
+                } {
+                    effectiveDuration = 4.0;  // Default duration
+                    "Starting % active layers with default duration: % seconds...".format(
+                        activeCount, effectiveDuration
+                    ).postln;
+                };
             };
             
-            // Create and play parent ProcMod with optional duration
-            ~layers.parentProc = ~createLayersParentProc.(duration);
+            // Create and play parent ProcMod with determined duration
+            ~layers.parentProc = ~createLayersParentProc.(effectiveDuration);
             ~layers.parentProc.play;
             
             ~layers.state.startTime = Main.elapsedTime;
-            ~layers.state.totalDuration = duration ?? 10.0;  // Store the duration
+            ~layers.state.totalDuration = effectiveDuration;  // Store the duration
             
             ~printLayerStatus.();
         } {
@@ -176,6 +190,39 @@
         config.duration = 0;
     };
     "All layer melodies cleared".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         MANUAL CONTROL FUNCTIONS                           │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Get duration from MIDI knob (row 1, position 8)
+~getLayersDurationFromKnob = {
+    var duration = 4.0; // Default duration
+    var rawValue, normalizedValue, mappedDuration;
+    
+    if (~layers.state.manualControl and: { ~midiController.notNil }) {
+        // Get the raw value from the knob
+        rawValue = ~midiController.getKnobRow1(8);
+        
+        // Check if we need to normalize (if value > 1, it's likely raw MIDI 0-127)
+        if (rawValue > 1) {
+            normalizedValue = rawValue / 127.0;
+        } {
+            normalizedValue = rawValue;
+        };
+        
+        // Map to duration range
+        duration = normalizedValue.linlin(0, 1, 0.1, 10.0);
+    };
+    
+    duration
+};
+
+// Enable/disable manual control mode
+~setLayersManualControl = { |enabled|
+    ~layers.state.manualControl = enabled;
+    "Layers manual control mode: %".format(if(enabled, "ENABLED", "DISABLED")).postln;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
