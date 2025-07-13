@@ -162,8 +162,28 @@ SynthDef(\BendEnvelopeLoop, {
 // Synth definition for ADSR expression envelope
 // Sends CC 17 (expression) by default to control VST parameters
 
-// Synth definition for ADSR expression envelope
+// Layer 1 expression envelope (also maintains backward compatibility with \ccEnvelope)
 SynthDef(\ccEnvelope, {
+    arg start=0, peak=100, end=0, 
+        attackTime=0.5, releaseTime=0.5,
+        chanIndex=0, ccNum=11, attackCurve=\sin, releaseCurve=\sin;
+    var env;
+    
+    env = EnvGen.kr(
+        Env([start, peak, end], [attackTime, releaseTime], [attackCurve, releaseCurve]),
+        doneAction: 2
+    );
+    
+    SendReply.kr(
+        Impulse.kr(100),
+        '/expression',  // Original path for backward compatibility
+        [chanIndex, ccNum, env.round(1).clip(0, 127)],
+        replyID: chanIndex
+    );
+}).add;
+
+// Layer 1 expression envelope (new explicit name)
+SynthDef(\ccEnvelope1, {
     arg start=0, peak=100, end=0, 
         attackTime=0.5, releaseTime=0.5,
         chanIndex=0, ccNum=11, attackCurve=\sin, releaseCurve=\sin;
@@ -185,7 +205,7 @@ SynthDef(\ccEnvelope, {
     // Send the control signal via OSC at same rate as bend
     SendReply.kr(
         Impulse.kr(100),  // Send 100 times per second
-        '/expression',
+        '/expression1',
         [chanIndex, ccNum, env.round(1).clip(0, 127)]  // Round to integer and clip for MIDI CC
     );
 }).add;
@@ -275,6 +295,52 @@ SynthDef(\ccEnvelopeLoop2, {
     SendReply.kr(
         Impulse.kr(100),
         '/expression2',
+        [chanIndex, ccNum, env],
+        replyID: chanIndex
+    );
+}).add;
+
+// ===== NEW: Layer 3 expression envelope that reports to /expression3 =====
+
+SynthDef(\ccEnvelope3, {
+    arg start=0, peak=100, end=0,
+        attackTime=0.5, releaseTime=0.5,
+        chanIndex=0, ccNum=11, attackCurve=\sin, releaseCurve=\sin;
+    var env;
+
+    env = EnvGen.kr(
+        Env([start, peak, end], [attackTime, releaseTime], [attackCurve, releaseCurve]),
+        doneAction: 2
+    );
+
+    SendReply.kr(
+        Impulse.kr(100),
+        '/expression3',   // Layer 3 OSC path
+        [chanIndex, ccNum, env.round(1).clip(0, 127)],
+        replyID: chanIndex
+    );
+}).add;
+
+SynthDef(\ccEnvelopeLoop3, {
+    arg start = 0, peak = 100, end = 0,
+        delayTime = 0, attackTime = 0.5, releaseTime = 0.5, loopDuration = 2,
+        chanIndex = 0, ccNum = 17, attackCurve = \sin, releaseCurve = \sin, delayCurve = \lin,
+        timeOffset = 0;
+
+    var trigRate = 1 / loopDuration;
+    var trig = Impulse.kr(trigRate);
+    var totalDelay = delayTime + timeOffset;
+    var env = EnvGen.kr(
+        Env([start, start, peak, end], [totalDelay, attackTime, releaseTime], [delayCurve, attackCurve, releaseCurve]),
+        gate: Trig.kr(trig, totalDelay + attackTime + releaseTime),
+        doneAction: 0
+    );
+
+    env = env.round(1).clip(0, 127);
+
+    SendReply.kr(
+        Impulse.kr(100),
+        '/expression3',
         [chanIndex, ccNum, env],
         replyID: chanIndex
     );

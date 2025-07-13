@@ -37,21 +37,48 @@
         melodyList: [],
         vstGroup: 'Layer1',      // Default group from vstplugin-setup
         enabled: true,
-        duration: 0
+        duration: 0,
+        ccControl: (
+            enabled: true,
+            expressionCC: 11,
+            expressionMin: 10,
+            expressionMax: 120,
+            expressionShape: \sin,
+            expressionPeakPos: 0.5,
+            expressionDurationScalar: 1.0
+        )
     );
     
     ~layers.configs[\layer2] = (
         melodyList: [],
         vstGroup: 'Layer2',      // Default group from vstplugin-setup
         enabled: true,
-        duration: 0
+        duration: 0,
+        ccControl: (
+            enabled: true,
+            expressionCC: 12,
+            expressionMin: 10,
+            expressionMax: 120,
+            expressionShape: \sin,
+            expressionPeakPos: 0.5,
+            expressionDurationScalar: 1.0
+        )
     );
     
     ~layers.configs[\layer3] = (
         melodyList: [],
         vstGroup: 'Layer3',      // Default group from vstplugin-setup
         enabled: true,
-        duration: 0
+        duration: 0,
+        ccControl: (
+            enabled: true,
+            expressionCC: 13,
+            expressionMin: 10,
+            expressionMax: 120,
+            expressionShape: \sin,
+            expressionPeakPos: 0.5,
+            expressionDurationScalar: 1.0
+        )
     );
     
     "Dependent layers initialized with default VST groups".postln;

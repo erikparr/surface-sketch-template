@@ -54,7 +54,10 @@
         .states_([
             ["Start All Layers", Color.black, Color.green.alpha_(0.3)]
         ])
-        .action_({ ~startLayers.() });
+        .action_({ 
+            "DEBUG: Start button pressed".postln;
+            ~startLayers.();
+        });
     
     stopButton = Button()
         .states_([

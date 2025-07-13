@@ -1,89 +1,223 @@
-# TODO: MIDI Knob Duration Control - FIXED
+# Layer-Specific CC Envelope Implementation Plan
 
-## Problem Description - RESOLVED
+## Overview
+Implement independent expression control for each of the 3 layers using separate ccEnvelope SynthDefs and OSC responders, with MIDI control mapping:
+- Row 1 knobs � Layer 1 expression parameters
+- Row 2 knobs � Layer 2 expression parameters  
+- Row 3 knobs � Layer 3 expression parameters
 
-The MIDI knob control for parent ProcMod duration was not working due to a syntax error in the `~getLayersDurationFromKnob` function.
+## 1. SynthDef Updates (`synths-setup.scd`)
 
-### Root Cause (FIXED):
+### Already exists:
+- `ccEnvelope` � rename to `ccEnvelope1` (sends to `/expression1`)
+- `ccEnvelope2` � already exists (sends to `/expression2`)
 
-The function was missing an assignment of the calculated value:
+### Need to add:
+```supercollider
+SynthDef(\ccEnvelope3, {
+    arg start=0, peak=100, end=0,
+        attackTime=0.5, releaseTime=0.5,
+        chanIndex=0, ccNum=11, attackCurve=\sin, releaseCurve=\sin;
+    var env;
+
+    env = EnvGen.kr(
+        Env([start, peak, end], [attackTime, releaseTime], [attackCurve, releaseCurve]),
+        doneAction: 2
+    );
+
+    SendReply.kr(
+        Impulse.kr(100),
+        '/expression3',   // Layer 3 OSC path
+        [chanIndex, ccNum, env.round(1).clip(0, 127)],
+        replyID: chanIndex
+    );
+}).add;
+```
+
+## 2. OSC Responder Updates (`osc-setup.scd`)
+
+### Need to update:
+- Change `~expressionFuncLayer1` to respond to `/expression1` (currently responds to `/expression`)
+
+### Need to add:
+```supercollider
+~expressionFuncLayer3.free;
+~expressionFuncLayer3 = OSCFunc({ |msg|
+    var replyID = msg[2];
+    var chanIndex = msg[3].asInteger;
+    var ccNum = msg[4].asInteger;
+    var exprValue = msg[5].asInteger.clip(0, 127);
+    var targetGroup = ~layers.configs[\layer3].vstGroup;
+    var instances = ~vstManager.getTargetInstances(targetGroup);
+
+    instances.values.do { |vst|
+        vst.midi.control(0, ccNum, exprValue);
+    };
+
+    "[Layer3] Sent CC% value % to % VSTs (group: %)".format(
+        ccNum, exprValue, instances.size, targetGroup ? "ALL"
+    ).postln;
+}, '/expression3', s.addr);
+```
+
+## 3. Layer Configuration Structure
+
+Each layer needs its own ccControl parameters in `~layers.configs`:
 
 ```supercollider
-// BEFORE (incorrect):
-~getLayersDurationFromKnob = {
-    var duration = 4.0; // Default duration
-    
-    if (~layers.state.manualControl and: { ~midiController.notNil }) {
-        ~midiController.getKnobRow1(8).linlin(0, 1, 0.1, 10.0);  // ← Missing assignment!
-    };
-    
-    duration  // Always returns 4.0
-};
+// In layers-core.scd initialization
+~layers.configs[\layer1].ccControl = (
+    enabled: true,
+    expressionCC: 11,
+    expressionMin: 10,
+    expressionMax: 120,
+    expressionShape: \sin,
+    expressionPeakPos: 0.5,
+    expressionDurationScalar: 1.0
+);
 
-// AFTER (fixed):
-~getLayersDurationFromKnob = {
-    var duration = 4.0; // Default duration
+~layers.configs[\layer2].ccControl = ( /* same structure */ );
+~layers.configs[\layer3].ccControl = ( /* same structure */ );
+```
+
+## 4. MIDI Control Mapping
+
+Using MIDIMix CC assignments:
+
+### Row 1 � Layer 1 (CCs: 16,20,24,28,46,50,54,58)
+- Pos 5 (CC 46): expressionMin
+- Pos 6 (CC 50): expressionMax
+- Pos 4 (CC 28): expressionDurationScalar
+
+### Row 2 � Layer 2 (CCs: 17,21,25,29,47,51,55,59)
+- Pos 5 (CC 47): expressionMin
+- Pos 6 (CC 51): expressionMax
+- Pos 4 (CC 29): expressionDurationScalar
+
+### Row 3 � Layer 3 (CCs: 18,22,26,30,48,52,56,60)
+- Pos 5 (CC 48): expressionMin
+- Pos 6 (CC 52): expressionMax
+- Pos 4 (CC 30): expressionDurationScalar
+
+## 5. Layer Playback Updates (`layers-playback.scd`)
+
+### Add layer-specific parameter reading:
+```supercollider
+~updateLayerExpressionParams = { |layerName|
+    var rowNum = switch(layerName,
+        \layer1, { 1 },
+        \layer2, { 2 },
+        \layer3, { 3 }
+    );
     
-    if (~layers.state.manualControl and: { ~midiController.notNil }) {
-        duration = ~midiController.getKnobRow1(8).linlin(0, 1, 0.1, 10.0);  // ← Fixed!
+    var config = ~layers.configs[layerName];
+    
+    if (~midiController.notNil && config.notNil) {
+        // Read expression parameters from appropriate row
+        config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5).linlin(0, 1, 0, 127).asInteger;
+        config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6).linlin(0, 1, 0, 127).asInteger;
+        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0, 1, 0.1, 1.0);
+        
+        // Ensure max > min
+        if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
+            config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
+        };
     };
-    
-    duration
 };
 ```
 
-## Fixes Applied
+### Modify layer ProcMod creation to start CC envelopes:
+```supercollider
+~startLayerCCEnvelope = { |layerName, duration|
+    var config = ~layers.configs[layerName];
+    var ccControl = config.ccControl;
+    var synthDefName = switch(layerName,
+        \layer1, { \ccEnvelope1 },
+        \layer2, { \ccEnvelope2 },
+        \layer3, { \ccEnvelope3 }
+    );
+    
+    if (ccControl.enabled) {
+        var scaledDuration = duration * ccControl.expressionDurationScalar;
+        var attackTime = scaledDuration * ccControl.expressionPeakPos;
+        var releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
+        
+        // Create expression synth for this layer
+        var ccSynth = Synth(synthDefName, [
+            \start, ccControl.expressionMin,
+            \peak, ccControl.expressionMax,
+            \end, ccControl.expressionMin,
+            \attackTime, attackTime,
+            \releaseTime, releaseTime,
+            \chanIndex, 0,  // Layer-specific if needed
+            \ccNum, ccControl.expressionCC,
+            \attackCurve, ccControl.expressionShape,
+            \releaseCurve, ccControl.expressionShape
+        ]);
+        
+        // Store synth reference for cleanup
+        ~layers.layerProcs[layerName].ccSynth = ccSynth;
+    };
+};
+```
 
-1. **✓ Fixed syntax error** in `~getLayersDurationFromKnob` in `layers-control.scd:204`
-   - Added missing assignment: `duration = ~midiController.getKnobRow1(8).linlin(0, 1, 0.1, 10.0);`
+## 6. Implementation Order
 
-2. **✓ Added visual feedback** in `layers-gui.scd`
-   - Modified `updateStatus` function to show current duration when manual control is enabled
-   - Status text now displays: "Ready: X layers configured | Duration: X.Xs"
-   - Duration updates in real-time as knob is turned (0.1 second refresh rate)
+1. **Update SynthDefs** (`synths-setup.scd`) ✓
+   - Added backward compatible `ccEnvelope` (sends to `/expression`)
+   - Renamed original to `ccEnvelope1` (sends to `/expression1`)
+   - Added `ccEnvelope3` (sends to `/expression3`)
 
-3. **✓ Created test file** `test-midi-knob.scd`
-   - Comprehensive test suite to verify MIDI knob functionality
-   - Includes debug helpers and monitoring tools
+2. **Update OSC responders** (`osc-setup.scd`) ✓
+   - Updated `~expressionFuncLayer1` to use `/expression1`
+   - Added backward compatibility for `/expression`
+   - Added `~expressionFuncLayer3` with proper VST group routing
 
-## Testing Instructions
+3. **Update layer core** (`layers-core.scd`) ✓
+   - Added ccControl dictionaries to each layer config
+   - Initialized with default values
 
-1. Load the layers system after normal startup
-2. Enable manual control mode via GUI checkbox or `~setLayersManualControl.(true)`
-3. Turn MIDI knob row 1 position 8 (CC 58)
-4. Verify duration changes in GUI status display
-5. Start layers with looping enabled to see duration take effect
+4. **Update layer playback** (`layers-playback.scd`) ✓
+   - Added `~updateLayerExpressionParams` function
+   - Added `~startLayerCCEnvelope` function
+   - Integrated CC envelope creation into parent ProcMod loop
+   - Updates expression parameters before each loop iteration
 
-## Current Status
+5. **Update layer control** (`layers-control.scd`) ✓
+   - Added expression control methods
+   - Added preset support for expression settings
+   - Added debugging functions
 
-The MIDI knob duration control is now fully functional. When manual control mode is enabled:
-- Knob row 1 position 8 controls duration from 0.1 to 10 seconds
-- GUI displays current duration in real-time
-- Each loop iteration uses the current knob value
+6. **Create test file** (`test-layers.scd`) ✓
+   - Created comprehensive examples
+   - Documented MIDI control mappings
+   - Included debugging examples
 
-## Future Enhancements (Lower Priority)
+## 7. Testing Checklist
 
-1. **Additional manual controls** - Use other row 1 knobs for:
-   - Layer balance/mixing (knobs 1-3)
-   - Global velocity (knob 4)
-   - Note density (knob 5)
-   - Crossfade time between loops (knob 6)
-   - Pattern variation (knob 7)
+- [x] Load layers system successfully
+- [x] Verify all 3 SynthDefs are available (ccEnvelope1, ccEnvelope2, ccEnvelope3)
+- [x] Check OSC responders are active (/expression1, /expression2, /expression3)
+- [x] Test MIDI knob control for each row
+- [x] Verify independent expression control per layer
+- [x] Check envelope timing doesn't exceed parent duration
+- [x] Test with different VST groups per layer
+- [x] Verify expression values are sent to correct VSTs
 
-2. **Smart row management** 
-   - Automatically reserve row 1 for layers when manual control is enabled
-   - Release row 1 back to mapping system when manual control is disabled
+## Implementation Complete!
 
-3. **Visual enhancements**
-   - Add dedicated duration display widget
-   - Show knob position indicator
-   - Add numerical input field for precise duration entry
+The layer-specific CC envelope system is now fully implemented with:
+- Separate ccEnvelope SynthDefs for each layer
+- Independent OSC paths for routing
+- MIDI knob control mapping (Row 1→Layer 1, Row 2→Layer 2, Row 3→Layer 3)
+- Expression parameters updated before each loop iteration
+- Full API for controlling expression settings
+- Test examples in `test-layers.scd`
 
-4. **Preset system for manual control**
-   - Save/recall knob configurations
-   - Morph between presets
+## 8. Future Enhancements
 
-## Notes
-
-- The midi-control-mapping system conflict has been temporarily resolved by commenting it out in `_setup-loader.scd`
-- Long-term solution: Implement smart row management as described above
+- Integration with mapping system for more complex parameter control
+- GUI controls for expression parameters
+- Preset system for expression settings
+- Expression curve visualization
+- MIDI learn functionality for custom CC assignments

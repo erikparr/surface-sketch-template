@@ -110,8 +110,9 @@ The layers system allows three independent layers to play different melodies thr
 
 - **VST Manager**: Routes notes to appropriate VST instances
 - **Melody Dictionary**: Sources melodies from `~melodyDict`
-- **MIDI Controller**: Reads knob values for manual control
+- **MIDI Controller**: Reads knob values for manual control and expression parameters
 - **Sketch System**: Compatible with main sketch timing parameters
+- **Expression Control**: Independent CC envelope control for each layer
 
 ## State Management
 
@@ -127,8 +128,53 @@ The layers system allows three independent layers to play different melodies thr
 3. **Fixed initialization**: Proper SynthDef availability without hacks
 4. **Consolidated state**: Single looping mode flag, no state duplication
 5. **Manual control**: MIDI knob control for real-time duration adjustment
+6. **Layer-specific expression control**: Independent CC envelopes for each layer
+
+## Expression Control System
+
+Each layer now has independent expression control via CC envelopes that send MIDI CC values to VST instruments:
+
+### CC Envelope Mapping
+- **Layer 1**: CC 11 via `ccEnvelope1` SynthDef → `/expression1` OSC path
+- **Layer 2**: CC 12 via `ccEnvelope2` SynthDef → `/expression2` OSC path  
+- **Layer 3**: CC 13 via `ccEnvelope3` SynthDef → `/expression3` OSC path
+
+### MIDI Knob Control
+Each layer's expression parameters are controlled by MIDI knobs on the corresponding row:
+
+- **Row 1** (Layer 1): Knobs 4-6 control Layer 1 expression
+- **Row 2** (Layer 2): Knobs 4-6 control Layer 2 expression
+- **Row 3** (Layer 3): Knobs 4-6 control Layer 3 expression
+
+#### Knob Functions
+- **Position 4**: Expression duration scalar (0.1-1.0) - scales envelope duration relative to layer duration
+- **Position 5**: Expression minimum value (0-127) - CC value at start/end of envelope
+- **Position 6**: Expression maximum value (0-127) - CC value at peak of envelope
+
+### Configuration Structure
+Each layer's `ccControl` configuration:
+```supercollider
+ccControl: (
+    enabled: true,
+    expressionCC: 11,              // CC number (11, 12, or 13)
+    expressionMin: 10,             // Minimum CC value
+    expressionMax: 120,            // Maximum CC value
+    expressionShape: \sin,         // Envelope curve shape
+    expressionPeakPos: 0.5,        // Peak position (0-1)
+    expressionDurationScalar: 1.0  // Duration multiplier
+)
+```
+
+### Expression Control API
+- `~setLayerExpressionEnabled.(layerName, enabled)`: Enable/disable expression for a layer
+- `~setLayerExpressionCC.(layerName, ccNum)`: Set CC number for a layer
+- `~setLayerExpressionParams.(layerName, min, max, shape, peakPos)`: Set expression parameters
+- `~enableAllLayerExpression.()`: Enable expression for all layers
+- `~disableAllLayerExpression.()`: Disable expression for all layers
+- `~printLayerExpressionSettings.(layerName)`: Show current expression settings
+- `~printAllLayerExpressionSettings.()`: Show all layer expression settings
 
 ## Known Issues
 
-- MIDI control mapping system (if enabled) may intercept row 1 knobs
+- MIDI control mapping system (if enabled) may intercept row knobs
 - Workaround: Comment out `midi-control-mapping.scd` in `setup/_setup-loader.scd`

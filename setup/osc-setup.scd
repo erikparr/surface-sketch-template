@@ -75,7 +75,7 @@
     };
 }, '/bend', s.addr);
 
-// OSC responder for expression control - MVP VERSION (send to all VSTs)
+// OSC responder for expression control - Layer 1
 ~expressionFuncLayer1.free;
 ~expressionFuncLayer1 = OSCFunc({ |msg|
     var replyID = msg[2];
@@ -88,10 +88,21 @@
     instances.values.do { |vst|
         vst.midi.control(0, ccNum, exprValue);
     };
+}, '/expression1', s.addr);
 
-    "[Layer1] Sent CC% value % to % VSTs (group: %)%".format(
-        ccNum, exprValue, instances.size, targetGroup ? "ALL"
-    ).postln;
+// Keep backward compatibility OSC responder for /expression
+~expressionFunc.free;
+~expressionFunc = OSCFunc({ |msg|
+    var replyID = msg[2];
+    var chanIndex = msg[3].asInteger;
+    var ccNum = msg[4].asInteger;
+    var exprValue = msg[5].asInteger.clip(0, 127);
+    var targetGroup = ~activeVSTGroup; // nil means all instances
+    var instances = ~vstManager.getTargetInstances(targetGroup);
+
+    instances.values.do { |vst|
+        vst.midi.control(0, ccNum, exprValue);
+    };
 }, '/expression', s.addr);
 
 // OSC responder for expression control - MVP VERSION (send to all VSTs)
@@ -107,8 +118,23 @@
     instances.values.do { |vst|
         vst.midi.control(0, ccNum, exprValue);
     };
-
-    "[Layer2] Sent CC% value % to % VSTs (group: %)%".format(
-        ccNum, exprValue, instances.size, targetGroup ? "ALL"
-    ).postln;
 }, '/expression2', s.addr);
+
+// OSC responder for expression control - Layer 3
+~expressionFuncLayer3.free;
+~expressionFuncLayer3 = OSCFunc({ |msg|
+    var replyID = msg[2];
+    var chanIndex = msg[3].asInteger;
+    var ccNum = msg[4].asInteger;
+    var exprValue = msg[5].asInteger.clip(0, 127);
+    var targetGroup = if(~layers.notNil && ~layers.configs.notNil && ~layers.configs[\layer3].notNil, { 
+        ~layers.configs[\layer3].vstGroup 
+    }, { 
+        nil 
+    });
+    var instances = ~vstManager.getTargetInstances(targetGroup);
+
+    instances.values.do { |vst|
+        vst.midi.control(0, ccNum, exprValue);
+    };
+}, '/expression3', s.addr);

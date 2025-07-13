@@ -13,22 +13,18 @@
 
 // Ensure ProcMod SynthDef is available on the server
 ~ensureProcModSynthDef = {
-    // The ProcMod class uses a writeDefs flag to ensure the SynthDef is only created once
-    // However, .add only adds to SynthDescLib, not to the server
-    // We need to ensure it's sent to the server
+    var temp;
     
-    if (SynthDescLib.global[\procmodenv_5216].isNil) {
-        // Force ProcMod to create its SynthDef by creating a temporary instance
-        var temp = ProcMod.new(Env.asr(0.01, 1, 0.01), 1.0, \temp);
-        temp = nil;  // Clean up
-    };
+    "Forcing ProcMod SynthDef creation...".postln;
     
-    // Now send the SynthDef to the server if it exists
+    // Force ProcMod to create and send its SynthDef
+    temp = ProcMod.new(Env.asr(0.01, 1, 0.01), 1.0, \temp);
+    temp = nil;  // Clean up
+    
+    // Force send to server
     if (SynthDescLib.global[\procmodenv_5216].notNil) {
         SynthDescLib.global[\procmodenv_5216].send(Server.default);
         "ProcMod SynthDef sent to server".postln;
-    } {
-        "Warning: ProcMod SynthDef not found in SynthDescLib".warn;
     };
 };
 
@@ -42,24 +38,30 @@
 
 // Create the parent ProcMod that manages all layers
 ~createLayersParentProc = { |duration|
-    // Use an envelope with a release node to keep it sustained
-    var env = Env.asr(0.05, 1.0, 0.05, \lin, releaseNode: 1);  // Release node at sustain
-    var id = ("layersParent_" ++ Date.getDate.stamp).asSymbol;
+    var env, id, procMod;
     
-    // Use provided duration or calculate from current settings
-    duration = duration ?? { 4.0 };  // Default to 10 seconds if not specified
+    "DEBUG: ~createLayersParentProc called with duration: %".format(duration).postln;
     
-    
-    ProcMod.new(
-        env,          // ASR envelope with release node
-        1.0,          // Amplitude
-        id,           // Unique ID
-        nil,          // Group (create new)
-        0,            // addAction
-        1,            // target
+    try {
+        // Use an envelope with a release node to keep it sustained
+        env = Env.asr(0.05, 1.0, 0.05, \lin);  // ASR envelope
+        id = ("layersParent_" ++ Date.getDate.stamp).asSymbol;
         
-        // Main function - returns a Task
-        { |parentGroup, envbus|
+        // Use provided duration or calculate from current settings
+        duration = duration ?? { 4.0 };  // Default to 10 seconds if not specified
+        
+        "DEBUG: Creating ProcMod with id: %".format(id).postln;
+        
+        procMod = ProcMod.new(
+            env,          // ASR envelope with release node
+            1.0,          // Amplitude
+            id,           // Unique ID
+            nil,          // Group (create new)
+            0,            // addAction
+            1,            // target
+            
+            // Main function - returns a Task
+            { |parentGroup, envbus|
             var mainTask = Task({
                 var loopCount = 0;
                 
@@ -110,6 +112,9 @@
                     };
                     "Parent group: %, Duration: % seconds".format(parentGroup, currentDuration).postln;
                     
+                    // Update expression parameters from MIDI before each loop
+                    ~updateAllLayerExpressionParams.();
+                    
                     // Only create ProcMods on first iteration or if they're not running
                     if (loopCount == 1) {
                         // First iteration - create all ProcMods
@@ -143,14 +148,23 @@
                             };
                         };
                         
+                        // Start CC envelopes for each active layer
+                        ~layers.configs.keysValuesDo { |layerName, config|
+                            if (config.enabled and: { config.melodyList.size > 0 }) {
+                                var ccSynth = ~startLayerCCEnvelope.(layerName, currentDuration);
+                                if (ccSynth.notNil) {
+                                    // Store synth reference for potential cleanup
+                                    ~layers.timingData[layerName].ccSynth = ccSynth;
+                                };
+                            };
+                        };
+                        
                         // Wait for the current duration
                         currentDuration.wait;
                         
                         // Don't release child ProcMods - they loop internally
                         
-                        if (~layers.state.loopingMode) {
-                            "Parent loop % completed after % seconds - continuing...".format(loopCount, currentDuration).postln;
-                        } {
+                        if (~layers.state.loopingMode.not) {
                             "All layers completed after % seconds".format(currentDuration).postln;
                         };
                     } {
@@ -162,7 +176,6 @@
                     // Add a small delay between loops to ensure clean transitions
                     if (~layers.state.loopingMode) {
                         0.2.wait;  // Small delay before next loop to sync with children
-                        "Parent starting loop %...".format(loopCount + 1).postln;
                     } {
                         "Parent stopping - looping mode is off".postln;
                     };
@@ -179,6 +192,10 @@
             
             // Clear layer procs dictionary
             ~layers.layerProcs.clear;
+            
+            // Clear parent reference so system knows it's not playing
+            ~layers.parentProc = nil;
+            ~layers.state.startTime = nil;
         },
         
         // onRelease function - executes when release is triggered
@@ -196,6 +213,15 @@
             // Don't set isPlaying to false here - let control functions handle it
         }
     );
+        
+        "DEBUG: ProcMod created successfully".postln;
+        procMod  // Return the ProcMod
+        
+    } { |error|
+        "ERROR creating parent ProcMod: %".format(error).postln;
+        error.reportError;
+        nil  // Return nil on error
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -298,7 +324,6 @@
                     if (~layers.state.loopingMode) {
                         // Small gap before next iteration
                         0.1.wait;
-                        "Layer % starting iteration %".format(layerName, iterationCount + 1).postln;
                     } {
                         "Layer % stopping - looping mode is off".format(layerName).postln;
                     };
@@ -470,5 +495,109 @@
         "Warning: ~vstManager not available, cannot route note to VST".postln;
     };
 };
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    LAYER-SPECIFIC EXPRESSION CONTROL                       │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update expression parameters for a layer from MIDI knobs
+~updateLayerExpressionParams = { |layerName|
+    var rowNum = switch(layerName,
+        \layer1, { 1 },
+        \layer2, { 2 },
+        \layer3, { 3 }
+    );
+    var config = ~layers.configs[layerName];
+    var knob4, knob5, knob6;
+    
+    if (~midiController.notNil && config.notNil && config.ccControl.notNil) {
+        // Check if mapping system is intercepting these values
+        if (~midiController.mappingMode.notNil && ~midiController.mappingMode) {
+            "Warning: MIDI mapping mode is active, knob values may be intercepted".postln;
+        };
+        
+        // Read expression parameters from appropriate row
+        // Position 5: expression min
+        config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5).linlin(0, 1, 0, 127).asInteger;
+        
+        // Position 6: expression max
+        config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6).linlin(0, 1, 0, 127).asInteger;
+        
+        // Position 4: expression duration scalar
+        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0, 1, 0.1, 1.0);
+        
+        // Ensure max > min
+        if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
+            config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
+        };
+        
+        // Debug output for knob changes
+        knob4 = ~midiController.getKnobRow(rowNum, 4);
+        knob5 = ~midiController.getKnobRow(rowNum, 5);
+        knob6 = ~midiController.getKnobRow(rowNum, 6);
+        
+        "[Layer %] Knob values - Pos 4: % (DurScale: %), Pos 5: % (Min: %), Pos 6: % (Max: %)".format(
+            layerName,
+            knob4.round(0.01), config.ccControl.expressionDurationScalar.round(0.01),
+            knob5.round(0.01), config.ccControl.expressionMin,
+            knob6.round(0.01), config.ccControl.expressionMax
+        ).postln;
+    };
+};
+
+// Start CC envelope for a specific layer
+~startLayerCCEnvelope = { |layerName, duration|
+    var config = ~layers.configs[layerName];
+    var ccControl = config.ccControl;
+    var synthDefName = switch(layerName,
+        \layer1, { \ccEnvelope1 },
+        \layer2, { \ccEnvelope2 },
+        \layer3, { \ccEnvelope3 }
+    );
+    
+    if (ccControl.notNil && ccControl.enabled) {
+        var scaledDuration = duration * ccControl.expressionDurationScalar;
+        var attackTime = scaledDuration * ccControl.expressionPeakPos;
+        var releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
+        var ccSynth;
+        
+        "Starting % envelope - Duration: %s, Attack: %s, Release: %s".format(
+            synthDefName, 
+            scaledDuration.round(0.01),
+            attackTime.round(0.01),
+            releaseTime.round(0.01)
+        ).postln;
+        
+        // Create expression synth for this layer
+        ccSynth = Synth(synthDefName, [
+            \start, ccControl.expressionMin,
+            \peak, ccControl.expressionMax,
+            \end, ccControl.expressionMin,
+            \attackTime, attackTime,
+            \releaseTime, releaseTime,
+            \chanIndex, 0,  // All layers use channel 0
+            \ccNum, ccControl.expressionCC,
+            \attackCurve, ccControl.expressionShape,
+            \releaseCurve, ccControl.expressionShape
+        ]);
+        
+        // Return synth for tracking
+        ccSynth
+    } {
+        nil
+    };
+};
+
+// Update all layer expression parameters from MIDI
+~updateAllLayerExpressionParams = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~updateLayerExpressionParams.(layerName);
+    };
+};
+
+// Test that functions are defined
+"DEBUG: Testing function definitions...".postln;
+"  ~createLayersParentProc is: %".format(~createLayersParentProc.class).postln;
+"  ~createLayerProcMod is: %".format(~createLayerProcMod.class).postln;
 
 "Dependent layers playback system loaded".postln;

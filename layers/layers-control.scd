@@ -13,6 +13,12 @@
 
 // Start all layers
 ~startLayers = { |duration|
+    "DEBUG: ~startLayers called with duration: %".format(duration).postln;
+    "DEBUG: parentProc = %, isRunning = %".format(
+        ~layers.parentProc, 
+        ~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }
+    ).postln;
+    
     if (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) {
         "Layers already playing".warn;
     } {
@@ -40,8 +46,26 @@
             };
             
             // Create and play parent ProcMod with determined duration
-            ~layers.parentProc = ~createLayersParentProc.(effectiveDuration);
+            "DEBUG: About to call ~createLayersParentProc...".postln;
+            "DEBUG: ~createLayersParentProc is: %".format(~createLayersParentProc).postln;
+            
+            if (~createLayersParentProc.notNil) {
+                ~layers.parentProc = ~createLayersParentProc.(effectiveDuration);
+            } {
+                "ERROR: ~createLayersParentProc is nil!".postln;
+                ~layers.parentProc = nil;
+            };
+            
+            "DEBUG: Created parentProc: %".format(~layers.parentProc).postln;
+            
             ~layers.parentProc.play;
+            "DEBUG: Called play on parentProc".postln;
+            
+            // Check if it's actually running
+            {
+                0.1.wait;
+                "DEBUG: After play - isRunning: %".format(~layers.parentProc.isRunning).postln;
+            }.fork;
             
             ~layers.state.startTime = Main.elapsedTime;
             ~layers.state.totalDuration = effectiveDuration;  // Store the duration
@@ -265,6 +289,97 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       EXPRESSION CONTROL                                   │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Enable/disable expression control for a specific layer
+~setLayerExpressionEnabled = { |layerName, enabled|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.ccControl.notNil) {
+        config.ccControl.enabled = enabled;
+        "Layer % expression control: %".format(
+            layerName, 
+            if(enabled, "ENABLED", "DISABLED")
+        ).postln;
+    };
+};
+
+// Set expression CC number for a layer
+~setLayerExpressionCC = { |layerName, ccNum|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.ccControl.notNil) {
+        config.ccControl.expressionCC = ccNum;
+        "Layer % expression CC set to %".format(layerName, ccNum).postln;
+    };
+};
+
+// Set expression parameters for a layer
+~setLayerExpressionParams = { |layerName, min, max, shape = \sin, peakPos = 0.5|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.ccControl.notNil) {
+        config.ccControl.expressionMin = min.clip(0, 127);
+        config.ccControl.expressionMax = max.clip(0, 127);
+        config.ccControl.expressionShape = shape;
+        config.ccControl.expressionPeakPos = peakPos.clip(0, 1);
+        
+        // Ensure max > min
+        if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
+            config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
+        };
+        
+        "Layer % expression: Min=%, Max=%, Shape=%, PeakPos=%".format(
+            layerName, 
+            config.ccControl.expressionMin,
+            config.ccControl.expressionMax,
+            config.ccControl.expressionShape,
+            config.ccControl.expressionPeakPos
+        ).postln;
+    };
+};
+
+// Enable expression control for all layers
+~enableAllLayerExpression = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerExpressionEnabled.(layerName, true);
+    };
+};
+
+// Disable expression control for all layers
+~disableAllLayerExpression = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerExpressionEnabled.(layerName, false);
+    };
+};
+
+// Print expression settings for a layer
+~printLayerExpressionSettings = { |layerName|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.ccControl.notNil) {
+        var cc = config.ccControl;
+        "=== Layer % Expression Settings ===".format(layerName).postln;
+        "  Enabled: %".format(cc.enabled).postln;
+        "  CC Number: %".format(cc.expressionCC).postln;
+        "  Min: %".format(cc.expressionMin).postln;
+        "  Max: %".format(cc.expressionMax).postln;
+        "  Shape: %".format(cc.expressionShape).postln;
+        "  Peak Position: %".format(cc.expressionPeakPos).postln;
+        "  Duration Scalar: %".format(cc.expressionDurationScalar).postln;
+        "================================".postln;
+    };
+};
+
+// Print all layer expression settings
+~printAllLayerExpressionSettings = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~printLayerExpressionSettings.(layerName);
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         PRESET MANAGEMENT                                  │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -276,7 +391,8 @@
         preset[name] = (
             melodyList: config.melodyList.copy,
             vstGroup: config.vstGroup,
-            enabled: config.enabled
+            enabled: config.enabled,
+            ccControl: config.ccControl.copy  // Include expression settings
         );
     };
     
@@ -295,6 +411,11 @@
         config.melodyList = settings.melodyList.copy;
         config.vstGroup = settings.vstGroup;
         config.enabled = settings.enabled;
+        
+        // Load expression settings if available
+        if (settings.ccControl.notNil) {
+            config.ccControl = settings.ccControl.copy;
+        };
     };
     
     "Layer preset '%' loaded".format(presetName).postln;
