@@ -434,52 +434,59 @@
         var extension = PathName(filePath).extension.toLower;
         
         if (extension == "json") {
-            // Handle JSON files
+            // Handle JSON files using our timing-aware import function
             try {
                 "Loading JSON melody file for layer %: %".format(layerName, filePath).postln;
-                loadedData = JSONlib.parseFile(filePath, useEvent: true);
                 
-                if (loadedData.notNil && loadedData[\melodies].notNil && loadedData[\melodies].size > 0) {
-                    // Add ALL melodies from the file to ~melodyDict
-                    if (~melodyDict.isNil) {
-                        ~melodyDict = Dictionary.new;
-                    };
+                // Use the timing-aware import function
+                if (~importLayerMelodyFromJSON.notNil) {
+                    melodies = ~importLayerMelodyFromJSON.(filePath);
                     
-                    // Load each melody from the file
-                    loadedData[\melodies].do { |melodyInfo|
-                        var melodyKey = melodyInfo[\key].asSymbol;
+                    if (melodies.notNil) {
+                        var layerKey, matchingKey;
                         
-                        ~melodyDict[melodyKey] = (
-                            name: melodyInfo[\name],
-                            patterns: [melodyInfo[\pattern]],
-                            velocityMultipliers: (
-                                first: melodyInfo[\velocityFirst] ? 1.0,
-                                last: melodyInfo[\velocityLast] ? 1.0
-                            ),
-                            loopCount: melodyInfo[\loopCount] ? 1
-                        );
+                        // Add imported melodies to global dictionary
+                        ~addImportedMelodiesToDict.(melodies, "");  // Empty prefix to use original layer names
                         
-                        "Added melody % (%s) to ~melodyDict".format(melodyKey, melodyInfo[\name]).postln;
-                    };
-                    
-                    // Set the first melody as the active one for this layer
-                    if (loadedData[\melodies].size > 0) {
-                        var firstMelodyKey = loadedData[\melodies][0][\key].asSymbol;
-                        ~setLayerMelody.(layerName, firstMelodyKey);
+                        // Find the appropriate layer data
+                        layerKey = layerName.asString.replace("layer", "layer");  // Ensure format matches
                         
-                        "Loaded % melodies from file. Layer % set to use melody: %".format(
-                            loadedData[\melodies].size, 
-                            layerName, 
-                            firstMelodyKey
-                        ).postln;
+                        // Try to find a matching layer in the imported data
+                        // First try exact match
+                        matchingKey = melodies.keys.detect { |key|
+                            key == layerName
+                        };
+                        
+                        // If no exact match, try by layer number
+                        if (matchingKey.isNil) {
+                            var layerNum = layerName.asString.last.asString.asInteger;
+                            // Try 0-indexed match (layer1 -> layer0)
+                            matchingKey = ("layer" ++ (layerNum - 1)).asSymbol;
+                            if (melodies[matchingKey].isNil) {
+                                // Try 1-indexed match (layer1 -> layer1)
+                                matchingKey = layerName;
+                                if (melodies[matchingKey].isNil) {
+                                    matchingKey = nil;
+                                };
+                            };
+                        };
+                        
+                        if (matchingKey.isNil) {
+                            // Fallback: use the first available layer from the file
+                            matchingKey = melodies.keys.asArray.sort.first;
+                        };
+                        
+                        if (matchingKey.notNil) {
+                            ~setLayerMelody.(layerName, matchingKey);
+                            "Loaded melody '%' from JSON for layer %".format(matchingKey, layerName).postln;
+                        } {
+                            "Warning: No suitable melody found in JSON for layer %".format(layerName).postln;
+                        };
                     } {
-                        "Loaded % melodies from file. No melody set for layer %.".format(
-                            loadedData[\melodies].size, 
-                            layerName
-                        ).postln;
+                        "Error: Failed to import melodies from JSON file".postln;
                     };
                 } {
-                    "Error: JSON file does not contain valid melody data".postln;
+                    "Error: ~importLayerMelodyFromJSON function not available".postln;
                 };
             } { |error|
                 "Error parsing JSON file: %".format(error).postln;

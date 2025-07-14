@@ -221,3 +221,61 @@ The layer-specific CC envelope system is now fully implemented with:
 - Preset system for expression settings
 - Expression curve visualization
 - MIDI learn functionality for custom CC assignments
+
+## 9. Timing Data Implementation (COMPLETED)
+
+### Overview
+Implemented support for custom timing patterns in layer melodies, allowing inter-onset intervals as fractions that sum to 1.0.
+
+### Features Added:
+1. **Timing calculation system** (`layers-timing.scd`)
+   - `~calculateLayerTiming` - Calculates absolute start times from timing fractions
+   - `~importLayerMelodyFromJSON` - Imports melodies with timing from JSON
+   - `~validateTiming` - Validates timing arrays
+   - `~createTimingTestMelody` - Creates test melodies with timing data
+
+2. **Playback system updates** (`layers-playback.scd`)
+   - Parent ProcMod calculates timing data for all layers
+   - Child ProcMods use pre-calculated start times and durations
+   - Backward compatible - melodies without timing use equal spacing
+
+3. **JSON import format supported:**
+```json
+{
+  "notes": [
+    {"midi": 60, "vel": 0.8, "dur": 0.6},
+    {"midi": 62, "vel": 0.7, "dur": 0.6}
+  ],
+  "timing": [0.1, 0.2, 0.5, 0.2],  // Fractions summing to 1.0
+  "metadata": {
+    "totalDuration": 4.0,
+    "durationType": "absolute"
+  }
+}
+```
+
+### How timing works:
+- `timing[0]` = wait before first note (as fraction of total duration)
+- `timing[1..n-1]` = wait between notes
+- `timing[n]` = wait after last note
+- All values sum to 1.0
+
+### Testing:
+- Test suite available: `layers/test-timing.scd`
+- Tests backward compatibility, timing data, JSON import, and looping
+- Example JSON data: `data/melody-export.json`
+
+### Usage:
+```supercollider
+// Import from JSON
+var melodies = ~importLayerMelodyFromJSON.("path/to/file.json");
+~addImportedMelodiesToDict.(melodies);
+
+// Or create manually
+~melodyDict[\myTimedMelody] = (
+    patterns: [[60, 62, 64]],
+    timing: [0.1, 0.2, 0.5, 0.2],  // Custom timing
+    noteDurations: [0.5, 0.5, 1.0],  // Individual note durations
+    durationType: "absolute"
+);
+```

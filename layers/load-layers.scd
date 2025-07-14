@@ -25,6 +25,8 @@
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-playback.scd").load;
 
+(thisProcess.nowExecutingPath.dirname +/+ "layers-timing.scd").load;
+
 (thisProcess.nowExecutingPath.dirname +/+ "layers-control.scd").load;
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-gui.scd").load;
@@ -39,6 +41,9 @@
 "  ~startLayers.()         - Start all configured layers".postln;
 "  ~stopLayers.()          - Stop all layers".postln;
 "  ~printLayerStatus.()    - Show current configuration".postln;
+"\nTiming data support:".postln;
+"  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing".postln;
+"  ~createTimingTestMelody.()            - Create test melody with timing".postln;
 "\nQuick start:".postln;
 "  ~setLayerMelody.(\\layer1, \\yourMelody)".postln;
 "  ~setLayerMelody.(\\layer2, \\anotherMelody)".postln;

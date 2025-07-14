@@ -129,6 +129,9 @@ The layers system allows three independent layers to play different melodies thr
 4. **Consolidated state**: Single looping mode flag, no state duplication
 5. **Manual control**: MIDI knob control for real-time duration adjustment
 6. **Layer-specific expression control**: Independent CC envelopes for each layer
+7. **Timing data support**: Custom inter-onset intervals and note durations
+8. **JSON import**: Full support for importing melodies with timing data via GUI or code
+9. **Smart layer mapping**: Automatically handles 0-indexed JSON to 1-indexed GUI mapping
 
 ## Expression Control System
 
@@ -174,7 +177,83 @@ ccControl: (
 - `~printLayerExpressionSettings.(layerName)`: Show current expression settings
 - `~printAllLayerExpressionSettings.()`: Show all layer expression settings
 
+## Timing Data System
+
+The layers system now supports custom timing patterns for melodies, allowing precise control over note placement and duration.
+
+### Timing Structure
+```supercollider
+melodyData.timing = [0.1, 0.2, 0.5, 0.2];  // Fractions that sum to 1.0
+melodyData.noteDurations = [0.5, 0.5, 1.0]; // Individual note durations
+melodyData.durationType = "absolute";        // or "fractional"
+```
+
+### How Timing Works
+For n notes, provide n+1 timing values:
+- `timing[0]`: Wait before first note (fraction of total duration)
+- `timing[1..n-1]`: Inter-onset intervals between notes
+- `timing[n]`: Wait after last note
+
+Example with 3 notes and 4s total duration:
+- `[0.1, 0.2, 0.5, 0.2]` produces:
+  - 0.4s: Note 1 (10% × 4s wait)
+  - 1.2s: Note 2 (0.4s + 20% × 4s)
+  - 3.2s: Note 3 (1.2s + 50% × 4s)
+  - 4.0s: End (3.2s + 20% × 4s)
+
+### JSON Import
+```supercollider
+// Import via GUI: Use "Load File" button and select .json file
+// Or programmatically:
+var melodies = ~importLayerMelodyFromJSON.("path/to/melody.json");
+~addImportedMelodiesToDict.(melodies);
+
+// The system automatically maps:
+// JSON layer0 → GUI layer1
+// JSON layer1 → GUI layer2  
+// JSON layer2 → GUI layer3
+
+// JSON format:
+{
+  "layers": {
+    "layer0": {
+      "notes": [
+        {"midi": 60, "vel": 0.8, "dur": 0.6},
+        {"midi": 62, "vel": 0.7, "dur": 0.6}
+      ],
+      "timing": [0.1, 0.2, 0.5, 0.2],
+      "metadata": {
+        "totalDuration": 4.0,
+        "durationType": "absolute"
+      }
+    }
+  }
+}
+```
+
+### Manual Creation
+```supercollider
+~melodyDict[\myTimedMelody] = (
+    name: "Custom Timed Melody",
+    patterns: [[60, 62, 64, 65]],
+    timing: [0.1, 0.1, 0.2, 0.3, 0.3],  // Custom timing
+    noteDurations: [0.4, 0.4, 0.4, 0.8], // Individual durations
+    durationType: "absolute"
+);
+```
+
+### Testing
+- **Example data**: `data/melody-export.json` - Sample JSON file with 3 layers
+- **Backward compatible**: Melodies without timing data automatically use equal spacing
+- **GUI testing**: Use "Load File" button on any layer to import JSON melodies
+
+## Requirements
+
+- **JSON Quark**: Required for JSON import functionality
+  - Install: `Quarks.install("https://github.com/musikinformatik/JSONlib.git"); thisProcess.recompile;`
+  - This provides the String extensions (parseJSON, parseJSONFile) that JSONlib depends on
+
 ## Known Issues
 
 - MIDI control mapping system (if enabled) may intercept row knobs
-- Workaround: Comment out `midi-control-mapping.scd` in `setup/_setup-loader.scd`
+  - Workaround: Comment out `midi-control-mapping.scd` in `setup/_setup-loader.scd`
