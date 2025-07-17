@@ -51,6 +51,11 @@ MIDIController {
     var <groupParameterCallback; // Callback for parameter updates
     var <mappingMode;           // Enable/disable mapping processing
 
+    // Single device MIDI selection properties
+    var <selectiveMode;         // Enable/disable selective device mode
+    var <selectedDeviceID;      // Single selected MIDI device ID
+    var <selectedDevice;        // Selected device info
+
     *new { |vstList, oscNetAddr, bendSynth = nil, numKnobs = 16, startCC = 0, debug = false|
         ^super.new.init(vstList, oscNetAddr, bendSynth, numKnobs, startCC, debug);
     }
@@ -117,6 +122,11 @@ MIDIController {
         controlTemplates = nil;         // No templates by default  
         groupParameterCallback = nil;   // No callback by default
         mappingMode = false;            // Mapping disabled by default
+        
+        // Initialize single device MIDI selection properties
+        selectiveMode = false;          // Listen to all devices by default
+        selectedDeviceID = nil;         // No device selected by default
+        selectedDevice = nil;           // No device info by default
         
         // Initialize controller presets
         this.initControllerPresets;
@@ -415,6 +425,11 @@ MIDIController {
             if(noteHandlingEnabled) {
                 var shouldProcessNote = true; // Flag to control processing
                 
+                // Filter by selected device if in selective mode
+                if(selectiveMode and: { selectedDeviceID.notNil } and: { src != selectedDeviceID }) {
+                    shouldProcessNote = false; // Skip notes from non-selected devices
+                };
+                
                 // Determine channel based on mode
                 if(multiChannelMode) {
                     // Check if this pitch is already in activeNotes (retriggered note)
@@ -511,11 +526,15 @@ MIDIController {
         });
 
         // Note Off
-        midiFuncs[\noteOff] = MIDIFunc.noteOff({ |veloc, pitch, chan|
+        midiFuncs[\noteOff] = MIDIFunc.noteOff({ |veloc, pitch, chan, src|
             var outChan;
             
             // Skip processing if note handling is disabled
             if(noteHandlingEnabled) {
+                // Filter by selected device if in selective mode
+                if(selectiveMode and: { selectedDeviceID.notNil } and: { src != selectedDeviceID }) {
+                    ^nil; // Skip noteOff from non-selected devices
+                };
                 // Retrieve the channel this note was assigned to
                 if(multiChannelMode) {
                     if(activeNotes.includesKey(pitch)) {
@@ -600,6 +619,11 @@ MIDIController {
         // MIDI CC (Control Change)
         midiFuncs[\control] = MIDIFunc.cc({ |val, num, chan, src|
             var normalizedVal, mappingHandled = false;
+
+            // Filter by selected device if in selective mode
+            if(selectiveMode and: { selectedDeviceID.notNil } and: { src != selectedDeviceID }) {
+                ^nil; // Skip CC from non-selected devices
+            };
 
             // NEW: Check if mapping system should handle this CC first
             if(mappingMode && rowMappings.notNil) {
@@ -1314,5 +1338,61 @@ MIDIController {
         if(debug) {
             "--- routeCCThroughMappings END".postln;
         };
+    }
+
+    // ===== SINGLE DEVICE MIDI SELECTION METHODS =====
+
+    // Enable/disable selective device mode
+    setSelectiveMode { |enabled|
+        selectiveMode = enabled.asBoolean;
+        this.debug("Selective device mode: %".format(if(selectiveMode, "ENABLED", "DISABLED")));
+    }
+
+    // Set the selected MIDI device by ID
+    setMIDIDevice { |deviceID|
+        if(deviceID.isNil) {
+            selectedDeviceID = nil;
+            selectedDevice = nil;
+            this.debug("Cleared MIDI device selection");
+        } {
+            // Find device info
+            var deviceInfo = MIDIClient.sources.detect { |src| src.uid == deviceID };
+            if(deviceInfo.notNil) {
+                selectedDeviceID = deviceID;
+                selectedDevice = deviceInfo;
+                this.debug("Selected MIDI device: % (ID: %)".format(deviceInfo.name, deviceID));
+            } {
+                this.debug("MIDI device with ID % not found".format(deviceID));
+            };
+        };
+    }
+
+    // Set the selected MIDI device by name
+    setMIDIDeviceByName { |deviceName|
+        var deviceInfo = MIDIClient.sources.detect { |src| src.name == deviceName };
+        if(deviceInfo.notNil) {
+            this.setMIDIDevice(deviceInfo.uid);
+        } {
+            this.debug("MIDI device '{}' not found".format(deviceName));
+        };
+    }
+
+    // Get the currently selected device
+    getSelectedMIDIDevice {
+        ^selectedDevice;
+    }
+
+    // List all available MIDI devices
+    listMIDIDevices {
+        "Available MIDI Devices:".postln;
+        MIDIClient.sources.do { |src, i|
+            var status = if(selectedDeviceID == src.uid, " [SELECTED]", "");
+            "  % (ID: %)%".format(src.name, src.uid, status).postln;
+        };
+    }
+
+    // Clear device selection
+    clearMIDIDeviceSelection {
+        this.setMIDIDevice(nil);
     }
 }

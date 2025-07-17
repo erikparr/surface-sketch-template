@@ -122,8 +122,174 @@
         "MIDI Control Mapping GUI creation function not available yet".postln;
     };
 
+    // AUTOMATICALLY OPEN SINGLE DEVICE MIDI SELECTOR GUI
+    AppClock.sched(2, {
+        if(~midiController.notNil) {
+            "Opening Single Device MIDI Selector GUI automatically...".postln;
+            ~createSingleDeviceSelectorGUI.();
+        } {
+            "MIDI Controller not ready - Single Device GUI not opened".postln;
+        };
+        nil; // Don't reschedule
+    });
+
     nil; // return nil to prevent rescheduling
 };
+
+// ========== SINGLE DEVICE MIDI SELECTOR GUI ==========
+~createSingleDeviceSelectorGUI = {
+    var win, devicePopup, modeButton, statusText, refreshButton;
+    var updateDeviceList, updateUI;
+    var devices = Array.new;
+    
+    if(~midiController.isNil) {
+        "MIDI Controller not initialized. Please run ~initMIDISetup.() first.".warn;
+        ^nil;
+    };
+    
+    // Close existing window if any
+    if(~singleDeviceWindow.notNil) { 
+        if(~singleDeviceWindow.isClosed.not) {
+            ~singleDeviceWindow.close;
+        };
+    };
+    
+    // Create window
+    win = Window("Single Device MIDI Selector", Rect(100, 100, 400, 200));
+    ~singleDeviceWindow = win;
+    
+    // Create UI elements
+    statusText = StaticText()
+        .string_("Mode: Listening to all devices")
+        .font_(Font("Arial", 12))
+        .align_(\center);
+        
+    devicePopup = PopUpMenu()
+        .items_(["All Devices"])
+        .action_({ |menu|
+            if(menu.value == 0) {
+                ~midiController.clearMIDIDeviceSelection;
+            } {
+                var deviceID = devices[menu.value - 1].uid;
+                ~midiController.setMIDIDevice(deviceID);
+            };
+            updateUI.();
+        });
+        
+    modeButton = Button()
+        .states_([
+            ["Enable Selective Mode", Color.black, Color.gray(0.9)],
+            ["Disable Selective Mode", Color.white, Color.red(0.7)]
+        ])
+        .action_({ |btn|
+            if(btn.value == 1) {
+                // Enable selective mode
+                if(~midiController.selectedDeviceID.notNil) {
+                    ~midiController.setSelectiveMode(true);
+                } {
+                    "Please select a device first".warn;
+                    { btn.value = false }.defer;
+                };
+            } {
+                // Disable selective mode
+                ~midiController.setSelectiveMode(false);
+            };
+            updateUI.();
+        });
+        
+    refreshButton = Button()
+        .states_([["Refresh", Color.black, Color.gray(0.9)]])
+        .action_({
+            updateDeviceList.();
+            updateUI.();
+        });
+    
+    // Function to update device list
+    updateDeviceList = {
+        {
+            var sources = MIDIClient.sources;
+            var items = ["All Devices"];
+            
+            devices = sources;
+            sources.do { |src|
+                items = items.add(src.name);
+            };
+            
+            devicePopup.items = items;
+        }.defer;
+    };
+    
+    // Function to update UI state
+    updateUI = {
+        {
+            var modeStr;
+            
+            // Update mode button state
+            modeButton.value = if(~midiController.selectiveMode, 1, 0);
+            
+            // Update status text
+            if(~midiController.selectiveMode) {
+                if(~midiController.selectedDeviceID.notNil) {
+                    modeStr = "Mode: SELECTIVE - Listening to %".format(~midiController.selectedDevice.name);
+                } {
+                    modeStr = "Mode: SELECTIVE - No device selected!";
+                };
+            } {
+                modeStr = "Mode: Listening to ALL devices";
+            };
+            statusText.string = modeStr;
+            
+            // Update popup selection
+            if(~midiController.selectedDeviceID.notNil) {
+                var index = devices.detectIndex { |dev| dev.uid == ~midiController.selectedDeviceID };
+                if(index.notNil) {
+                    devicePopup.value = index + 1; // +1 because "All Devices" is at index 0
+                };
+            } {
+                devicePopup.value = 0; // "All Devices"
+            };
+        }.defer;
+    };
+    
+    // Set layout
+    win.layout = VLayout(
+        // Title
+        StaticText().string_("Single Device MIDI Selector")
+            .font_(Font("Arial", 16, true))
+            .align_(\center)
+            .maxHeight_(30),
+        
+        // Current status
+        statusText.maxHeight_(30),
+        
+        // Device selection
+        StaticText().string_("Select MIDI device:").maxHeight_(20),
+        devicePopup,
+        
+        // Buttons
+        HLayout(
+            modeButton,
+            refreshButton
+        )
+    );
+    
+    // Initialize
+    updateDeviceList.();
+    updateUI.();
+    
+    // Set window actions
+    win.onClose = {
+        ~singleDeviceWindow = nil;
+    };
+    
+    win.front;
+    
+    // Return window for reference
+    win;
+};
+
+// Convenience function
+~singleDeviceGUI = { ~createSingleDeviceSelectorGUI.() };
 
 // Call MIDI setup once manually when VST Manager is ready
 // (Remove automatic scheduling to prevent infinite loops)
