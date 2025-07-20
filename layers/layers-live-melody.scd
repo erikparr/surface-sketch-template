@@ -1,0 +1,346 @@
+/*
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                          LAYERS LIVE MELODY MODE                              ║
+║                   Real-time melody updates via OSC                            ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+*/
+
+(
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                            OSC RECEIVER SETUP                               │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~initLiveMelodyOSC = {
+    "Initializing live melody OSC receivers...".postln;
+    
+    [\layer1, \layer2, \layer3].do { |layerName|
+        var oscPath = ("/liveMelody/update/" ++ layerName).asSymbol;
+        var defName = ("liveMelody_" ++ layerName).asSymbol;
+        
+        OSCdef(
+            defName,
+            { |msg, time, addr, recvPort|
+                var jsonData = msg[1].asString;
+                "Received live melody update for % from %:%".format(
+                    layerName, addr.ip, addr.port
+                ).postln;
+                
+                try {
+                    ~queueLiveMelodyUpdate.(layerName, jsonData);
+                } { |error|
+                    "Error processing live melody update: %".format(error).error;
+                };
+            },
+            oscPath
+        );
+        
+        "OSC receiver ready: %".format(oscPath).postln;
+    };
+    
+    "Live melody OSC receivers initialized".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                          UPDATE QUEUE MANAGEMENT                            │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~queueLiveMelodyUpdate = { |layerName, jsonData|
+    var melodyData, validatedData;
+    
+    // Parse JSON
+    try {
+        melodyData = jsonData.parseJSON;
+    } { |error|
+        "Failed to parse JSON: %".format(error).error;
+        ^nil;
+    };
+    
+    // Validate data
+    validatedData = ~validateLiveMelodyData.(melodyData);
+    
+    if (validatedData.notNil) {
+        // Store in pending updates
+        ~layers.state.pendingUpdates[layerName] = validatedData;
+        
+        "Queued melody update for %: % notes".format(
+            layerName, 
+            validatedData.notes.size
+        ).postln;
+        
+        // Log timing info if present
+        if (validatedData.timing.notNil) {
+            "  Timing: %".format(validatedData.timing.collect(_.round(0.001))).postln;
+        };
+    } {
+        "Invalid melody data for %".format(layerName).error;
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                           DATA VALIDATION                                   │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~validateLiveMelodyData = { |data|
+    var notes, timing, metadata, expressionOverride;
+    var noteCount, timingSum;
+    
+    // Check for required fields
+    if (data.isNil or: { data.notes.isNil }) {
+        "Missing required 'notes' field".error;
+        ^nil;
+    };
+    
+    notes = data.notes;
+    timing = data.timing;
+    metadata = data.metadata ? ();
+    expressionOverride = data.expressionOverride;
+    
+    // Validate notes array
+    if (notes.isArray.not or: { notes.size == 0 }) {
+        "Notes must be a non-empty array".error;
+        ^nil;
+    };
+    
+    // Validate each note
+    notes.do { |note, i|
+        if (note.midi.isNil or: { note.midi < 0 } or: { note.midi > 127 }) {
+            "Invalid MIDI note at index %: %".format(i, note.midi).error;
+            ^nil;
+        };
+        
+        if (note.vel.isNil or: { note.vel < 0 } or: { note.vel > 1.0 }) {
+            "Invalid velocity at index %: %".format(i, note.vel).error;
+            ^nil;
+        };
+        
+        if (note.dur.isNil or: { note.dur <= 0 }) {
+            "Invalid duration at index %: %".format(i, note.dur).error;
+            ^nil;
+        };
+    };
+    
+    noteCount = notes.size;
+    
+    // Validate timing array if present
+    if (timing.notNil) {
+        if (timing.isArray.not) {
+            "Timing must be an array".error;
+            ^nil;
+        };
+        
+        if (timing.size != (noteCount + 1)) {
+            "Timing array size (%) doesn't match expected size (%) for % notes".format(
+                timing.size, noteCount + 1, noteCount
+            ).error;
+            ^nil;
+        };
+        
+        // Check that timing sums to 1.0
+        timingSum = timing.sum;
+        if ((timingSum - 1.0).abs > 0.001) {
+            "Timing array sum (%) is not 1.0".format(timingSum).error;
+            ^nil;
+        };
+        
+        // Check all values are positive
+        timing.do { |val, i|
+            if (val < 0) {
+                "Negative timing value at index %: %".format(i, val).error;
+                ^nil;
+            };
+        };
+    };
+    
+    // Validate expression override if present
+    if (expressionOverride.notNil) {
+        if (expressionOverride.expressionMin.notNil) {
+            var min = expressionOverride.expressionMin;
+            if (min < 0 or: { min > 127 }) {
+                "Invalid expressionMin: %".format(min).error;
+                ^nil;
+            };
+        };
+        
+        if (expressionOverride.expressionMax.notNil) {
+            var max = expressionOverride.expressionMax;
+            if (max < 0 or: { max > 127 }) {
+                "Invalid expressionMax: %".format(max).error;
+                ^nil;
+            };
+        };
+        
+        if (expressionOverride.expressionDurationScalar.notNil) {
+            var scalar = expressionOverride.expressionDurationScalar;
+            if (scalar < 0.1 or: { scalar > 1.0 }) {
+                "Invalid expressionDurationScalar: %".format(scalar).error;
+                ^nil;
+            };
+        };
+    };
+    
+    // Return validated data
+    (
+        notes: notes,
+        timing: timing,
+        metadata: metadata,
+        expressionOverride: expressionOverride
+    )
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         DATA CONVERSION                                     │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~convertLiveMelodyData = { |data|
+    var notes = data.notes;
+    var patterns, velocities, durations;
+    var melodyData;
+    
+    // Extract arrays from note objects
+    patterns = notes.collect { |n| n.midi };
+    velocities = notes.collect { |n| (n.vel * 127).asInteger };
+    durations = notes.collect { |n| n.dur };
+    
+    // Build melody dictionary entry
+    melodyData = (
+        name: "Live Melody",
+        patterns: [patterns],  // Wrap in array for compatibility
+        velocities: velocities,
+        timing: data.timing,
+        noteDurations: durations,
+        durationType: data.metadata.durationType ? "absolute"
+    );
+    
+    // Add metadata if present
+    if (data.metadata.notNil) {
+        melodyData.metadata = data.metadata;
+    };
+    
+    melodyData
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    APPLY PENDING UPDATES                                    │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~applyPendingMelodyUpdates = {
+    if (~layers.state.liveMelodyMode.not) {
+        ^nil;  // Exit if not in live melody mode
+    };
+    
+    ~layers.state.pendingUpdates.keysValuesDo { |layerName, melodyData|
+        var tempKey = ("live_" ++ layerName).asSymbol;
+        var config = ~layers.configs[layerName];
+        
+        // Convert to internal format
+        ~melodyDict[tempKey] = ~convertLiveMelodyData.(melodyData);
+        
+        // Update layer config to use new melody
+        config.melodyList = [tempKey];
+        
+        // Apply expression overrides if present
+        if (melodyData.expressionOverride.notNil) {
+            var override = melodyData.expressionOverride;
+            var ccControl = config.ccControl;
+            
+            if (override.expressionMin.notNil) {
+                ccControl.expressionMin = override.expressionMin;
+            };
+            
+            if (override.expressionMax.notNil) {
+                ccControl.expressionMax = override.expressionMax;
+            };
+            
+            if (override.expressionDurationScalar.notNil) {
+                ccControl.expressionDurationScalar = override.expressionDurationScalar;
+            };
+            
+            "Applied expression overrides for %".format(layerName).postln;
+        };
+        
+        // Clear pending update
+        ~layers.state.pendingUpdates[layerName] = nil;
+        
+        "Applied live melody update to %".format(layerName).postln;
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         CONTROL FUNCTIONS                                   │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~enableLiveMelodyMode = {
+    if (~layers.state.liveMelodyMode) {
+        "Live melody mode already enabled".postln;
+        ^nil;
+    };
+    
+    ~layers.state.liveMelodyMode = true;
+    ~layers.state.pendingUpdates = Dictionary.new;  // Ensure dictionary exists
+    ~initLiveMelodyOSC.();
+    
+    "Live melody mode enabled - listening for OSC updates".postln;
+    "Send updates to: /liveMelody/update/layer1, layer2, or layer3".postln;
+};
+
+~disableLiveMelodyMode = {
+    if (~layers.state.liveMelodyMode.not) {
+        "Live melody mode already disabled".postln;
+        ^nil;
+    };
+    
+    ~layers.state.liveMelodyMode = false;
+    
+    // Free OSC receivers
+    [\layer1, \layer2, \layer3].do { |layer|
+        OSCdef(("liveMelody_" ++ layer).asSymbol).free;
+    };
+    
+    // Clear pending updates
+    ~layers.state.pendingUpdates.clear;
+    
+    "Live melody mode disabled".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                          UTILITY FUNCTIONS                                  │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Test function to send update from within SC
+~sendLiveMelodyUpdate = { |layerName, melodyData|
+    var jsonString = melodyData.asJSON;
+    var addr = NetAddr("127.0.0.1", 57120);  // Loopback to SC
+    var path = ("/liveMelody/update/" ++ layerName).asSymbol;
+    
+    addr.sendMsg(path, jsonString);
+    "Sent test update to %".format(path).postln;
+};
+
+// Get current live melody status
+~getLiveMelodyStatus = {
+    var status = (
+        enabled: ~layers.state.liveMelodyMode,
+        pendingUpdates: Dictionary.new
+    );
+    
+    if (~layers.state.pendingUpdates.notNil) {
+        ~layers.state.pendingUpdates.keysValuesDo { |layer, data|
+            if (data.notNil) {
+                status.pendingUpdates[layer] = data.notes.size;
+            };
+        };
+    };
+    
+    status
+};
+
+// Clear all pending updates
+~clearLiveMelodyUpdates = {
+    if (~layers.state.pendingUpdates.notNil) {
+        ~layers.state.pendingUpdates.clear;
+        "Cleared all pending live melody updates".postln;
+    };
+};
+
+"Layers live melody system loaded successfully".postln;
+);

@@ -27,6 +27,8 @@
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-timing.scd").load;
 
+(thisProcess.nowExecutingPath.dirname +/+ "layers-live-melody.scd").load;
+
 (thisProcess.nowExecutingPath.dirname +/+ "layers-control.scd").load;
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-gui.scd").load;
@@ -44,6 +46,10 @@
 "\nTiming data support:".postln;
 "  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing".postln;
 "  ~createTimingTestMelody.()            - Create test melody with timing".postln;
+"\nLive melody mode:".postln;
+"  ~enableLiveMelodyMode.()              - Enable live OSC updates".postln;
+"  ~disableLiveMelodyMode.()             - Disable live OSC updates".postln;
+"  ~getLiveMelodyStatus.()               - Check status and pending updates".postln;
 "\nQuick start:".postln;
 "  ~setLayerMelody.(\\layer1, \\yourMelody)".postln;
 "  ~setLayerMelody.(\\layer2, \\anotherMelody)".postln;

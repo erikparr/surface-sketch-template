@@ -74,6 +74,11 @@
                     
                     loopCount = loopCount + 1;
                     
+                    // Check for live melody updates before starting new loop
+                    if (~layers.state.liveMelodyMode and: { ~applyPendingMelodyUpdates.notNil }) {
+                        ~applyPendingMelodyUpdates.();
+                    };
+                    
                     // Determine duration at the START of each loop (like sketch system)
                     if (~layers.state.manualControl) {
                         // Manual control: read fresh value from knob each iteration
@@ -330,7 +335,18 @@
                             if (~processNote.notNil) {
                                 processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
                             } {
-                                processedNote = [note, 100];  // Fallback
+                                // Check if melody has velocity data
+                                var melodyData = ~melodyDict[melodyKey];
+                                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
+                                    velocity = melodyData.velocities[noteIndex];
+                                    // Convert from 0-1 to 0-127 if needed
+                                    if (velocity <= 1.0) {
+                                        velocity = (velocity * 127).asInteger;
+                                    };
+                                    processedNote = [note, velocity];
+                                } {
+                                    processedNote = [note, 100];  // Default fallback
+                                };
                             };
                             
                             if (iterationCount == 1) {  // Only log first iteration
@@ -368,7 +384,18 @@
                             if (~processNote.notNil) {
                                 processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
                             } {
-                                processedNote = [note, 100];  // Fallback
+                                // Check if melody has velocity data
+                                var melodyData = ~melodyDict[melodyKey];
+                                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
+                                    velocity = melodyData.velocities[noteIndex];
+                                    // Convert from 0-1 to 0-127 if needed
+                                    if (velocity <= 1.0) {
+                                        velocity = (velocity * 127).asInteger;
+                                    };
+                                    processedNote = [note, velocity];
+                                } {
+                                    processedNote = [note, 100];  // Default fallback
+                                };
                             };
                             
                             if (iterationCount == 1) {  // Only log first iteration
@@ -497,8 +524,18 @@
             if (~processNote.notNil) {
                 processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
             } {
-                // Fallback: just return note and default velocity
-                processedNote = [note, 100];
+                // Check if melody has velocity data
+                var melodyData = ~melodyDict[melodyKey];
+                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
+                    var velocity = melodyData.velocities[noteIndex];
+                    // Convert from 0-1 to 0-127 if needed
+                    if (velocity <= 1.0) {
+                        velocity = (velocity * 127).asInteger;
+                    };
+                    processedNote = [note, velocity];
+                } {
+                    processedNote = [note, 100];  // Default fallback
+                };
             };
             
             // Get timing - use sketch system if available, otherwise defaults

@@ -129,10 +129,18 @@
 ~setLayerMelody = { |layerName, melodyKey|
     var config = ~layers.configs[layerName];
     
-    config.melodyList = [melodyKey];  // Single melody, no progression
+    if (config.isNil) {
+        "Error: Layer % not found".format(layerName).error;
+        ^nil;
+    };
     
-    // Find the melody in ~melodyData and add it to ~melodyDict
-    if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
+    // Check if melody exists
+    if (~melodyDict.notNil and: { ~melodyDict[melodyKey].notNil }) {
+        config.melodyList = [melodyKey];  // Single melody, no progression
+        "Layer %: assigned melody %".format(layerName, melodyKey).postln;
+    } {
+        // Try to find the melody in ~melodyData and add it to ~melodyDict
+        if (~melodyData.notNil and: { ~melodyData[\melodies].notNil }) {
         var melodyInfo = ~melodyData[\melodies].detect { |m| m[\key].asSymbol == melodyKey };
         if (melodyInfo.notNil) {
             // Add to ~melodyDict for playback compatibility
@@ -149,12 +157,19 @@
                 loopCount: melodyInfo[\loopCount] ? 1
             );
             "Added melody % to ~melodyDict".format(melodyKey).postln;
+            config.melodyList = [melodyKey];
+            "Added melody % from ~melodyData to ~melodyDict".format(melodyKey).postln;
         } {
-            "Warning: Melody % not found in ~melodyData".format(melodyKey).postln;
+            // Melody not found in either dict, but still set it
+            config.melodyList = [melodyKey];
+            "Warning: Melody % not found in ~melodyDict or ~melodyData".format(melodyKey).warn;
         };
+    } {
+        // No ~melodyData available, just set the melody
+        config.melodyList = [melodyKey];
+        "Warning: Melody % not found in ~melodyDict".format(melodyKey).warn;
     };
-    
-    "Layer % melody set to %".format(layerName, melodyKey).postln;
+    };
     
     // Recalculate duration
     ~calculateLayerDuration.(config);

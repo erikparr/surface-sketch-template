@@ -95,6 +95,21 @@
             })
     );
     
+    // Live melody mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Live Melody Mode (OSC Updates)")
+            .value_(~layers.state.liveMelodyMode)
+            .action_({ |cb|
+                if (cb.value) {
+                    ~enableLiveMelodyMode.();
+                } {
+                    ~disableLiveMelodyMode.();
+                };
+                updateStatus.();
+            })
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘
@@ -284,7 +299,7 @@
     ~layersRefreshButton = Button()
         .states_([
             ["Auto-loading VST Groups...", Color.black, Color.yellow.alpha_(0.3)],
-            ["VST Groups Loaded ✓", Color.black, Color.green.alpha_(0.3)]
+            ["VST Groups Loaded", Color.black, Color.green.alpha_(0.3)]
         ])
         .action_({ |btn|
             ~refreshLayerVSTGroups.();
@@ -332,6 +347,21 @@
                 var duration = ~getLayersDurationFromKnob.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
             };
+            
+            // Add live melody info if active
+            if (~layers.state.liveMelodyMode) {
+                var pendingCount = 0;
+                if (~layers.state.pendingUpdates.notNil) {
+                    ~layers.state.pendingUpdates.keysValuesDo { |layer, data|
+                        if (data.notNil) { pendingCount = pendingCount + 1 };
+                    };
+                };
+                if (pendingCount > 0) {
+                    statusString = statusString ++ " | Live: % pending".format(pendingCount);
+                } {
+                    statusString = statusString ++ " | Live: active";
+                };
+            };
         } {
             statusString = "Ready: % layers configured".format(activeCount);
             
@@ -339,6 +369,11 @@
             if (~layers.state.manualControl) {
                 var duration = ~getLayersDurationFromKnob.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+            };
+            
+            // Show live melody status when not playing
+            if (~layers.state.liveMelodyMode) {
+                statusString = statusString ++ " | Live mode enabled";
             };
         };
         
@@ -403,7 +438,7 @@
     
     // Check VST availability on startup
     if (~vstManager.isNil or: { ~vstManager.getGroupNames().size == 0 }) {
-        statusText.string = "⚠️ VST groups not ready - click 'Refresh VST Groups' button";
+        statusText.string = "VST groups not ready - click 'Refresh VST Groups' button";
     };
     
     win.front;
