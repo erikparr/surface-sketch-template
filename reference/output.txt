@@ -1,0 +1,673 @@
+compiling class library...
+	Found 865 primitives.
+	Compiling directory '/Applications/SuperCollider.app/Contents/Resources/SCClassLibrary'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/Extensions'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Tendency'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/TabbedView2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/XML'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Ctk'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JoshMisc'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JSONlib'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Singleton'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/FreeAfter'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Connection'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Collapse'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/WindowViewRecall'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/UnitTest2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Deferred'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Log'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/wslib'
+	numentries = 1723697 / 37441320 = 0.046
+	9222 method selectors, 4060 classes
+	method table size 33210136 bytes, big table size 299530560
+	Number of Symbols 22446
+	Byte Code Size 891739
+	compiled 854 files in 0.81 seconds
+
+Info: 2 methods are currently overwritten by extensions. To see which, execute:
+MethodOverride.printAll
+
+compile done
+localhost : setting clientID to 0.
+internal : setting clientID to 0.
+Class tree inited in 0.01 seconds
+Ctk init class runs
+
+
+*** Welcome to SuperCollider 3.14.0-dev. *** For help press Cmd-D.
+Booting server 'localhost' on address 127.0.0.1:57110.
+VSTPlugin 0.6
+SCDoc: Indexing help-files...
+exception in GraphDef_Load: name too long (> 31 chars): 1
+while reading file: '/Users/erikparr/Library/Application Support/SuperCollider/synthdefs/BendEnvelopeLoop.scsyndef'Number of Devices: 3
+   0 : "SB242Y"
+   1 : "Mac Studio Speakers"
+   2 : "Babyface Pro (70798404)"
+
+"Babyface Pro (70798404)" Input Device
+   Streams: 1
+      0  channels 14
+
+"Babyface Pro (70798404)" Output Device
+   Streams: 1
+      0  channels 14
+
+SC_AudioDriver: sample rate = 48000.000000, driver's block size = 512
+SuperCollider 3 server ready.
+SCDoc: Indexed 2285 documents in 0.72 seconds
+Requested notification messages from server 'localhost'
+localhost: server process's maxLogins (1) matches with my options.
+localhost: keeping clientID (0) as confirmed by server process.
+Shared memory server interface initialized
+MIDI Sources:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+MIDI Destinations:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+[MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp"), MIDIEndPoint("USB MIDI Device", "USB MIDI Device"), MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)"), MIDIEndPoint("Keystation 61 MK3", "(Transport)"), MIDIEndPoint("MIDI Mix", "MIDI Mix")]
+Loading setup...
+Loading setup file: synths-setup.scd
+Loading Dependent Layer System...
+Initializing dependent layer system...
+Dependent layers initialized with default VST groups
+Forcing ProcMod SynthDef creation...
+ProcMod SynthDef sent to server
+DEBUG: Testing function definitions...
+  ~createLayersParentProc is: Function
+  ~createLayerProcMod is: Function
+Dependent layers playback system loaded
+Layers timing utilities loaded successfully
+ERROR: syntax error, unexpected VAR, expecting '}'
+  in interpreted text
+  line 376 char 15:
+
+              var convertedData = ~convertEventToDict.(melodyData);
+              ^^^
+              "DEBUG: Converted data: %".format(convertedData).postln;
+-----------------------------------
+ERROR: Command line parse failed
+Dependent layers control system loaded
+Dependent layers GUI loaded
+
+=== Dependent Layer System Loaded Successfully ===
+Available functions:
+  ~createLayersGUI.()     - Open the control interface
+  ~startLayers.()         - Start all configured layers
+  ~stopLayers.()          - Stop all layers
+  ~printLayerStatus.()    - Show current configuration
+
+Timing data support:
+  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing
+  ~createTimingTestMelody.()            - Create test melody with timing
+
+Live melody mode:
+  ~enableLiveMelodyMode.()              - Enable live OSC updates
+  ~disableLiveMelodyMode.()             - Disable live OSC updates
+  ~getLiveMelodyStatus.()               - Check status and pending updates
+
+Quick start:
+  ~setLayerMelody.(\layer1, \yourMelody)
+  ~setLayerMelody.(\layer2, \anotherMelody)
+  ~startLayers.()
+===============================================
+
+=== Layer GUI Debug ===
+~vstManager available: false
+===================
+VSTManager not available
+Loading setup file: vstplugin-setup.scd
+Searching for VST plugins...
+VST plugin search complete.
+VSTManager: Initializing... Server: %
+VSTManager: Performing initial VST search...
+WARNING: keyword arg 'completion' not found in call to Meta_VSTPlugin:search
+VSTManager: Initialization complete.
+VSTManager initialized.
+VSTManager is ready for use.
+Starting VST instance loading...
+Waiting for VST search to complete (5 seconds)...
+WARNING: already searching!
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST'...
+read cache file /Users/erikparr/Library/Application Support/vstplugin/sc/cache_amd64.ini
+found 0 plugins
+searching in '/Library/Audio/Plug-Ins/VST'...
+/Library/Audio/Plug-Ins/VST/Analog Lab V.vst
+/Library/Audio/Plug-Ins/VST/ARP 2600 V3.vst
+/Library/Audio/Plug-Ins/VST/Augmented STRINGS.vst
+/Library/Audio/Plug-Ins/VST/Augmented VOICES.vst
+/Library/Audio/Plug-Ins/VST/B-3 V2.vst
+/Library/Audio/Plug-Ins/VST/Buchla Easel V.vst
+/Library/Audio/Plug-Ins/VST/Clavinet V.vst
+/Library/Audio/Plug-Ins/VST/CMI V.vst
+/Library/Audio/Plug-Ins/VST/CS-80 V4.vst
+/Library/Audio/Plug-Ins/VST/CZ V.vst
+/Library/Audio/Plug-Ins/VST/DX7 V.vst
+/Library/Audio/Plug-Ins/VST/Emulator II V.vst
+/Library/Audio/Plug-Ins/VST/Farfisa V.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp.vst
+/Library/Audio/Plug-Ins/VST/iZotope Trash 2.vst
+/Library/Audio/Plug-Ins/VST/Jun-6 V.vst
+/Library/Audio/Plug-Ins/VST/Jup-8 V4.vst
+/Library/Audio/Plug-Ins/VST/Kontakt.vst
+/Library/Audio/Plug-Ins/VST/KORG MS-20 V.vst
+/Library/Audio/Plug-Ins/VST/Matrix-12 V2.vst
+/Library/Audio/Plug-Ins/VST/Mellotron V.vst
+/Library/Audio/Plug-Ins/VST/Mini V3.vst
+/Library/Audio/Plug-Ins/VST/Modular V3.vst
+/Library/Audio/Plug-Ins/VST/Omnisphere.vst
+/Library/Audio/Plug-Ins/VST/OP-Xa V.vst
+/Library/Audio/Plug-Ins/VST/Piano V3.vst
+/Library/Audio/Plug-Ins/VST/Pigments.vst
+/Library/Audio/Plug-Ins/VST/Prophet-5 V.vst
+/Library/Audio/Plug-Ins/VST/Prophet-VS V.vst
+/Library/Audio/Plug-Ins/VST/SEM V2.vst
+/Library/Audio/Plug-Ins/VST/Solina V2.vst
+/Library/Audio/Plug-Ins/VST/SQ80 V.vst
+/Library/Audio/Plug-Ins/VST/Stage-73 V2.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Baritone Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Tuba.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Cello 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Contrabassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM English Horn 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Euphonium.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn Bb.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn F.vst
+/Library/Audio/Plug-Ins/VST/SWAM Oboe 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Soprano Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet C.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tuba Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Viola 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Violin 3.vst
+/Library/Audio/Plug-Ins/VST/Synclavier V.vst
+/Library/Audio/Plug-Ins/VST/Synthi V.vst
+/Library/Audio/Plug-Ins/VST/ValhallaFreqEcho.vst
+/Library/Audio/Plug-Ins/VST/ValhallaShimmer_x64.vst
+/Library/Audio/Plug-Ins/VST/Vocoder V.vst
+/Library/Audio/Plug-Ins/VST/VOX Continental V2.vst
+/Library/Audio/Plug-Ins/VST/Wurli V2.vst
+found 80 plugins
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST3'...
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/adelay.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again-sampleaccurate.vst3
+	[1/2] Advanced Tutorial
+	[2/2] AGain Sample Accurate
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again.vst3
+	[1/2] AGain VST3
+	[2/2] AGain SideChain VST3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/againsimple.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/BasicVST.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/channelcontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/dataexchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/hostchecker.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/legacymidiccout.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/mda-vst3.vst3
+	[1/34] mda RingMod
+	[2/34] mda Image
+	[3/34] mda Bandisto
+	[4/34] mda Round Panner
+	[5/34] mda Delay
+	[6/34] mda TestTone
+	[7/34] mda Combo
+	[8/34] mda Stereo Simulator
+	[9/34] mda Tracker
+	[10/34] mda MultiBand
+	[11/34] mda Dither
+	[12/34] mda Limiter
+	[13/34] mda RePsycho!
+	[14/34] mda BeatBox
+	[15/34] mda Loudness
+	[16/34] mda TalkBox
+	[17/34] mda Ambience
+	[18/34] mda Degrade
+	[19/34] mda EPiano
+	[20/34] mda Dynamics
+	[21/34] mda Leslie
+	[22/34] mda Shepard
+	[23/34] mda Detune
+	[24/34] mda Sub-Bass Synthesizer
+	[25/34] mda Splitter
+	[26/34] mda DeEsser
+	[27/34] mda DubDelay
+	[28/34] mda Piano
+	[29/34] mda JX10
+	[30/34] mda RezFilter
+	[31/34] mda DX10
+	[32/34] mda Thru-Zero Flanger
+	[33/34] mda Overdrive
+	[34/34] mda SpecMeter
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/multiple-program-changes.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressionsynth.vst3
+	[1/2] Note Expression Synth
+	[2/2] Note Expression Synth With UI
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressiontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/panner.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/pitchnames.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/prefetchable.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/programchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/syncdelay.vst3
+found 54 plugins
+searching in '/Library/Audio/Plug-Ins/VST3'...
+'/Library/Audio/Plug-Ins/VST3/Analog Lab V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/ARP 2600 V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented STRINGS.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented VOICES.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/B-3 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Buchla Easel V.vst3
+'/Library/Audio/Plug-Ins/VST3/Clavinet V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CMI V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CS-80 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/CZ V.vst3
+'/Library/Audio/Plug-Ins/VST3/DX7 V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Emulator II V.vst3
+'/Library/Audio/Plug-Ins/VST3/Eventide/Physion Mk II.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Eventide/SplitEQ.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Farfisa V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Contrast.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Equalize.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM EqualizeMono.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Shift.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Warp.vst3
+/Library/Audio/Plug-Ins/VST3/iZotope Trash 2.vst3
+'/Library/Audio/Plug-Ins/VST3/Jun-6 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Jup-8 V4.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Kontakt 7.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Kontakt.vst3
+'/Library/Audio/Plug-Ins/VST3/KORG MS-20 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MagicBlur.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MagicDelay.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFilter.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFusion.vst3
+'/Library/Audio/Plug-Ins/VST3/MagicPitch.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Matrix-12 V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mellotron V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mini V3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MMM.vst3
+/Library/Audio/Plug-Ins/VST3/MMMm.vst3
+/Library/Audio/Plug-Ins/VST3/Modular V3.vst3
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 DualMonoIn VST3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 VST3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Neutone FX.vst3
+/Library/Audio/Plug-Ins/VST3/Neutone Morpho.vst3
+/Library/Audio/Plug-Ins/VST3/Omnisphere.vst3
+'/Library/Audio/Plug-Ins/VST3/OP-Xa V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Piano V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Pigments.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-5 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-VS V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/QuantumDelay.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/QuantumDistortion.vst3
+/Library/Audio/Plug-Ins/VST3/QuantumFilter.vst3
+/Library/Audio/Plug-Ins/VST3/Rift Feedback Lite.vst3
+/Library/Audio/Plug-Ins/VST3/SEM V2.vst3
+'/Library/Audio/Plug-Ins/VST3/SimpleVST.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Solina V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/SQ80 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Stage-73 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Baritone Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Cello 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Contrabassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM English Horn 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn Bb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn F.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Oboe 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Soprano Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet C.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Viola 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Violin 3.vst3
+'/Library/Audio/Plug-Ins/VST3/Synclavier V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Synthi V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/ValhallaFreqEcho.vst3
+/Library/Audio/Plug-Ins/VST3/ValhallaShimmer.vst3
+/Library/Audio/Plug-Ins/VST3/Vocoder V.vst3
+'/Library/Audio/Plug-Ins/VST3/VOX Continental V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Wurli V2.vst3' is black-listed.
+found 59 plugins
+Loading setup file: vst-management.scd
+Updating VST manager UI...
+VST Manager: Group selector refreshed.
+ERROR: Failed to read tmp file!
+Loading setup file: midi-setup.scd
+MIDI setup function defined. Call ~initMIDISetup.() when VST Manager is ready.
+Loading setup file: osc-setup.scd
+Loading setup file: melody-management.scd
+All setup files loaded successfully!
+Loading melody data...
+Loading melody data from: /Users/erikparr/surfacing/surfacing/layers/../setup/../data/melody-data.json
+Successfully loaded melody data
+updateMelodyList called, melody count: 64
+First melody example: ('pattern': [89, 84, 81, 77, 89], 'name': Tuba Melody II, 'key': set2, 'loopCount': 1, 
+  'velocityFirst': 1.5, 'active': true, 'velocityLast': 0.5)
+OSC keyOn responder setup for melody capture (listening on all addresses)
+Adding VST instances...
+VSTManager: Group 'Layer1' created with members: [Bass Tuba 01]
+VSTManager: Group 'Layer2' created with members: [Bass Tuba 02]
+VSTManager: Group 'Layer3' created with members: [Bass Tuba 03]
+VST instances added. Waiting for initialization to complete...
+VSTs loaded, updating UI...
+Updating all VST manager UIs...
+Updating VST manager UI...
+Calling ~initMIDISetup.() now that VST Manager is ready...
+~initMIDISetup called #1 times
+Before cleanup: 1 total MIDIFuncs
+After cleanup: 1 total MIDIFuncs
+Initializing MIDI controller with VST instances...
+Current working directory: /
+User home directory: /Users/erikparr
+Using project path: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light
+Using snapshot directory: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+Directory already exists: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+Successfully set MIDI controller to MIDIMix preset
+midiMix: Akai MIDIMix
+Setting up MIDI Control Mapping integration...
+MIDI Control Mapping system not detected, using standard mode
+MIDI Control Mapping GUI creation function not available yet
+VSTManager setup complete with 3 SWAM instrument instances
+VST groups detected! Auto-refreshing...
+Refreshed VST group menus with 3 groups
+VST Manager: Group selector refreshed.
+VSTManager: VST loaded: Bass Tuba 01
+VSTManager: VST loaded: Bass Tuba 02
+VSTManager: VST loaded: Bass Tuba 03
+VSTManager: Updated  127  parameters for  Bass Tuba 01
+VSTManager: Updated  127  parameters for  Bass Tuba 02
+VSTManager: Updated  127  parameters for  Bass Tuba 03
+vstplugin-setup: Explicitly refreshing VST Manager group UI.
+VST Manager: Group selector refreshed.
+Layers manual control mode: ENABLED
+Layers manual control mode: DISABLED
+Opening VST editors...
+VST editors opened.
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 03'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 02'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 01'
+Set program 'control-group-1' on 0 of 3 total VST instances
+=== Simple OSC Test ===
+Live melody mode enabled: false
+~convertEventToDict exists: false
+Run ~testRawJSON.() to test with raw JSON
+-> Run ~testRawJSON.() to test with raw JSON
+-> nil
+ERROR: syntax error, unexpected '(', expecting end of file
+  in interpreted text
+  line 1 char 22:
+
+  ~enableLiveMelodyMode(); 
+                       ^
+-----------------------------------
+ERROR: Command line parse failed
+-> nil
+-> nil
+-> nil
+-> nil
+false
+-> false
+DEBUG: Start button pressed
+DEBUG: ~startLayers called with duration: nil
+DEBUG: parentProc = nil, isRunning = false
+WARNING: No active layers to start. Please assign melodies and enable layers.
+Loading JSON melody file for layer layer1: /Users/erikparr/surfacing/surfacing/data/melody-export.json
+Imported layer2 with 2 notes, timing: true
+Imported layer1 with 3 notes, timing: true
+Imported layer0 with 5 notes, timing: true
+Successfully imported 3 layers from JSON
+Added melody 'layer2' to ~melodyDict
+Added melody 'layer1' to ~melodyDict
+Added melody 'layer0' to ~melodyDict
+Added 3 melodies to ~melodyDict
+Layer layer1: assigned melody layer1
+Loaded melody 'layer1' from JSON for layer layer1
+Loading JSON melody file for layer layer2: /Users/erikparr/surfacing/surfacing/data/melody-export.json
+Imported layer2 with 2 notes, timing: true
+Imported layer1 with 3 notes, timing: true
+Imported layer0 with 5 notes, timing: true
+Successfully imported 3 layers from JSON
+Added melody 'layer2' to ~melodyDict
+Added melody 'layer1' to ~melodyDict
+Added melody 'layer0' to ~melodyDict
+Added 3 melodies to ~melodyDict
+Layer layer2: assigned melody layer2
+Loaded melody 'layer2' from JSON for layer layer2
+Layer layer1: assigned melody layer0
+Layer layer2: assigned melody layer1
+Loading JSON melody file for layer layer3: /Users/erikparr/surfacing/surfacing/data/melody-export.json
+Imported layer2 with 2 notes, timing: true
+Imported layer1 with 3 notes, timing: true
+Imported layer0 with 5 notes, timing: true
+Successfully imported 3 layers from JSON
+Added melody 'layer2' to ~melodyDict
+Added melody 'layer1' to ~melodyDict
+Added melody 'layer0' to ~melodyDict
+Added 3 melodies to ~melodyDict
+Layer layer3: assigned melody layer2
+Loaded melody 'layer2' from JSON for layer layer3
+DEBUG: Start button pressed
+DEBUG: ~startLayers called with duration: nil
+DEBUG: parentProc = nil, isRunning = false
+Starting 3 active layers with default duration: 4.0 seconds...
+DEBUG: About to call ~createLayersParentProc...
+DEBUG: ~createLayersParentProc is: a Function
+DEBUG: ~createLayersParentProc called with duration: 4.0
+DEBUG: Creating ProcMod with id: layersParent_250719_215019
+DEBUG: ProcMod created successfully
+DEBUG: Created parentProc: a ProcMod
+DEBUG: Called play on parentProc
+
+=== Layer Status ===
+Layer layer2: layer1 → Layer2
+Layer layer3: layer2 → Layer3
+Layer layer1: layer0 → Layer1
+Active layers: 3
+Total duration: 4.0 seconds
+Playing: true
+==================
+
+Loop 1: Using fixed duration: 4.0 seconds
+Using timing data for 3 notes: start times = [0.0, 1.778, 3.556]
+Using timing data for 2 notes: start times = [0.0, 3.43]
+Using timing data for 5 notes: start times = [0.0, 0.889, 1.778, 2.667, 3.556]
+=== Starting dependent layers (loop 1) ===
+Parent group: 1004, Duration: 4.0 seconds
+[Layer layer1] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer2] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer3] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+Created ProcMod for layer2
+Created ProcMod for layer3
+Created ProcMod for layer1
+Starting 3 layer ProcMods simultaneously
+Starting ccEnvelope2 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope3 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope1 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Layer layer2: 3 notes using timing data, total: 4.0 seconds
+Layer layer2 note 1 at time 0.0s: note 85 vel 127 dur 0.5s
+Layer layer3: 2 notes using timing data, total: 4.0 seconds
+Layer layer3 note 1 at time 0.0s: note 90 vel 127 dur 0.5s
+Layer layer1: 5 notes using timing data, total: 4.0 seconds
+Layer layer1 note 1 at time 0.0s: note 90 vel 127 dur 0.5s
+DEBUG: After play - isRunning: true
+Layer layer1 note 2 at time 0.889s: note 85 vel 127 dur 0.5s
+Layer layer1 note 3 at time 1.778s: note 82 vel 127 dur 0.5s
+Layer layer2 note 2 at time 1.778s: note 82 vel 127 dur 0.5s
+Layer layer1 note 4 at time 2.667s: note 75 vel 95 dur 0.5s
+Layer layer3 note 2 at time 3.43s: note 90 vel 63 dur 0.5s
+Layer layer2 note 3 at time 3.556s: note 75 vel 63 dur 0.5s
+Layer layer1 note 5 at time 3.556s: note 90 vel 63 dur 0.5s
+Layer layer3 completed all 2 notes
+Layer layer2 completed all 3 notes
+Layer layer1 completed all 5 notes
+Loop 2: Using fixed duration: 4.0 seconds
+Using timing data for 3 notes: start times = [0.0, 1.778, 3.556]
+Using timing data for 2 notes: start times = [0.0, 3.43]
+Using timing data for 5 notes: start times = [0.0, 0.889, 1.778, 2.667, 3.556]
+=== Starting dependent layers (loop 2) ===
+Parent group: 1004, Duration: 4.0 seconds
+[Layer layer1] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer2] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer3] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+Reusing 3 existing layer ProcMods
+Starting ccEnvelope2 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope3 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope1 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Loop 3: Using fixed duration: 4.0 seconds
+Using timing data for 3 notes: start times = [0.0, 1.778, 3.556]
+Using timing data for 2 notes: start times = [0.0, 3.43]
+Using timing data for 5 notes: start times = [0.0, 0.889, 1.778, 2.667, 3.556]
+=== Starting dependent layers (loop 3) ===
+Parent group: 1004, Duration: 4.0 seconds
+[Layer layer1] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer2] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer3] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+Reusing 3 existing layer ProcMods
+Starting ccEnvelope2 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope3 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope1 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Stopping all layers...
+nil
+Parent ProcMod releasing...
+Releasing child ProcMod: layer2_250719_215019
+nil
+Releasing layer layer2 ProcMod...
+Releasing child ProcMod: layer3_250719_215019
+nil
+Releasing layer layer3 ProcMod...
+Releasing child ProcMod: layer1_250719_215019
+nil
+Releasing layer layer1 ProcMod...
+All layers stopped
+Layer layer3 ProcMod released
+Layer layer2 ProcMod released
+Layer layer1 ProcMod released
+Parent ProcMod released
+--- Expression Knob Toggle Action ---
+Checkbox value: true, isChecked: true
+Expression Knob (CC16) ACTIVE for group: All  (Dedicated MIDIFunc created)
+MIDIController Knob CC: 16 val: 49 (norm: 0.38582677165354) chan: 0 src: 1298960095
+Expression Knob (CC16 via dedicated MIDIFunc): val 49 to VSTs in group 'Layer1' (Chan: 0, Src: 1298960095)
+MIDIController Knob CC: 16 val: 48 (norm: 0.37795275590551) chan: 0 src: 1298960095
+Expression Knob (CC16 via dedicated MIDIFunc): val 48 to VSTs in group 'Layer1' (Chan: 0, Src: 1298960095)
+MIDIController Knob CC: 16 val: 47 (norm: 0.37007874015748) chan: 0 src: 1298960095
+Expression Knob (CC16 via dedicated MIDIFunc): val 47 to VSTs in group 'Layer1' (Chan: 0, Src: 1298960095)
+MIDIController Knob CC: 16 val: 46 (norm: 0.36220472440945) chan: 0 src: 1298960095
+Expression Knob (CC16 via dedicated MIDIFunc): val 46 to VSTs in group 'Layer1' (Chan: 0, Src: 1298960095)
+DEBUG: Start button pressed
+DEBUG: ~startLayers called with duration: nil
+DEBUG: parentProc = nil, isRunning = false
+Starting 3 active layers with default duration: 4.0 seconds...
+DEBUG: About to call ~createLayersParentProc...
+DEBUG: ~createLayersParentProc is: a Function
+DEBUG: ~createLayersParentProc called with duration: 4.0
+DEBUG: Creating ProcMod with id: layersParent_250719_215035
+DEBUG: ProcMod created successfully
+DEBUG: Created parentProc: a ProcMod
+DEBUG: Called play on parentProc
+
+=== Layer Status ===
+Layer layer2: layer1 → Layer2
+Layer layer3: layer2 → Layer3
+Layer layer1: layer0 → Layer1
+Active layers: 3
+Total duration: 4.0 seconds
+Playing: true
+==================
+
+Loop 1: Using fixed duration: 4.0 seconds
+Using timing data for 3 notes: start times = [0.0, 1.778, 3.556]
+Using timing data for 2 notes: start times = [0.0, 3.43]
+Using timing data for 5 notes: start times = [0.0, 0.889, 1.778, 2.667, 3.556]
+=== Starting dependent layers (loop 1) ===
+Parent group: 1021, Duration: 4.0 seconds
+[Layer layer1] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer2] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+[Layer layer3] Knob values - Pos 4: 0.5 (DurScale: 0.55), Pos 5: 0.5 (Min: 63), Pos 6: 0.5 (Max: 64)
+Created ProcMod for layer2
+Created ProcMod for layer3
+Created ProcMod for layer1
+Starting 3 layer ProcMods simultaneously
+Starting ccEnvelope2 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope3 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Starting ccEnvelope1 envelope - Duration: 2.2s, Attack: 1.1s, Release: 1.1s
+Layer layer2: 3 notes using timing data, total: 4.0 seconds
+Layer layer2 note 1 at time 0.0s: note 85 vel 127 dur 0.5s
+Layer layer1: 5 notes using timing data, total: 4.0 seconds
+Layer layer1 note 1 at time 0.0s: note 90 vel 127 dur 0.5s
+Layer layer3: 2 notes using timing data, total: 4.0 seconds
+Layer layer3 note 1 at time 0.0s: note 90 vel 127 dur 0.5s
+DEBUG: After play - isRunning: true
+Layer layer1 note 2 at time 0.889s: note 85 vel 127 dur 0.5s
+Stopping all layers...
+nil
+Parent ProcMod releasing...
+Releasing child ProcMod: layer2_250719_215035
+nil
+Releasing layer layer2 ProcMod...
+Releasing child ProcMod: layer3_250719_215035
+nil
+Releasing layer layer3 ProcMod...
+Releasing child ProcMod: layer1_250719_215035
+nil
+Releasing layer layer1 ProcMod...
+All layers stopped
+Layer layer1 ProcMod released
+Layer layer2 ProcMod released
+Layer layer3 ProcMod released
+Parent ProcMod released
+=== Simple OSC Test ===
+Live melody mode enabled: false
+~convertEventToDict exists: false
+Run ~testRawJSON.() to test with raw JSON
+-> Run ~testRawJSON.() to test with raw JSON
+-> nil

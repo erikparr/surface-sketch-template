@@ -29,6 +29,14 @@
                     ~queueLiveMelodyUpdate.(layerName, jsonData);
                 } { |error|
                     "Error processing live melody update: %".format(error).error;
+                    "Error class: %".format(error.class).postln;
+                    if (error.respondsTo(\what)) {
+                        "Error what: %".format(error.what).postln;
+                    };
+                    if (error.respondsTo(\receiver)) {
+                        "Error receiver: %".format(error.receiver).postln;
+                    };
+                    error.reportError;
                 };
             },
             oscPath
@@ -47,11 +55,21 @@
 ~queueLiveMelodyUpdate = { |layerName, jsonData|
     var melodyData, validatedData;
     
+    "DEBUG: Received JSON data for %: %".format(layerName, jsonData.asString.keep(200)).postln;
+    
     // Parse JSON
     try {
-        melodyData = jsonData.parseJSON;
+        // Use JSONlib.convertToSC which is the correct method
+        if (JSONlib.notNil) {
+            melodyData = JSONlib.convertToSC(jsonData, useEvent: true);
+            "Successfully parsed JSON with JSONlib".postln;
+        } {
+            "JSONlib not available - trying parseJSON method".postln;
+            melodyData = jsonData.parseJSON;
+        };
     } { |error|
         "Failed to parse JSON: %".format(error).error;
+        "JSON data received: %".format(jsonData.keep(500)).postln;
         ^nil;
     };
     
@@ -224,11 +242,17 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 ~applyPendingMelodyUpdates = {
+    "DEBUG: applyPendingMelodyUpdates called".postln;
+    "  liveMelodyMode: %".format(~layers.state.liveMelodyMode).postln;
+    "  pendingUpdates: %".format(~layers.state.pendingUpdates.keys).postln;
+    
     if (~layers.state.liveMelodyMode.not) {
+        "  Exiting: live melody mode not enabled".postln;
         ^nil;  // Exit if not in live melody mode
     };
     
     ~layers.state.pendingUpdates.keysValuesDo { |layerName, melodyData|
+        "  Processing update for layer: %".format(layerName).postln;
         var tempKey = ("live_" ++ layerName).asSymbol;
         var config = ~layers.configs[layerName];
         
@@ -306,12 +330,77 @@
 // │                          UTILITY FUNCTIONS                                  │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
+// Convert SuperCollider Events to Dictionary format for JSON
+~convertEventToDict = { |data|
+    var convertValue = { |val|
+        case 
+        { val.isKindOf(Event) } {
+            // Convert Event to Dictionary
+            var dict = Dictionary.new;
+            val.keysValuesDo { |key, value|
+                dict[key.asString] = convertValue.(value);
+            };
+            dict;
+        }
+        { val.isKindOf(Array) } {
+            // Convert Array recursively
+            val.collect { |item| convertValue.(item) };
+        }
+        { val.isKindOf(Symbol) } {
+            // Convert Symbol to String
+            val.asString;
+        }
+        { 
+            // Keep as is (numbers, strings, etc.)
+            val;
+        };
+    };
+    
+    convertValue.(data);
+};
+
 // Test function to send update from within SC
 ~sendLiveMelodyUpdate = { |layerName, melodyData|
-    var jsonString = melodyData.asJSON;
+    var jsonString;
     var addr = NetAddr("127.0.0.1", 57120);  // Loopback to SC
     var path = ("/liveMelody/update/" ++ layerName).asSymbol;
     
+    "DEBUG: Function called with layer: % data: %".format(layerName, melodyData).postln;
+    
+    // Check if conversion function exists
+    if (~convertEventToDict.isNil) {
+        "ERROR: ~convertEventToDict function not defined!".error;
+        ^nil;
+    };
+    
+    "DEBUG: Attempting to convert data: %".format(melodyData).postln;
+    
+    // Convert to JSON string
+    try {
+        if (JSONlib.notNil) {
+            var convertedData;
+            "Using JSONlib.stringify".postln;
+            // Convert SuperCollider Events to Dictionary format for JSONlib
+            convertedData = ~convertEventToDict.(melodyData);
+            "DEBUG: Converted data: %".format(convertedData).postln;
+            
+            // Use the correct JSONlib method
+            jsonString = JSONlib.convertToJSON(convertedData);
+        } {
+            "Warning: JSONlib not available, trying .asJSON".warn;
+            if (melodyData.respondsTo(\asJSON)) {
+                jsonString = melodyData.asJSON;
+            } {
+                "Error: No JSON conversion method available".error;
+                ^nil;
+            };
+        };
+    } { |error|
+        "Error converting to JSON: %".format(error).error;
+        ^nil;
+    };
+    
+    "DEBUG: Sending JSON: %".format(jsonString.keep(200)).postln;
     addr.sendMsg(path, jsonString);
     "Sent test update to %".format(path).postln;
 };
