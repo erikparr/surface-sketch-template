@@ -1,168 +1,275 @@
-# LiveMelody Mode Implementation Plan
+# Live Melody Updates During Playback - Implementation Plan
 
-## Overview
-LiveMelody mode enables real-time melody updates via OSC messages while layers are looping. Updates are queued and applied seamlessly at loop boundaries without interrupting playback.
+## Problem Statement
 
-## Architecture
+The current live melody system successfully receives and queues OSC updates, but these updates only take effect when layers are stopped and restarted. This is unacceptable for live performance where melody changes must happen seamlessly during continuous playback.
 
-### 1. OSC Message Format
-```
-/liveMelody/update/<layerName> <jsonData>
-```
+**Root Cause**: Child ProcMods are created once with static melody data and continue looping with that fixed data. They don't check for melody updates during their loop iterations.
 
-Where `<layerName>` is: `layer1`, `layer2`, or `layer3`
+## Architecture Solution: Dynamic Melody Reference System
 
-### 2. JSON Data Structure
-```json
-{
-  "notes": [
-    {
-      "midi": 60,        // MIDI note number (0-127)
-      "vel": 0.8,        // Velocity (0.0-1.0)
-      "dur": 0.5         // Duration in seconds
-    }
-  ],
-  "timing": [0.1, 0.2, 0.5, 0.2],  // Optional - fractional timing (must sum to 1.0)
-  "metadata": {
-    "durationType": "absolute",     // "absolute" or "fractional"
-    "totalDuration": 4.0,          // Total loop duration
-    "key": "C",                    // Optional metadata
-    "scale": "major"               // Optional metadata
-  },
-  "expressionOverride": {          // Optional CC control override
-    "expressionMin": 20,
-    "expressionMax": 100,
-    "expressionDurationScalar": 0.8
-  }
-}
+Replace static melody passing with dynamic melody getter functions that child ProcMods call at the start of each loop iteration.
+
+### Core Concept
+
+Instead of:
+```supercollider
+// CURRENT: Static melody data passed once
+childProc.playFunc = { |playingNode|
+    var melodyData = staticMelodyData;  // Fixed at creation time
+    // ... use melodyData forever
+};
 ```
 
-### 3. Data Fields Explanation
-
-#### Required Fields:
-- **notes**: Array of note objects
-  - **midi**: MIDI note number (0-127)
-  - **vel**: Velocity as float (0.0-1.0, will be converted to 0-127)
-  - **dur**: Note duration in seconds
-
-#### Optional Fields:
-- **timing**: Array of fractional time values (length = notes.length + 1)
-  - First value: wait before first note
-  - Middle values: inter-onset intervals
-  - Last value: wait after last note
-  - Must sum to 1.0
-  - If omitted, notes are equally spaced
-
-- **metadata**: Additional information
-  - **durationType**: "absolute" (durations in seconds) or "fractional" (relative to available time)
-  - **totalDuration**: Suggested total duration (may be overridden by current loop settings)
-  - Other fields for documentation purposes
-
-- **expressionOverride**: Override layer's CC expression settings
-  - **expressionMin**: Minimum CC value (0-127)
-  - **expressionMax**: Maximum CC value (0-127)
-  - **expressionDurationScalar**: Duration multiplier (0.1-1.0)
+Implement:
+```supercollider
+// NEW: Dynamic melody getter called each loop
+childProc.playFunc = { |playingNode|
+    Task({
+        while { ~layers.state.loopingMode } {
+            var melodyData = ~getLayerMelodyDynamic.(layerName);  // Fresh each loop
+            // ... use current melodyData for this iteration
+            ~layers.timingData.totalDuration.wait;
+        };
+    }).play;
+};
+```
 
 ## Implementation Steps
 
-### Phase 1: Core Infrastructure
-1. **Create layers-live-melody.scd**
-   - OSC receiver setup
-   - Data validation functions
-   - Queue management
-   - Data conversion utilities
+### Step 1: Create Dynamic Melody Getter Functions
+**File**: `layers-live-melody.scd` (add to existing file)
 
-2. **Modify layers-core.scd**
-   - Add liveMelodyMode flag to state
-   - Add pendingUpdates Dictionary
-   - Add temporary melody storage
-
-3. **Modify layers-playback.scd**
-   - Check for pending updates at loop start
-   - Apply updates without disrupting playback
-   - Handle expression overrides
-
-### Phase 2: Integration
-4. **Update load-layers.scd**
-   - Load layers-live-melody.scd after timing utilities
-
-5. **Create test file**
-   - Example OSC sender code
-   - Test melodies with various timing patterns
-   - Validation test cases
-
-### Phase 3: UI Enhancement (Optional)
-6. **Update layers-gui.scd**
-   - Add liveMelody mode toggle
-   - Show pending update indicators
-   - Display current melody source (live vs preset)
-
-## Key Design Decisions
-
-1. **Non-disruptive Updates**: Updates only apply at loop boundaries to avoid glitches
-2. **Queue System**: Multiple updates can be queued, latest overwrites previous
-3. **Validation**: All data is validated before queuing to prevent runtime errors
-4. **Backwards Compatible**: Works alongside existing melody system
-5. **Expression Control**: Can override CC parameters per melody update
-
-## Usage Example
-
-### From SuperCollider:
 ```supercollider
-// Enable live melody mode
-~enableLiveMelodyMode.();
+~getLayerMelodyDynamic = { |layerName|
+    var config = ~layers.configs[layerName];
+    var melodyKey, melodyData;
+    
+    // Check for pending live updates first
+    if (~layers.state.liveMelodyMode and: { 
+        ~layers.state.pendingUpdates[layerName].notNil 
+    }) {
+        // Apply pending update immediately
+        ~applyPendingUpdateForLayer.(layerName);
+    };
+    
+    // Return current melody data
+    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
+        melodyKey = config.melodyList[0];
+        melodyData = ~melodyDict[melodyKey];
+    };
+    
+    melodyData
+};
 
-// Send update from SC (for testing)
-~sendLiveMelodyUpdate.(\layer1, (
-    notes: [
-        (midi: 60, vel: 0.8, dur: 0.5),
-        (midi: 62, vel: 0.7, dur: 0.5)
-    ],
-    timing: [0.2, 0.3, 0.5]
-));
+~applyPendingUpdateForLayer = { |layerName|
+    var melodyData = ~layers.state.pendingUpdates[layerName];
+    var tempKey = ("live_" ++ layerName).asSymbol;
+    var config = ~layers.configs[layerName];
+    
+    if (melodyData.notNil) {
+        // Convert and store
+        ~melodyDict[tempKey] = ~convertLiveMelodyData.(melodyData);
+        config.melodyList = [tempKey];
+        
+        // Apply expression overrides if present
+        if (melodyData.expressionOverride.notNil) {
+            var override = melodyData.expressionOverride;
+            var ccControl = config.ccControl;
+            
+            if (override.expressionMin.notNil) {
+                ccControl.expressionMin = override.expressionMin;
+            };
+            if (override.expressionMax.notNil) {
+                ccControl.expressionMax = override.expressionMax;
+            };
+            if (override.expressionDurationScalar.notNil) {
+                ccControl.expressionDurationScalar = override.expressionDurationScalar;
+            };
+        };
+        
+        // Clear pending update
+        ~layers.state.pendingUpdates[layerName] = nil;
+        
+        "LIVE UPDATE APPLIED: % during playback".format(layerName).postln;
+    };
+};
 ```
 
-### From External Application:
-```python
-# Python example using python-osc
-from pythonosc import udp_client
-import json
+### Step 2: Modify Child ProcMod Creation
+**File**: `layers-playback.scd` (modify existing function)
 
-client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
+Replace the static melody approach in `~createLayerProcMod` with dynamic melody fetching:
 
-melody_data = {
-    "notes": [
-        {"midi": 60, "vel": 0.8, "dur": 0.5},
-        {"midi": 62, "vel": 0.7, "dur": 0.5}
-    ],
-    "timing": [0.2, 0.3, 0.5]
-}
-
-client.send_message("/liveMelody/update/layer1", json.dumps(melody_data))
+```supercollider
+~createLayerProcMod = { |layerName, config|
+    var layerProc;
+    
+    layerProc = ProcMod.new;
+    layerProc.playFunc = { |playingNode|
+        var currentIteration = 0;
+        
+        Task({
+            while { ~layers.state.loopingMode } {
+                var melodyData, patterns, timing, velocities, noteDurations;
+                var noteCount, noteInterval, noteIndex = 0;
+                var totalDuration, expressionSynth;
+                
+                // GET DYNAMIC MELODY DATA - FRESH EACH LOOP ⭐
+                melodyData = ~getLayerMelodyDynamic.(layerName);
+                
+                if (melodyData.notNil) {
+                    patterns = melodyData.patterns[currentIteration % melodyData.patterns.size];
+                    velocities = melodyData.velocities;
+                    timing = ~layers.timingData[layerName] ? melodyData.timing;
+                    noteDurations = melodyData.noteDurations;
+                    totalDuration = ~layers.timingData.totalDuration;
+                    
+                    noteCount = patterns.size;
+                    
+                    // Start expression envelope if enabled
+                    if (config.ccControl.enabled) {
+                        expressionSynth = ~startLayerExpressionEnvelope.(layerName, totalDuration);
+                    };
+                    
+                    // Play notes using existing timing logic
+                    if (timing.notNil) {
+                        // Custom timing
+                        timing.do { |timeFraction, i|
+                            if (i < noteCount) {
+                                var waitTime = timeFraction * totalDuration;
+                                waitTime.wait;
+                                ~playLayerNote.(
+                                    layerName,
+                                    patterns[i],
+                                    velocities[i] ? 127,
+                                    noteDurations[i] ? 0.5
+                                );
+                            } else {
+                                (timeFraction * totalDuration).wait;
+                            };
+                        };
+                    } {
+                        // Equal timing
+                        noteInterval = totalDuration / noteCount;
+                        patterns.do { |note, i|
+                            ~playLayerNote.(
+                                layerName,
+                                note,
+                                velocities[i] ? 127,
+                                noteDurations[i] ? 0.5
+                            );
+                            noteInterval.wait;
+                        };
+                    };
+                    
+                    // Clean up expression synth
+                    if (expressionSynth.notNil) {
+                        expressionSynth.release;
+                    };
+                } {
+                    // No melody data, just wait
+                    (~layers.timingData.totalDuration ? 1.0).wait;
+                };
+                
+                currentIteration = currentIteration + 1;
+            };
+        }).play;
+    };
+    
+    layerProc
+};
 ```
 
-## Testing Strategy
+### Step 3: Remove Bulk Update Processing
+**File**: `layers-playback.scd` (modify existing function)
 
-1. **Basic Functionality**
-   - Single layer update
-   - Multiple layer updates
-   - Rapid successive updates
+Remove the bulk update check from parent ProcMod since individual layers now handle their own updates:
 
-2. **Edge Cases**
-   - Invalid JSON
-   - Missing required fields
-   - Timing array validation
-   - Updates while not looping
+```supercollider
+~createLayersParentProc = { |duration|
+    var parentProc;
+    
+    parentProc = ProcMod.new;
+    parentProc.playFunc = { |playingNode|
+        var sustainNode = playingNode.sustainNode;
+        
+        Task({
+            while { ~layers.state.loopingMode } {
+                // REMOVED: Bulk update processing - individual layers handle updates now
+                
+                "Loop iteration starting (duration: %s)".format(duration.round(0.1)).postln;
+                duration.wait;
+            };
+            
+            sustainNode.release;
+        }).play;
+    };
+    
+    parentProc
+};
+```
 
-3. **Performance**
-   - High-frequency updates
-   - Large melodies
-   - CPU usage monitoring
+### Step 4: Update Live Melody Functions
+**File**: `layers-live-melody.scd` (modify existing function)
 
-## Future Enhancements
+Simplify `~applyPendingMelodyUpdates` since individual updates are now handled per-layer:
 
-1. **Melody Interpolation**: Smooth transitions between melodies
-2. **Pattern Library**: Store and recall live melodies
-3. **MIDI Input**: Convert live MIDI input to melody updates
-4. **Networked Collaboration**: Multiple users updating different layers
-5. **Visual Feedback**: Real-time visualization of incoming melodies
+```supercollider
+~applyPendingMelodyUpdates = {
+    "INFO: Bulk update function called, but individual layers now handle updates automatically".postln;
+    "Pending updates: %".format(~layers.state.pendingUpdates.keys).postln;
+    
+    // This function is now mainly for debugging/status
+    ^nil;
+};
+```
+
+## Testing Plan
+
+### Test 1: Basic Live Update
+1. Start layers playing with different melodies
+2. Send OSC update to layer1: `~testRawJSON.()`
+3. Verify layer1 changes melody on next loop iteration
+4. Verify layer2 and layer3 continue with original melodies
+
+### Test 2: Multiple Layer Updates
+1. Start all layers playing
+2. Send updates to layer1, then layer2, then layer3
+3. Verify each layer updates independently
+4. Verify timing remains synchronized
+
+### Test 3: Rapid Updates
+1. Start layers playing
+2. Send multiple updates to same layer rapidly
+3. Verify only latest update is applied
+4. Verify no audio glitches or timing issues
+
+### Test 4: Expression Override Updates
+1. Start layers with expression enabled
+2. Send update with expressionOverride data
+3. Verify CC envelope parameters update dynamically
+
+## Benefits
+
+✅ **True Live Updates**: Updates apply during playback without stopping
+✅ **Seamless Transitions**: Changes happen at loop boundaries  
+✅ **No Audio Glitches**: No child ProcMod recreation needed
+✅ **Individual Layer Control**: Each layer updates independently
+✅ **Backward Compatible**: Existing melody system unchanged
+✅ **Performance Friendly**: Minimal overhead, only check when needed
+
+## Files to Modify
+
+1. **layers-live-melody.scd**: Add dynamic getter functions
+2. **layers-playback.scd**: Modify child ProcMod creation and parent loop
+3. **test-live-melody.scd**: Update tests for new behavior
+
+## Success Criteria
+
+- OSC melody updates apply during continuous playback
+- No stopping/starting required for updates
+- Each layer updates independently
+- Timing synchronization maintained
+- Expression overrides work dynamically
+- No audio artifacts during updates

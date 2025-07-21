@@ -74,10 +74,7 @@
                     
                     loopCount = loopCount + 1;
                     
-                    // Check for live melody updates before starting new loop
-                    if (~layers.state.liveMelodyMode and: { ~applyPendingMelodyUpdates.notNil }) {
-                        ~applyPendingMelodyUpdates.();
-                    };
+                    // REMOVED: Bulk update processing - individual layers handle updates now
                     
                     // Determine duration at the START of each loop (like sketch system)
                     if (~layers.state.manualControl) {
@@ -254,12 +251,10 @@
 // │                         LAYER PROCMOD CREATION                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Create a ProcMod for an individual layer
+// Create a ProcMod for an individual layer - NEW DYNAMIC VERSION
 ~createLayerProcMod = { |layerName, config, parentGroup|
     var id = (layerName.asString ++ "_" ++ Date.getDate.stamp).asSymbol;
-    var melodyKey = config.melodyList[0];  // Always play first melody (no auto-progression)
     var env = Env.asr(0.01, 1.0, 0.01, \lin);  // Quick attack/release envelope for child layers
-    var timing = ~layers.timingData[layerName];  // Get pre-calculated timing
     
     ProcMod.new(
         env,          // All ProcMods need an envelope
@@ -272,163 +267,123 @@
         // Main function - returns a Task
         { |group, envbus|
             var task = Task({
-                var pattern, noteCount, noteInterval, parentDuration;
                 var iterationCount = 0;
                 
-                // Get melody pattern (doesn't change)
-                pattern = ~melodyDict[melodyKey].patterns[0];
-                noteCount = pattern.size;
-                
-                // Loop the melody based on shared looping state
+                // Loop based on shared looping state
                 while { ~layers.state.loopingMode or: { iterationCount == 0 } } {
-                    var currentTiming;
+                    var melodyData, pattern, noteCount, noteInterval, parentDuration;
+                    var currentTiming, velocities, noteDurations, timing;
+                    var expressionSynth;
                     
                     iterationCount = iterationCount + 1;
                     
-                    // Read fresh timing data at the start of each iteration
-                    currentTiming = ~layers.timingData[layerName];
-                    if (currentTiming.notNil) {
-                        noteInterval = currentTiming.noteInterval;
-                        parentDuration = currentTiming.duration;
-                    } {
-                        // Fallback if timing data not available
-                        parentDuration = 4.0;
-                        noteInterval = parentDuration / noteCount;
-                    };
+                    // GET DYNAMIC MELODY DATA - FRESH EACH LOOP ⭐
+                    melodyData = ~getLayerMelodyDynamic.(layerName);
                     
-                    if (iterationCount == 1) {  // Only log first iteration
-                        if (currentTiming.notNil and: { currentTiming.hasTiming }) {
-                            "Layer %: % notes using timing data, total: % seconds".format(
-                                layerName, noteCount, parentDuration
-                            ).postln;
+                    if (melodyData.notNil) {
+                        pattern = melodyData.patterns[iterationCount % melodyData.patterns.size];
+                        velocities = melodyData.velocities;
+                        noteDurations = melodyData.noteDurations;
+                        
+                        noteCount = pattern.size;
+                        
+                        // Read fresh timing data at the start of each iteration
+                        currentTiming = ~layers.timingData[layerName];
+                        if (currentTiming.notNil) {
+                            noteInterval = currentTiming.noteInterval;
+                            parentDuration = currentTiming.duration;
                         } {
-                            "Layer %: % notes, equal interval: % seconds, total: % seconds".format(
-                                layerName, noteCount, noteInterval.round(0.001), parentDuration
-                            ).postln;
+                            // Fallback if timing data not available
+                            parentDuration = 4.0;
+                            noteInterval = parentDuration / noteCount;
                         };
-                    };
-                    
-                    // Play each note using timing data or equal intervals
-                    if (currentTiming.notNil and: { currentTiming.hasTiming } and: { currentTiming.waitTimes.notNil }) {
-                        // Use timing data
-                        var waitTimes = currentTiming.waitTimes;
-                        var durations = currentTiming.durations;
-                        var startTimes = currentTiming.startTimes;
-                        var currentTime = 0;
-                        var finalWait;
                         
-                        noteCount.do { |noteIndex|
-                            var note = pattern[noteIndex];
-                            var waitTime = waitTimes[noteIndex];
-                            var noteDuration = durations[noteIndex];
-                            var isFirstNote = (noteIndex == 0);
-                            var isLastNote = (noteIndex == (noteCount - 1));
-                            var processedNote, velocity;
-                            
-                            // Wait before playing the note
-                            if (waitTime > 0) {
-                                waitTime.wait;
-                                currentTime = currentTime + waitTime;
-                            };
-                            
-                            // Process note for velocity, offset, etc.
-                            if (~processNote.notNil) {
-                                processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
+                        // Start expression envelope if enabled
+                        if (config.ccControl.enabled) {
+                            expressionSynth = ~startLayerCCEnvelope.(layerName, parentDuration);
+                        };
+                        
+                        if (iterationCount == 1) {  // Only log first iteration
+                            if (currentTiming.notNil and: { currentTiming.hasTiming }) {
+                                "Layer %: % notes using timing data, total: % seconds".format(
+                                    layerName, noteCount, parentDuration
+                                ).postln;
                             } {
-                                // Check if melody has velocity data
-                                var melodyData = ~melodyDict[melodyKey];
-                                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
-                                    velocity = melodyData.velocities[noteIndex];
-                                    // Convert from 0-1 to 0-127 if needed
-                                    if (velocity <= 1.0) {
-                                        velocity = (velocity * 127).asInteger;
-                                    };
-                                    processedNote = [note, velocity];
-                                } {
-                                    processedNote = [note, 100];  // Default fallback
-                                };
-                            };
-                            
-                            if (iterationCount == 1) {  // Only log first iteration
-                                "Layer % note % at time %s: note % vel % dur %s".format(
-                                    layerName, noteIndex + 1, currentTime.round(0.001), 
-                                    processedNote[0], processedNote[1], noteDuration.round(0.001)
+                                "Layer %: % notes, equal interval: % seconds, total: % seconds".format(
+                                    layerName, noteCount, noteInterval.round(0.001), parentDuration
                                 ).postln;
                             };
-                            
-                            // Play note directly with specified duration
-                            ~playLayerNote.(
-                                layerName,
-                                processedNote[0],  // note
-                                processedNote[1],  // velocity
-                                noteDuration       // Use duration from timing data
-                            );
                         };
                         
-                        // Wait for any remaining time after last note
-                        finalWait = parentDuration - currentTime;
-                        if (finalWait > 0) {
-                            finalWait.wait;
-                        };
-                        
-                    } {
-                        // Use equal spacing (backward compatibility)
-                        noteCount.do { |noteIndex|
-                            var note = pattern[noteIndex];
-                            var noteTime = noteIndex * noteInterval;
-                            var isFirstNote = (noteIndex == 0);
-                            var isLastNote = (noteIndex == (noteCount - 1));
-                            var processedNote, velocity;
+                        // Play notes using existing timing logic - use waitTimes from currentTiming if available
+                        if (currentTiming.notNil and: { currentTiming.hasTiming } and: { currentTiming.waitTimes.notNil }) {
+                            // Use pre-calculated timing data
+                            var waitTimes = currentTiming.waitTimes;
+                            var durations = currentTiming.durations;
+                            var currentTime = 0;
+                            var finalWait;
                             
-                            // Process note for velocity, offset, etc.
-                            if (~processNote.notNil) {
-                                processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
-                            } {
-                                // Check if melody has velocity data
-                                var melodyData = ~melodyDict[melodyKey];
-                                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
-                                    velocity = melodyData.velocities[noteIndex];
-                                    // Convert from 0-1 to 0-127 if needed
-                                    if (velocity <= 1.0) {
-                                        velocity = (velocity * 127).asInteger;
-                                    };
-                                    processedNote = [note, velocity];
-                                } {
-                                    processedNote = [note, 100];  // Default fallback
+                            noteCount.do { |noteIndex|
+                                var note = pattern[noteIndex];
+                                var waitTime = waitTimes[noteIndex];
+                                var noteDuration = durations[noteIndex];
+                                var velocity = velocities[noteIndex] ? 127;
+                                
+                                // Wait before playing the note
+                                if (waitTime > 0) {
+                                    waitTime.wait;
+                                    currentTime = currentTime + waitTime;
                                 };
+                                
+                                ~playLayerNote.(
+                                    layerName,
+                                    note,
+                                    velocity,
+                                    noteDuration
+                                );
                             };
                             
-                            if (iterationCount == 1) {  // Only log first iteration
-                                "Layer % note % at time %s: note % vel %".format(
-                                    layerName, noteIndex + 1, noteTime.round(0.001), 
-                                    processedNote[0], processedNote[1]
-                                ).postln;
+                            // Wait for any remaining time after last note
+                            finalWait = parentDuration - currentTime;
+                            if (finalWait > 0) {
+                                finalWait.wait;
                             };
-                            
-                            // Play note directly (no OSC indirection)
-                            ~playLayerNote.(
-                                layerName,
-                                processedNote[0],  // note
-                                processedNote[1],  // velocity
-                                0.2  // Note duration (could be configurable)
-                            );
-                            
-                            // Wait until next note time
-                            if (noteIndex < (noteCount - 1)) {
+                        } {
+                            // Equal timing fallback
+                            noteInterval = parentDuration / noteCount;
+                            pattern.do { |note, i|
+                                var velocity = velocities[i] ? 127;
+                                var duration = noteDurations[i] ? 0.5;
+                                
+                                ~playLayerNote.(
+                                    layerName,
+                                    note,
+                                    velocity,
+                                    duration
+                                );
                                 noteInterval.wait;
-                            } {
-                                // For last note, wait the remaining time to complete the full duration
-                                var remainingTime = parentDuration - (noteIndex * noteInterval);
-                                remainingTime.wait;
                             };
+                        };
+                        
+                        // Clean up expression synth
+                        if (expressionSynth.notNil) {
+                            expressionSynth.release;
+                        };
+                        
+                        if (iterationCount == 1) {  // Only log first iteration
+                            "Layer % completed all % notes".format(layerName, noteCount).postln;
+                        };
+                    } {
+                        // No melody data, just wait
+                        var waitTime = (~layers.timingData.totalDuration ? 4.0);
+                        waitTime.wait;
+                        
+                        if (iterationCount == 1) {
+                            "Layer %: No melody data, waiting % seconds".format(layerName, waitTime).postln;
                         };
                     };
                     
-                    if (iterationCount == 1) {  // Only log first iteration
-                        "Layer % completed all % notes".format(layerName, noteCount).postln;
-                    };
-                    
-                    // Check if we should continue looping (single source of truth)
+                    // Check if we should continue looping
                     if (~layers.state.loopingMode) {
                         // Small gap before next iteration
                         0.1.wait;
@@ -636,13 +591,13 @@
         
         // Read expression parameters from appropriate row
         // Position 5: expression min
-        config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5).linlin(0, 1, 0, 127).asInteger;
+        config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5);
         
         // Position 6: expression max
-        config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6).linlin(0, 1, 0, 127).asInteger;
+        config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
         
         // Position 4: expression duration scalar
-        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0, 1, 0.1, 1.0);
+        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0, 1, 0.01, 1.0);
         
         // Ensure max > min
         if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
@@ -654,12 +609,12 @@
         knob5 = ~midiController.getKnobRow(rowNum, 5);
         knob6 = ~midiController.getKnobRow(rowNum, 6);
         
-        "[Layer %] Knob values - Pos 4: % (DurScale: %), Pos 5: % (Min: %), Pos 6: % (Max: %)".format(
-            layerName,
-            knob4.round(0.01), config.ccControl.expressionDurationScalar.round(0.01),
-            knob5.round(0.01), config.ccControl.expressionMin,
-            knob6.round(0.01), config.ccControl.expressionMax
-        ).postln;
+        // "[Layer %] Knob values - Pos 4: % (DurScale: %), Pos 5: % (Min: %), Pos 6: % (Max: %)".format(
+        //     layerName,
+        //     knob4.round(0.01), config.ccControl.expressionDurationScalar.round(0.01),
+        //     knob5.round(0.01), config.ccControl.expressionMin,
+        //     knob6.round(0.01), config.ccControl.expressionMax
+        // ).postln;
     };
 };
 

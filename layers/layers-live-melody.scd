@@ -242,24 +242,46 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 ~applyPendingMelodyUpdates = {
-    "DEBUG: applyPendingMelodyUpdates called".postln;
-    "  liveMelodyMode: %".format(~layers.state.liveMelodyMode).postln;
-    "  pendingUpdates: %".format(~layers.state.pendingUpdates.keys).postln;
+    "INFO: Bulk update function called, but individual layers now handle updates automatically".postln;
+    "Pending updates: %".format(~layers.state.pendingUpdates.keys).postln;
     
-    if (~layers.state.liveMelodyMode.not) {
-        "  Exiting: live melody mode not enabled".postln;
-        ^nil;  // Exit if not in live melody mode
+    // This function is now mainly for debugging/status
+    ^nil;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      DYNAMIC MELODY GETTERS                                 │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~getLayerMelodyDynamic = { |layerName|
+    var config = ~layers.configs[layerName];
+    var melodyKey, melodyData;
+    
+    // Check for pending live updates first
+    if (~layers.state.liveMelodyMode and: { 
+        ~layers.state.pendingUpdates[layerName].notNil 
+    }) {
+        // Apply pending update immediately
+        ~applyPendingUpdateForLayer.(layerName);
     };
     
-    ~layers.state.pendingUpdates.keysValuesDo { |layerName, melodyData|
-        "  Processing update for layer: %".format(layerName).postln;
-        var tempKey = ("live_" ++ layerName).asSymbol;
-        var config = ~layers.configs[layerName];
-        
-        // Convert to internal format
+    // Return current melody data
+    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
+        melodyKey = config.melodyList[0];
+        melodyData = ~melodyDict[melodyKey];
+    };
+    
+    melodyData
+};
+
+~applyPendingUpdateForLayer = { |layerName|
+    var melodyData = ~layers.state.pendingUpdates[layerName];
+    var tempKey = ("live_" ++ layerName).asSymbol;
+    var config = ~layers.configs[layerName];
+    
+    if (melodyData.notNil) {
+        // Convert and store
         ~melodyDict[tempKey] = ~convertLiveMelodyData.(melodyData);
-        
-        // Update layer config to use new melody
         config.melodyList = [tempKey];
         
         // Apply expression overrides if present
@@ -270,22 +292,18 @@
             if (override.expressionMin.notNil) {
                 ccControl.expressionMin = override.expressionMin;
             };
-            
             if (override.expressionMax.notNil) {
                 ccControl.expressionMax = override.expressionMax;
             };
-            
             if (override.expressionDurationScalar.notNil) {
                 ccControl.expressionDurationScalar = override.expressionDurationScalar;
             };
-            
-            "Applied expression overrides for %".format(layerName).postln;
         };
         
         // Clear pending update
         ~layers.state.pendingUpdates[layerName] = nil;
         
-        "Applied live melody update to %".format(layerName).postln;
+        "LIVE UPDATE APPLIED: % during playback".format(layerName).postln;
     };
 };
 
