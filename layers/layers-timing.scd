@@ -80,8 +80,21 @@ Returns:
         ).postln;
     };
     
-    // Handle note durations
+    // Handle note durations with proportional scaling
     if (noteDurations.notNil and: { noteDurations.size == noteCount }) {
+        var scalingFactor = 1.0;
+        var originalTotalDuration = melodyData.metadata.totalDuration;
+        
+        // Calculate scaling factor if original duration is available
+        if (originalTotalDuration.notNil and: { originalTotalDuration > 0 }) {
+            scalingFactor = totalDuration / originalTotalDuration;
+            "Note duration scaling: current=%, original=%, factor=%".format(
+                totalDuration.round(0.01), 
+                originalTotalDuration.round(0.01), 
+                scalingFactor.round(0.001)
+            ).postln;
+        };
+        
         if (durationType == "fractional") {
             // Convert fractional durations to absolute
             durations = noteCount.collect { |i|
@@ -99,12 +112,26 @@ Returns:
                 noteDurations[i] * availableTime
             };
         } {
-            // Use absolute durations directly
-            durations = noteDurations;
+            // Use absolute durations with proportional scaling
+            durations = noteDurations.collect { |dur|
+                var scaledDuration = dur * scalingFactor;
+                // Minimum duration to prevent notes from becoming too short
+                scaledDuration.max(0.01);
+            };
         };
     } {
-        // Default duration (could be made configurable)
-        durations = Array.fill(noteCount, 0.2);
+        // Default duration with scaling applied
+        var defaultDuration = 0.2;
+        var originalTotalDuration = melodyData.metadata.totalDuration;
+        var scalingFactor = 1.0;
+        
+        if (originalTotalDuration.notNil and: { originalTotalDuration > 0 }) {
+            scalingFactor = totalDuration / originalTotalDuration;
+            defaultDuration = defaultDuration * scalingFactor;
+            defaultDuration = defaultDuration.max(0.01); // Minimum duration
+        };
+        
+        durations = Array.fill(noteCount, defaultDuration);
     };
     
     // Return timing information
