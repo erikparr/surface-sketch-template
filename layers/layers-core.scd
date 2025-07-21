@@ -21,9 +21,10 @@
         totalDuration: 0,
         startTime: nil,
         loopingMode: false,       // Single source of truth for looping
-        manualControl: false,     // Enable MIDI knob control for duration and other parameters
+        manualControl: false,     // Enable MIDI knob control for duration and velocity
         liveMelodyMode: false,    // Enable live melody updates via OSC
-        pendingUpdates: Dictionary.new  // Store pending melody updates per layer
+        pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
+        backupProcessNote: nil    // Backup of sketch system's processNote function
     )
 );
 

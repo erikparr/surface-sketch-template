@@ -225,6 +225,15 @@
         { |parentGroup, envbus|
             "Parent ProcMod releasing...".postln;
             
+            // Release all CC synths first
+            ~layers.timingData.keysValuesDo { |layerName, timing|
+                if (timing.ccSynth.notNil) {
+                    "Releasing CC synth for %".format(layerName).postln;
+                    timing.ccSynth.release;
+                    timing.ccSynth = nil;
+                };
+            };
+            
             // Release all child ProcMods
             ~layers.layerProcs.do { |proc|
                 if (proc.notNil and: { proc.isRunning }) {
@@ -273,7 +282,6 @@
                 while { ~layers.state.loopingMode or: { iterationCount == 0 } } {
                     var melodyData, pattern, noteCount, noteInterval, parentDuration;
                     var currentTiming, velocities, noteDurations, timing;
-                    var expressionSynth;
                     
                     iterationCount = iterationCount + 1;
                     
@@ -298,10 +306,7 @@
                             noteInterval = parentDuration / noteCount;
                         };
                         
-                        // Start expression envelope if enabled
-                        if (config.ccControl.enabled) {
-                            expressionSynth = ~startLayerCCEnvelope.(layerName, parentDuration);
-                        };
+                        // CC envelope is now handled by parent ProcMod only
                         
                         if (iterationCount == 1) {  // Only log first iteration
                             if (currentTiming.notNil and: { currentTiming.hasTiming }) {
@@ -327,7 +332,26 @@
                                 var note = pattern[noteIndex];
                                 var waitTime = waitTimes[noteIndex];
                                 var noteDuration = durations[noteIndex];
-                                var velocity = velocities[noteIndex] ? 127;
+                                var velocity, processedNote;
+                                var isFirstNote = (noteIndex == 0);
+                                var isLastNote = (noteIndex == (noteCount - 1));
+                                
+                                // Check manual control mode for velocity
+                                if (~layers.state.manualControl) {
+                                    // MANUAL CONTROL: Use Row 1, Knob 3 directly
+                                    if (~midiController.notNil) {
+                                        var knobValue = ~midiController.getKnobRow1(3);
+                                        velocity = knobValue.linlin(0, 127, 1, 127).asInteger;
+                                        "DEBUG: Manual control - knob raw: %, velocity: %".format(knobValue.round(0.001), velocity).postln;
+                                    } {
+                                        velocity = 100; // Default if no MIDI controller
+                                        "DEBUG: Manual control - using default velocity = %".format(velocity).postln;
+                                    };
+                                } {
+                                    // Use melody velocity data
+                                    velocity = velocities[noteIndex] ? 127;
+                                    "DEBUG: Using melody velocity data = %".format(velocity).postln;
+                                };
                                 
                                 // Wait before playing the note
                                 if (waitTime > 0) {
@@ -352,8 +376,27 @@
                             // Equal timing fallback
                             noteInterval = parentDuration / noteCount;
                             pattern.do { |note, i|
-                                var velocity = velocities[i] ? 127;
+                                var velocity, processedNote;
                                 var duration = noteDurations[i] ? 0.5;
+                                var isFirstNote = (i == 0);
+                                var isLastNote = (i == (noteCount - 1));
+                                
+                                // Check manual control mode for velocity
+                                if (~layers.state.manualControl) {
+                                    // MANUAL CONTROL: Use Row 1, Knob 3 directly
+                                    if (~midiController.notNil) {
+                                        var knobValue = ~midiController.getKnobRow1(3);
+                                        velocity = knobValue.linlin(0, 127, 1, 127).asInteger;
+                                        "DEBUG: Manual control (equal timing) - knob raw: %, velocity: %".format(knobValue.round(0.001), velocity).postln;
+                                    } {
+                                        velocity = 100; // Default if no MIDI controller
+                                        "DEBUG: Manual control (equal timing) - using default velocity = %".format(velocity).postln;
+                                    };
+                                } {
+                                    // Use melody velocity data
+                                    velocity = velocities[i] ? 127;
+                                    "DEBUG: Using melody velocity data (equal timing) = %".format(velocity).postln;
+                                };
                                 
                                 ~playLayerNote.(
                                     layerName,
@@ -363,11 +406,6 @@
                                 );
                                 noteInterval.wait;
                             };
-                        };
-                        
-                        // Clean up expression synth
-                        if (expressionSynth.notNil) {
-                            expressionSynth.release;
                         };
                         
                         if (iterationCount == 1) {  // Only log first iteration
@@ -415,130 +453,6 @@
     );
 };
 
-// Keep the old task creation function for backwards compatibility temporarily
-~createLayerTask = { |layerName, config, parentGroup, maxDuration|
-    Task({
-        var currentTime = 0;
-        var melodyKey = config.melodyList[0];  // Always play first melody (no auto-progression)
-        
-        "Layer % starting: melody % → VST group %".format(
-            layerName, melodyKey, config.vstGroup
-        ).postln;
-        
-        // Note: VST targeting is handled per-note in the OSC handler
-        // Each layer sends its notes with its layer name, and the OSC handler
-        // routes to the correct VST group based on the layer's config
-        
-        // Play the melody repeatedly until max duration
-        while { currentTime < maxDuration } {
-            var melodyDuration = ~calculateMelodyDuration.(melodyKey);
-            var remainingTime = maxDuration - currentTime;
-            var playDuration = min(melodyDuration, remainingTime);
-            
-            "Layer % playing % for % seconds".format(
-                layerName, melodyKey, playDuration
-            ).postln;
-            
-            // Play the melody segment
-            ~playLayerMelodySegment.(melodyKey, layerName, playDuration, parentGroup);
-            
-            // Wait for this segment to complete
-            playDuration.wait;
-            
-            currentTime = currentTime + playDuration;
-        };
-        
-        // VST group targeting is handled in the OSC handler, no need to restore
-        
-        "Layer % completed".format(layerName).postln;
-    })
-};
-
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                         MELODY PLAYBACK                                    │
-// └─────────────────────────────────────────────────────────────────────────────┘
-
-// Play a segment of a melody for a specific duration
-~playLayerMelodySegment = { |melodyKey, layerName, duration, parentGroup|
-    var pattern = ~melodyDict[melodyKey].patterns[0];
-    var startTime = Main.elapsedTime;
-    var noteIndex = 0;
-    var noteCount = pattern.size;
-    
-    Task({
-        while { 
-            (noteIndex < noteCount) and: 
-            ((Main.elapsedTime - startTime) < duration) 
-        } {
-            var note = pattern[noteIndex];
-            var isFirstNote = (noteIndex == 0);
-            var isLastNote = (noteIndex == (noteCount - 1));
-            var processedNote, actualDuration, waitTime;
-            
-            // Process note - check if sketch system function exists
-            if (~processNote.notNil) {
-                processedNote = ~processNote.value(note, isFirstNote, isLastNote, melodyKey);
-            } {
-                // Check if melody has velocity data
-                var melodyData = ~melodyDict[melodyKey];
-                if (melodyData.notNil and: { melodyData.velocities.notNil } and: { melodyData.velocities[noteIndex].notNil }) {
-                    var velocity = melodyData.velocities[noteIndex];
-                    // Convert from 0-1 to 0-127 if needed
-                    if (velocity <= 1.0) {
-                        velocity = (velocity * 127).asInteger;
-                    };
-                    processedNote = [note, velocity];
-                } {
-                    processedNote = [note, 100];  // Default fallback
-                };
-            };
-            
-            // Get timing - use sketch system if available, otherwise defaults
-            actualDuration = if (~ccControl.notNil and: { ~ccControl.noteDuration.notNil }) {
-                ~ccControl.noteDuration
-            } {
-                0.2  // Default note duration
-            };
-            
-            waitTime = if (~ccControl.notNil and: { ~ccControl.noteRestTime.notNil }) {
-                ~ccControl.noteRestTime
-            } {
-                0.2  // Default rest time
-            };
-            
-            // Check if we have enough time for this note
-            if ((Main.elapsedTime - startTime + actualDuration) > duration) {
-                // Truncate last note if needed
-                actualDuration = duration - (Main.elapsedTime - startTime);
-                if (actualDuration <= 0) {
-                    // No time left, exit
-                    noteIndex = noteCount;  // Force exit
-                } {
-                    // Send truncated note
-                    ~playLayerNote.(
-                        layerName,
-                        processedNote[0],  // note
-                        processedNote[1],  // velocity
-                        actualDuration
-                    );
-                };
-            } {
-                // Normal note playback
-                ~playLayerNote.(
-                    layerName,
-                    processedNote[0],  // note
-                    processedNote[1],  // velocity
-                    actualDuration
-                );
-                
-                // Wait before next note
-                (actualDuration + waitTime).wait;
-            };
-            
-            noteIndex = noteIndex + 1;
-        };
-    }).play;
-};
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         DIRECT NOTE PLAYBACK                               │
@@ -597,7 +511,7 @@
         config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
         
         // Position 4: expression duration scalar
-        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0, 1, 0.01, 1.0);
+        config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0.0, 1.0, 0.001, 1.0);
         
         // Ensure max > min
         if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {

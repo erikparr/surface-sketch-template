@@ -87,7 +87,7 @@
     // Manual control mode checkbox
     layout.add(
         CheckBox()
-            .string_("Manual Control (MIDI Knob Duration)")
+            .string_("Manual Control (MIDI Knobs: Duration + Velocity)")
             .value_(~layers.state.manualControl)
             .action_({ |cb|
                 ~setLayersManualControl.(cb.value);
@@ -322,7 +322,7 @@
     );
     
     layout.add(StaticText()
-        .string_("MIDI Row 1 controls timing for all layers")
+        .string_("Manual Control: Row 1 Knob 8=Duration, Row 1 Knob 3=Velocity")
         .font_(Font.default.size_(9).italic_(true))
         .align_(\center)
     );

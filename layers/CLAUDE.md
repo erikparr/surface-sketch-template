@@ -19,7 +19,10 @@ The layers system allows three independent layers to play different melodies thr
         totalDuration: 0,
         startTime: nil,
         loopingMode: false,       // Enable/disable continuous looping
-        manualControl: false      // Enable MIDI knob control for duration
+        manualControl: false,     // Enable MIDI knob control for duration and velocity
+        liveMelodyMode: false,    // Enable live melody updates via OSC
+        pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
+        backupProcessNote: nil    // Backup of sketch system's processNote function
     )
 )
 ```
@@ -29,11 +32,14 @@ The layers system allows three independent layers to play different melodies thr
   - ASR envelope with release node for sustained operation
   - Contains a Task that manages loop iterations
   - Calculates timing once and shares with children
+  - Handles CC envelope triggering once per layer per loop
   
 - **Child ProcMods** (one per layer): Handle individual layer playback
   - Each has its own Task for note sequencing
+  - Use dynamic melody getter functions for real-time updates
   - Read timing from shared `~layers.timingData`
   - Loop internally based on parent's looping state
+  - Call `~getLayerMelodyDynamic` at start of each loop iteration
 
 ## Key Components
 
@@ -49,24 +55,33 @@ The layers system allows three independent layers to play different melodies thr
 - `~killLayers`: Emergency stop
 - `~setLayerMelody(layerName, melodyKey)`: Assign melody to layer
 - `~setLayerVSTGroup(layerName, vstGroup)`: Route layer to VST group
-- `~setLayersManualControl(enabled)`: Enable/disable MIDI control mode
+- `~setLayersManualControl(enabled)`: Enable/disable MIDI control mode with velocity integration
 - `~getLayersDurationFromKnob`: Read duration from MIDI knob (row 1, pos 8)
 
 ### 3. GUI (`layers-gui.scd`)
 - Transport controls (Start/Stop)
 - Loop mode checkbox
-- Manual control checkbox
+- Manual control checkbox (MIDI knobs for duration and velocity)
+- Live melody mode checkbox (OSC updates)
 - Per-layer controls:
   - Enable/disable
   - Melody selection
   - VST group routing
   - Load melody from file
 - Auto-refreshing VST group detection
+- Real-time status display including live melody pending updates
 
 ### 4. Loader (`load-layers.scd`)
 - Loads all components in correct order
 - Initializes the system
 - Creates GUI automatically
+
+### 5. Live Melody System (`layers-live-melody.scd`)
+- `~enableLiveMelodyMode()`: Enable OSC live updates
+- `~disableLiveMelodyMode()`: Disable OSC live updates
+- `~getLayerMelodyDynamic(layerName)`: Dynamic melody getter for real-time updates
+- `~applyPendingUpdateForLayer(layerName)`: Apply pending melody update immediately
+- OSC responder for `/liveMelody` messages with JSON melody data
 
 ## Usage
 
@@ -97,6 +112,23 @@ The layers system allows three independent layers to play different melodies thr
 
 // Now row 1, knob 8 controls duration (0.1-10 seconds)
 // Duration changes take effect on next loop iteration
+// Manual control also integrates velocity control with sketch system:
+// - When enabled: Row 1 Knob 3 controls velocity directly
+// - When disabled: Uses velocity data from melody files
+```
+
+### Live Melody Updates
+```supercollider
+// Enable live melody mode for real-time OSC updates
+~enableLiveMelodyMode.();
+
+// Send OSC update during playback (applies immediately to live layers)
+n = NetAddr("127.0.0.1", 57120);
+n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\":[100,110,120,127]}");
+
+// Updates apply live without stopping/restarting layers
+// Disable live melody mode
+~disableLiveMelodyMode.();
 ```
 
 ## Timing Synchronization
@@ -111,8 +143,10 @@ The layers system allows three independent layers to play different melodies thr
 - **VST Manager**: Routes notes to appropriate VST instances
 - **Melody Dictionary**: Sources melodies from `~melodyDict`
 - **MIDI Controller**: Reads knob values for manual control and expression parameters
-- **Sketch System**: Compatible with main sketch timing parameters
+- **Sketch System**: Compatible with main sketch timing parameters and velocity control (Row 1 Knob 3)
 - **Expression Control**: Independent CC envelope control for each layer
+- **OSC System**: Receives live melody updates during playback
+- **Live Updates**: Dynamic melody references enable real-time changes
 
 ## State Management
 
@@ -132,6 +166,9 @@ The layers system allows three independent layers to play different melodies thr
 7. **Timing data support**: Custom inter-onset intervals and note durations
 8. **JSON import**: Full support for importing melodies with timing data via GUI or code
 9. **Smart layer mapping**: Automatically handles 0-indexed JSON to 1-indexed GUI mapping
+10. **Live melody updates**: Dynamic melody references enable real-time OSC updates during playback
+11. **Velocity control integration**: Seamless switching between MIDI knob and melody velocity data
+12. **Code cleanup**: Removed 125 lines of legacy/unused code for cleaner architecture
 
 ## Expression Control System
 

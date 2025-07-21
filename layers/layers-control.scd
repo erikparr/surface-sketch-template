@@ -261,7 +261,16 @@
 // Enable/disable manual control mode
 ~setLayersManualControl = { |enabled|
     ~layers.state.manualControl = enabled;
-    "Layers manual control mode: %".format(if(enabled, "ENABLED", "DISABLED")).postln;
+    
+    if (enabled) {
+        "Layers manual control mode: ENABLED".postln;
+        "- Duration: Row 1, Knob 8 (0.1-10 seconds)".postln;
+        "- Velocity: Row 1, Knob 3 (1-127)".postln;
+    } {
+        "Layers manual control mode: DISABLED".postln;
+        "- Duration: Fixed/default values".postln;
+        "- Velocity: From melody data".postln;
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
