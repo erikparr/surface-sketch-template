@@ -266,6 +266,7 @@
         "Layers manual control mode: ENABLED".postln;
         "- Duration: Row 1, Knob 8 (0.1-10 seconds)".postln;
         "- Velocity: Row 1, Knob 3 (1-127)".postln;
+        "- Note Duration: Row 1, Knob 2 (1-150%)".postln;
     } {
         "Layers manual control mode: DISABLED".postln;
         "- Duration: Fixed/default values".postln;

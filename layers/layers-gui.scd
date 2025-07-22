@@ -322,7 +322,7 @@
     );
     
     layout.add(StaticText()
-        .string_("Manual Control: Row 1 Knob 8=Duration, Row 1 Knob 3=Velocity")
+        .string_("Manual Control: K8=Duration, K3=Velocity, K2=Note Dur (1-150%)")
         .font_(Font.default.size_(9).italic_(true))
         .align_(\center)
     );

@@ -83,7 +83,7 @@ Returns:
     // Handle note durations with proportional scaling
     if (noteDurations.notNil and: { noteDurations.size == noteCount }) {
         var scalingFactor = 1.0;
-        var originalTotalDuration = melodyData.metadata.totalDuration;
+        var originalTotalDuration = melodyData.metadata !? { melodyData.metadata.totalDuration };
         
         // Calculate scaling factor if original duration is available
         if (originalTotalDuration.notNil and: { originalTotalDuration > 0 }) {
@@ -115,6 +115,10 @@ Returns:
             // Use absolute durations with proportional scaling
             durations = noteDurations.collect { |dur|
                 var scaledDuration = dur * scalingFactor;
+                // Apply manual control note duration scalar if enabled
+                if (~layers.state.manualControl and: { ~layers.state.noteDurationScalar.notNil }) {
+                    scaledDuration = scaledDuration * ~layers.state.noteDurationScalar;
+                };
                 // Minimum duration to prevent notes from becoming too short
                 scaledDuration.max(0.01);
             };
@@ -122,12 +126,16 @@ Returns:
     } {
         // Default duration with scaling applied
         var defaultDuration = 0.2;
-        var originalTotalDuration = melodyData.metadata.totalDuration;
+        var originalTotalDuration = melodyData.metadata !? { melodyData.metadata.totalDuration };
         var scalingFactor = 1.0;
         
         if (originalTotalDuration.notNil and: { originalTotalDuration > 0 }) {
             scalingFactor = totalDuration / originalTotalDuration;
             defaultDuration = defaultDuration * scalingFactor;
+            // Apply manual control note duration scalar if enabled
+            if (~layers.state.manualControl and: { ~layers.state.noteDurationScalar.notNil }) {
+                defaultDuration = defaultDuration * ~layers.state.noteDurationScalar;
+            };
             defaultDuration = defaultDuration.max(0.01); // Minimum duration
         };
         

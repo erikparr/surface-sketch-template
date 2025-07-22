@@ -83,12 +83,20 @@
                         "Loop %: Using MIDI knob duration: % seconds".format(
                             loopCount, currentDuration.round(0.01)
                         ).postln;
+                        
+                        // Also read note duration scalar from knob 2
+                        if (~midiController.notNil) {
+                            var knobValue = ~midiController.getKnobRow1(2);
+                            ~layers.state.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.5);
+                            "Note duration scalar: %% (Row 1 Knob 2)".format((~layers.state.noteDurationScalar * 100).round(1)).postln;
+                        };
                     } {
                         // Normal mode: use provided duration
                         currentDuration = duration;
                         "Loop %: Using fixed duration: % seconds".format(
                             loopCount, currentDuration.round(0.01)
                         ).postln;
+                        ~layers.state.noteDurationScalar = 1.0; // Reset to 100% when manual control is off
                     };
                     
                     // Calculate timing for all layers with current duration

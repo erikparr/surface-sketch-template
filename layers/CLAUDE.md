@@ -22,7 +22,8 @@ The layers system allows three independent layers to play different melodies thr
         manualControl: false,     // Enable MIDI knob control for duration and velocity
         liveMelodyMode: false,    // Enable live melody updates via OSC
         pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
-        backupProcessNote: nil    // Backup of sketch system's processNote function
+        backupProcessNote: nil,   // Backup of sketch system's processNote function
+        noteDurationScalar: 1.0   // Note duration scalar (0.01-1.5) from Row 1 Knob 2
     )
 )
 ```
@@ -110,11 +111,12 @@ The layers system allows three independent layers to play different melodies thr
 // Enable MIDI knob control
 ~setLayersManualControl.(true);
 
-// Now row 1, knob 8 controls duration (0.1-10 seconds)
+// Manual control mappings (Row 1):
+// - Knob 8: Loop duration (0.1-10 seconds) - changes take effect on next loop
+// - Knob 3: Note velocity (1-127) - live control during playback
+// - Knob 2: Note duration scalar (1-150%) - scales all note durations
 // Duration changes take effect on next loop iteration
-// Manual control also integrates velocity control with sketch system:
-// - When enabled: Row 1 Knob 3 controls velocity directly
-// - When disabled: Uses velocity data from melody files
+// When disabled: Uses velocity and durations from melody data
 ```
 
 ### Live Melody Updates
@@ -134,9 +136,11 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 ## Timing Synchronization
 
 1. **Duration**: All layers share the same duration
-2. **Note Intervals**: Each layer divides duration by its note count
+2. **Note Intervals**: Each layer divides duration by its note count (or uses custom timing)
 3. **Loop Synchronization**: All layers start new iterations together
 4. **Dynamic Updates**: Duration can change between loops in manual mode
+5. **Proportional Scaling**: When loop duration changes, note durations scale proportionally
+6. **Note Duration Control**: Manual mode enables additional scaling via Knob 2 (1-150%)
 
 ## Integration Points
 
@@ -169,6 +173,8 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 10. **Live melody updates**: Dynamic melody references enable real-time OSC updates during playback
 11. **Velocity control integration**: Seamless switching between MIDI knob and melody velocity data
 12. **Code cleanup**: Removed 125 lines of legacy/unused code for cleaner architecture
+13. **Proportional note scaling**: Note durations scale proportionally with loop duration changes
+14. **Note duration scalar**: Manual control mode adds Knob 2 for 1-150% note duration scaling
 
 ## Expression Control System
 

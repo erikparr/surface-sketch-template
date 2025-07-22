@@ -24,7 +24,8 @@
         manualControl: false,     // Enable MIDI knob control for duration and velocity
         liveMelodyMode: false,    // Enable live melody updates via OSC
         pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
-        backupProcessNote: nil    // Backup of sketch system's processNote function
+        backupProcessNote: nil,   // Backup of sketch system's processNote function
+        noteDurationScalar: 1.0   // Note duration scalar (1.0-1.5) from Row 1 Knob 2
     )
 );
 
