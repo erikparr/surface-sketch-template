@@ -76,6 +76,17 @@
                     
                     // REMOVED: Bulk update processing - individual layers handle updates now
                     
+                    // Set up VST routing for sketch system compatibility
+                    if (loopCount == 1) {  // Only on first loop
+                        if (~layers.configs[\layer1].notNil && ~setActiveVSTGroup.notNil) {
+                            ~setActiveVSTGroup.(~layers.configs[\layer1].vstGroup);
+                        };
+                        if (~layers.configs[\layer2].notNil && ~setActiveVSTGroup_2.notNil) {
+                            ~setActiveVSTGroup_2.(~layers.configs[\layer2].vstGroup);
+                        };
+                        // Note: Layer 3 doesn't have a corresponding sketch system function
+                    };
+                    
                     // Determine duration at the START of each loop (like sketch system)
                     if (~layers.state.manualControl) {
                         // Manual control: read fresh value from knob each iteration

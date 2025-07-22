@@ -82,7 +82,11 @@
     var chanIndex = msg[3].asInteger;
     var ccNum = msg[4].asInteger;
     var exprValue = msg[5].asInteger.clip(0, 127);
-    var targetGroup = ~activeVSTGroup; // nil means all instances
+    var targetGroup = if(~layers.notNil && ~layers.configs.notNil && ~layers.configs[\layer1].notNil, { 
+        ~layers.configs[\layer1].vstGroup 
+    }, { 
+        ~activeVSTGroup  // Fallback to sketch system's global variable
+    });
     var instances = ~vstManager.getTargetInstances(targetGroup);
 
     instances.values.do { |vst|
@@ -105,14 +109,18 @@
     };
 }, '/expression', s.addr);
 
-// OSC responder for expression control - MVP VERSION (send to all VSTs)
+// OSC responder for expression control - Layer 2
 ~expressionFuncLayer2.free;
 ~expressionFuncLayer2 = OSCFunc({ |msg|
     var replyID = msg[2];
     var chanIndex = msg[3].asInteger;
     var ccNum = msg[4].asInteger;
     var exprValue = msg[5].asInteger.clip(0, 127);
-    var targetGroup = ~activeVSTGroup_2; // nil => all instances
+    var targetGroup = if(~layers.notNil && ~layers.configs.notNil && ~layers.configs[\layer2].notNil, { 
+        ~layers.configs[\layer2].vstGroup 
+    }, { 
+        ~activeVSTGroup_2  // Fallback to sketch system's global variable
+    });
     var instances = ~vstManager.getTargetInstances(targetGroup);
 
     instances.values.do { |vst|
@@ -130,9 +138,18 @@
     var targetGroup = if(~layers.notNil && ~layers.configs.notNil && ~layers.configs[\layer3].notNil, { 
         ~layers.configs[\layer3].vstGroup 
     }, { 
-        nil 
+        'Layer3'  // Fallback to default Layer3 group
     });
     var instances = ~vstManager.getTargetInstances(targetGroup);
+    
+    // Debug logging for layer 3
+    if(~layer3LogCounter.isNil) { ~layer3LogCounter = 0 };
+    ~layer3LogCounter = (~layer3LogCounter + 1);
+    if(~layer3LogCounter % 50 == 1) {  // Log every 50th message
+        "[Layer3 Expression] Target group: %, Instances count: %, CC%: %".format(
+            targetGroup, instances.size, ccNum, exprValue
+        ).postln;
+    };
 
     instances.values.do { |vst|
         vst.midi.control(0, ccNum, exprValue);
