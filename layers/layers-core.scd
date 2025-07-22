@@ -42,6 +42,7 @@
         vstGroup: 'Layer1',      // Default group from vstplugin-setup
         enabled: true,
         duration: 0,
+        noteDurationScalar: 1.0,  // Individual layer note duration scalar
         ccControl: (
             enabled: true,
             expressionCC: 11,
@@ -58,6 +59,7 @@
         vstGroup: 'Layer2',      // Default group from vstplugin-setup
         enabled: true,
         duration: 0,
+        noteDurationScalar: 1.0,  // Individual layer note duration scalar
         ccControl: (
             enabled: true,
             expressionCC: 12,
@@ -74,6 +76,7 @@
         vstGroup: 'Layer3',      // Default group from vstplugin-setup
         enabled: true,
         duration: 0,
+        noteDurationScalar: 1.0,  // Individual layer note duration scalar
         ccControl: (
             enabled: true,
             expressionCC: 13,

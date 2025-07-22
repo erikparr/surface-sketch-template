@@ -23,7 +23,7 @@ Returns:
     - durations: Array of durations for each note
     - waitTimes: Array of wait times between notes (for playback)
 */
-~calculateLayerTiming = { |melodyData, totalDuration|
+~calculateLayerTiming = { |melodyData, totalDuration, layerName|
     var pattern, noteCount, timing, startTimes, durations, waitTimes;
     var noteDurations, durationType;
     
@@ -116,8 +116,11 @@ Returns:
             durations = noteDurations.collect { |dur|
                 var scaledDuration = dur * scalingFactor;
                 // Apply manual control note duration scalar if enabled
-                if (~layers.state.manualControl and: { ~layers.state.noteDurationScalar.notNil }) {
-                    scaledDuration = scaledDuration * ~layers.state.noteDurationScalar;
+                if (~layers.state.manualControl and: { layerName.notNil }) {
+                    var config = ~layers.configs[layerName];
+                    if (config.notNil and: { config.noteDurationScalar.notNil }) {
+                        scaledDuration = scaledDuration * config.noteDurationScalar;
+                    };
                 };
                 // Minimum duration to prevent notes from becoming too short
                 scaledDuration.max(0.01);
@@ -133,8 +136,11 @@ Returns:
             scalingFactor = totalDuration / originalTotalDuration;
             defaultDuration = defaultDuration * scalingFactor;
             // Apply manual control note duration scalar if enabled
-            if (~layers.state.manualControl and: { ~layers.state.noteDurationScalar.notNil }) {
-                defaultDuration = defaultDuration * ~layers.state.noteDurationScalar;
+            if (~layers.state.manualControl and: { layerName.notNil }) {
+                var config = ~layers.configs[layerName];
+                if (config.notNil and: { config.noteDurationScalar.notNil }) {
+                    defaultDuration = defaultDuration * config.noteDurationScalar;
+                };
             };
             defaultDuration = defaultDuration.max(0.01); // Minimum duration
         };

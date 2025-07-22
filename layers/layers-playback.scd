@@ -95,19 +95,18 @@
                             loopCount, currentDuration.round(0.01)
                         ).postln;
                         
-                        // Also read note duration scalar from knob 2
-                        if (~midiController.notNil) {
-                            var knobValue = ~midiController.getKnobRow1(2);
-                            ~layers.state.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.5);
-                            "Note duration scalar: %% (Row 1 Knob 2)".format((~layers.state.noteDurationScalar * 100).round(1)).postln;
-                        };
+                        // Update note duration scalars for each layer from their respective rows
+                        ~updateAllLayerNoteDurationScalars.();
                     } {
                         // Normal mode: use provided duration
                         currentDuration = duration;
                         "Loop %: Using fixed duration: % seconds".format(
                             loopCount, currentDuration.round(0.01)
                         ).postln;
-                        ~layers.state.noteDurationScalar = 1.0; // Reset to 100% when manual control is off
+                        // Reset all layers to 100% when manual control is off
+                        ~layers.configs.keysValuesDo { |layerName, config|
+                            config.noteDurationScalar = 1.0;
+                        };
                     };
                     
                     // Calculate timing for all layers with current duration
@@ -121,7 +120,7 @@
                             
                             // Use timing calculation function if available
                             if (~calculateLayerTiming.notNil) {
-                                timingInfo = ~calculateLayerTiming.(melodyData, currentDuration);
+                                timingInfo = ~calculateLayerTiming.(melodyData, currentDuration, layerName);
                                 
                                 ~layers.timingData[layerName] = (
                                     melodyKey: melodyKey,
@@ -598,6 +597,33 @@
 ~updateAllLayerExpressionParams = {
     [\layer1, \layer2, \layer3].do { |layerName|
         ~updateLayerExpressionParams.(layerName);
+    };
+};
+
+// Update note duration scalar for a layer from MIDI knobs
+~updateLayerNoteDurationScalar = { |layerName|
+    var rowNum = switch(layerName,
+        \layer1, { 1 },
+        \layer2, { 2 },
+        \layer3, { 3 }
+    );
+    var config = ~layers.configs[layerName];
+    
+    if (~midiController.notNil && config.notNil) {
+        var knobValue = ~midiController.getKnobRow(rowNum, 2);
+        config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.5);
+        "Layer % note duration scalar: %% (Row % Knob 2)".format(
+            layerName, 
+            (config.noteDurationScalar * 100).round(1),
+            rowNum
+        ).postln;
+    };
+};
+
+// Update all layer note duration scalars from MIDI
+~updateAllLayerNoteDurationScalars = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~updateLayerNoteDurationScalar.(layerName);
     };
 };
 

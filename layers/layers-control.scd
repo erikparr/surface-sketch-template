@@ -264,9 +264,11 @@
     
     if (enabled) {
         "Layers manual control mode: ENABLED".postln;
-        "- Duration: Row 1, Knob 8 (0.1-10 seconds)".postln;
-        "- Velocity: Row 1, Knob 3 (1-127)".postln;
-        "- Note Duration: Row 1, Knob 2 (1-150%)".postln;
+        "- Loop Duration: Row 1, Knob 8 (0.1-10 seconds) - affects all layers".postln;
+        "Per-layer controls:".postln;
+        "- Layer 1: Row 1 - Knob 3 (Velocity), Knob 2 (Note Duration 1-150%)".postln;
+        "- Layer 2: Row 2 - Knob 3 (Velocity), Knob 2 (Note Duration 1-150%)".postln;
+        "- Layer 3: Row 3 - Knob 3 (Velocity), Knob 2 (Note Duration 1-150%)".postln;
     } {
         "Layers manual control mode: DISABLED".postln;
         "- Duration: Fixed/default values".postln;
