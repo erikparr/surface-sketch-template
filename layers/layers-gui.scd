@@ -110,6 +110,21 @@
             })
     );
     
+    // Single note CC mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Single Note CC Mode (Per-note envelopes)")
+            .value_(~layers.state.singleNoteCCMode)
+            .action_({ |cb|
+                ~layers.state.singleNoteCCMode = cb.value;
+                statusText.string = if (cb.value) {
+                    "Single note CC mode: ON"
+                } {
+                    "Single note CC mode: OFF"
+                };
+            })
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘

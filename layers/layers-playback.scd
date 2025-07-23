@@ -189,13 +189,19 @@
                             };
                         };
                         
-                        // Start CC envelopes for each active layer
-                        ~layers.configs.keysValuesDo { |layerName, config|
-                            if (config.enabled and: { config.melodyList.size > 0 }) {
-                                var ccSynth = ~startLayerCCEnvelope.(layerName, currentDuration);
-                                if (ccSynth.notNil) {
-                                    // Store synth reference for potential cleanup
-                                    ~layers.timingData[layerName].ccSynth = ccSynth;
+                        // Start CC envelopes based on mode
+                        if (~layers.state.singleNoteCCMode) {
+                            // Single note mode: CC envelopes will be triggered per note in ~playLayerNote
+                            "Single note CC mode active - envelopes will trigger per note".postln;
+                        } {
+                            // Normal mode: Start CC envelopes for each active layer
+                            ~layers.configs.keysValuesDo { |layerName, config|
+                                if (config.enabled and: { config.melodyList.size > 0 }) {
+                                    var ccSynth = ~startLayerCCEnvelope.(layerName, currentDuration);
+                                    if (ccSynth.notNil) {
+                                        // Store synth reference for potential cleanup
+                                        ~layers.timingData[layerName].ccSynth = ccSynth;
+                                    };
                                 };
                             };
                         };
@@ -499,6 +505,11 @@
     } {
         "Warning: ~vstManager not available, cannot route note to VST".postln;
     };
+    
+    // Trigger per-note CC envelope if single note mode is enabled
+    if (~layers.state.singleNoteCCMode) {
+        ~startPerNoteCCEnvelope.(layerName, duration);
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -624,6 +635,39 @@
 ~updateAllLayerNoteDurationScalars = {
     [\layer1, \layer2, \layer3].do { |layerName|
         ~updateLayerNoteDurationScalar.(layerName);
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    PER-NOTE CC ENVELOPE SYSTEM                             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Start CC envelope for a single note
+~startPerNoteCCEnvelope = { |layerName, noteDuration|
+    var config = ~layers.configs[layerName];
+    var ccControl = config.ccControl;
+    var synthDefName = switch(layerName,
+        \layer1, { \ccEnvelope1 },
+        \layer2, { \ccEnvelope2 },
+        \layer3, { \ccEnvelope3 }
+    );
+    
+    if (ccControl.notNil && ccControl.enabled && ~layers.state.singleNoteCCMode) {
+        var scaledDuration = noteDuration;  // Use note duration directly
+        var attackTime = scaledDuration * ccControl.expressionPeakPos;
+        var releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
+        
+        Synth(synthDefName, [
+            \start, ccControl.expressionMin,
+            \peak, ccControl.expressionMax,
+            \end, ccControl.expressionMin,
+            \attackTime, attackTime,
+            \releaseTime, releaseTime,
+            \chanIndex, 0,
+            \ccNum, ccControl.expressionCC,
+            \attackCurve, ccControl.expressionShape,
+            \releaseCurve, ccControl.expressionShape
+        ]);
     };
 };
 
