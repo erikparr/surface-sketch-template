@@ -56,6 +56,9 @@
 "  ~startLayers.()".postln;
 "===============================================\n".postln;
 
+// Initialize MIDI navigation
+~setupLayerMelodyNavigation.();
+
 // Create GUI immediately
 ~createLayersGUI.();
 

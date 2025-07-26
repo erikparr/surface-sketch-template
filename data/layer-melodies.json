@@ -1,39 +1,63 @@
 {
-    "melodies": [
-      
-        {
-            "active": true,
-            "key": "layer1",
-            "loopCount": 1,
-            "name": "Tuba Melody III",
-            "pattern": [82, 78, 73, 70, 66, 82],
-            "velocityFirst": 1.5,
-            "velocityLast": 0.5
+    "layers": {
+        "layer0": {
+            "notes": [
+                {"midi": 78, "vel": 0.9, "dur": 0.4},
+                {"midi": 73, "vel": 0.8, "dur": 0.4},
+                {"midi": 70, "vel": 0.8, "dur": 0.4},
+                {"midi": 63, "vel": 0.8, "dur": 0.4},
+                {"midi": 78, "vel": 0.5, "dur": 0.4}
+            ],
+            "timing": null,
+            "metadata": {
+                "key": "bridge2a",
+                "name": "Tuba Melody IX",
+                "totalDuration": 2.0,
+                "durationType": "absolute"
+            }
         },
-        {
-            "active": true,
-            "key": "layer2",
-            "loopCount": 1,
-            "name": "Tuba Melody III",
-            "pattern": [ ],
-            "velocityFirst": 1.5,
-            "velocityLast": 0.5
+        "layer1": {
+            "notes": [
+                {"midi": 77, "vel": 0.8, "dur": 0.2},
+                {"midi": 75, "vel": 0.8, "dur": 0.2},
+                {"midi": 77, "vel": 0.8, "dur": 0.2},
+                {"midi": 89, "vel": 0.8, "dur": 0.2},
+                {"midi": 78, "vel": 0.8, "dur": 0.2},
+                {"midi": 75, "vel": 0.8, "dur": 0.2},
+                {"midi": 77, "vel": 0.8, "dur": 0.2},
+                {"midi": 78, "vel": 0.8, "dur": 0.2},
+                {"midi": 90, "vel": 0.8, "dur": 0.2},
+                {"midi": 77, "vel": 0.8, "dur": 0.2},
+                {"midi": 78, "vel": 0.8, "dur": 0.2},
+                {"midi": 94, "vel": 0.8, "dur": 0.2},
+                {"midi": 82, "vel": 0.8, "dur": 0.2},
+                {"midi": 73, "vel": 0.8, "dur": 0.2},
+                {"midi": 77, "vel": 0.8, "dur": 0.2},
+                {"midi": 89, "vel": 0.8, "dur": 0.2},
+                {"midi": 78, "vel": 0.8, "dur": 0.2}
+            ],
+            "timing": null,
+            "metadata": {
+                "key": "part2a",
+                "name": "Tuba Melody X",
+                "totalDuration": 3.4,
+                "durationType": "absolute"
+            }
         },
-        {
-            "active": true,
-            "key": "layer3",
-            "loopCount": 1,
-            "name": "Tuba Melody III",
-            "pattern": [ ],
-            "velocityFirst": 1.5,
-            "velocityLast": 0.5
+        "layer2": {
+            "notes": [
+                {"midi": 72, "vel": 0.9, "dur": 0.5},
+                {"midi": 87, "vel": 0.8, "dur": 0.5},
+                {"midi": 82, "vel": 0.8, "dur": 0.5},
+                {"midi": 72, "vel": 0.6, "dur": 0.5}
+            ],
+            "timing": null,
+            "metadata": {
+                "key": "part3f",
+                "name": "Tuba Melody X",
+                "totalDuration": 2.0,
+                "durationType": "absolute"
+            }
         }
-
-    ],
-    "settings": {
-        "defaultNamePrefix": "melody",
-        "nextSequenceNumber": 1,
-        "selectedMelodyIndex": 0,
-        "windowSize": [600, 400]
     }
-} 
+}

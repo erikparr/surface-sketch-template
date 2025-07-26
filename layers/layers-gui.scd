@@ -125,6 +125,21 @@
             })
     );
     
+    // Global navigation mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Global Navigation Mode (All layers vs Layer 1 only)")
+            .value_(~layers.state.globalNavigationMode)
+            .action_({ |cb|
+                ~layers.state.globalNavigationMode = cb.value;
+                statusText.string = if (cb.value) {
+                    "Navigation: All layers (MIDI 22/27)"
+                } {
+                    "Navigation: Layer 1 only (MIDI 22/27)"
+                };
+            })
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘
@@ -390,6 +405,13 @@
             if (~layers.state.liveMelodyMode) {
                 statusString = statusString ++ " | Live mode enabled";
             };
+        };
+        
+        // Show navigation mode
+        if (~layers.state.globalNavigationMode) {
+            statusString = statusString ++ " | Nav: Global";
+        } {
+            statusString = statusString ++ " | Nav: Layer1";
         };
         
         statusText.string = statusString;

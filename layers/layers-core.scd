@@ -26,7 +26,10 @@
         pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
         backupProcessNote: nil,   // Backup of sketch system's processNote function
         noteDurationScalar: 1.0,  // Note duration scalar (1.0-1.5) from Row 1 Knob 2
-        singleNoteCCMode: false   // Toggle for per-note CC envelopes
+        singleNoteCCMode: false,  // Toggle for per-note CC envelopes
+        globalNavigationMode: true,  // true = all layers, false = layer1 only
+        currentMelodyIndex: 0,       // Shared melody index
+        layer1MelodyIndex: 0         // Layer 1 specific index when global is off
     )
 );
 

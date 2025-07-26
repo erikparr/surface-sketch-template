@@ -536,4 +536,83 @@
     };
 };
 
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         MELODY NAVIGATION                                  │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Navigate to next/previous melody
+~navigateLayerMelody = { |direction|
+    var config, newIndex;
+    
+    if (~layers.state.globalNavigationMode) {
+        // Global: Update shared index
+        newIndex = if (direction == \next) {
+            (~layers.state.currentMelodyIndex + 1)
+        } {
+            (~layers.state.currentMelodyIndex - 1).max(0)
+        };
+        ~layers.state.currentMelodyIndex = newIndex;
+        
+        // Each layer uses index modulo its own list size
+        ~layers.configs.keysValuesDo { |layerName, cfg|
+            if (cfg.melodyList.size > 0) {
+                cfg.currentMelodyKey = cfg.melodyList[newIndex % cfg.melodyList.size];
+            };
+        };
+        
+        "Global navigation: All layers → index %".format(newIndex).postln;
+    } {
+        // Layer 1 only
+        config = ~layers.configs[\layer1];
+        if (config.melodyList.size > 0) {
+            newIndex = if (direction == \next) {
+                (~layers.state.layer1MelodyIndex + 1) % config.melodyList.size
+            } {
+                (~layers.state.layer1MelodyIndex - 1).wrap(0, config.melodyList.size - 1)
+            };
+            ~layers.state.layer1MelodyIndex = newIndex;
+            config.currentMelodyKey = config.melodyList[newIndex];
+            
+            "Layer 1 navigation: % - %".format(newIndex, config.currentMelodyKey).postln;
+        };
+    };
+};
+
+// Get current melody for a layer
+~getCurrentLayerMelody = { |layerName|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil) {
+        // Use currentMelodyKey if set, otherwise use first melody
+        config.currentMelodyKey ?? { 
+            if (config.melodyList.size > 0) {
+                config.melodyList[0]
+            } {
+                nil
+            }
+        }
+    } {
+        nil
+    }
+};
+
+// MIDI note controls for melody navigation
+~setupLayerMelodyNavigation = {
+    // Next melody (Note 27)
+    MIDIdef.noteOn(\layersNextMelody, { |veloc, note|
+        if (note == 27 && veloc > 0) {
+            ~navigateLayerMelody.(\next);
+        };
+    }, 27);
+    
+    // Previous melody (Note 22)
+    MIDIdef.noteOn(\layersPrevMelody, { |veloc, note|
+        if (note == 22 && veloc > 0) {
+            ~navigateLayerMelody.(\prev);
+        };
+    }, 22);
+    
+    "Layer melody navigation MIDI controls enabled (22=prev, 27=next)".postln;
+};
+
 "Dependent layers control system loaded".postln;

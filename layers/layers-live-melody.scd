@@ -265,9 +265,10 @@
         ~applyPendingUpdateForLayer.(layerName);
     };
     
-    // Return current melody data
-    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
-        melodyKey = config.melodyList[0];
+    // Get current melody based on navigation
+    melodyKey = ~getCurrentLayerMelody.(layerName);
+    
+    if (melodyKey.notNil) {
         melodyData = ~melodyDict[melodyKey];
     };
     
