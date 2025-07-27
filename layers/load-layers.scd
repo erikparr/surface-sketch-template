@@ -25,6 +25,8 @@
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-playback.scd").load;
 
+(thisProcess.nowExecutingPath.dirname +/+ "layers-windowing.scd").load;
+
 (thisProcess.nowExecutingPath.dirname +/+ "layers-timing.scd").load;
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-live-melody.scd").load;
@@ -46,6 +48,10 @@
 "\nTiming data support:".postln;
 "  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing".postln;
 "  ~createTimingTestMelody.()            - Create test melody with timing".postln;
+"\nWindowing support:".postln;
+"  ~setLayerWindowing.(\\layer1, true)    - Enable windowing for a layer".postln;
+"  ~setLayerWindowingParams.(\\layer1, 5, 1, 1) - Set window params".postln;
+"  ~printAllLayerWindowingSettings.()     - Show windowing settings".postln;
 "\nLive melody mode:".postln;
 "  ~enableLiveMelodyMode.()              - Enable live OSC updates".postln;
 "  ~disableLiveMelodyMode.()             - Disable live OSC updates".postln;

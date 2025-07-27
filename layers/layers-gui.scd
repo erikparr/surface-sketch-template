@@ -33,7 +33,7 @@
     };
     
     // Create window
-    win = Window("Dependent Layers Control", Rect(100, 100, 350, 600));
+    win = Window("Dependent Layers Control", Rect(100, 100, 400, 850));
     
     // Main layout
     layout = VLayout();
@@ -272,6 +272,65 @@
             StaticText().string_("VST Group:").fixedWidth_(60),
             vstGroupMenu
         ));
+        
+        // Windowing controls
+        if (config.windowing.notNil) {
+            var windowingCheck, windowSizeField, triggerField, stepField;
+            var windowingLayout = VLayout();
+            
+            // Windowing checkbox
+            windowingCheck = CheckBox()
+                .string_("Windowing")
+                .value_(config.windowing.enabled)
+                .action_({ |cb|
+                    ~setLayerWindowing.(layerName, cb.value);
+                    updateStatus.();
+                });
+            
+            windowingLayout.add(windowingCheck);
+            
+            // Windowing parameters
+            windowingLayout.add(HLayout(
+                StaticText().string_("Window:").fixedWidth_(50),
+                windowSizeField = NumberBox()
+                    .value_(config.windowing.windowSize)
+                    .decimals_(0)
+                    .clipLo_(1)
+                    .action_({ |nb|
+                        ~setLayerWindowingParams.(layerName, nb.value, nil, nil);
+                    })
+                    .fixedWidth_(40),
+                StaticText().string_("Trigger:").fixedWidth_(50),
+                triggerField = NumberBox()
+                    .value_(config.windowing.overlapTriggerIndex)
+                    .decimals_(0)
+                    .clipLo_(0)
+                    .action_({ |nb|
+                        ~setLayerWindowingParams.(layerName, nil, nb.value, nil);
+                    })
+                    .fixedWidth_(40),
+                StaticText().string_("Step:").fixedWidth_(35),
+                stepField = NumberBox()
+                    .value_(config.windowing.stepSize)
+                    .decimals_(0)
+                    .clipLo_(1)
+                    .action_({ |nb|
+                        ~setLayerWindowingParams.(layerName, nil, nil, nb.value);
+                    })
+                    .fixedWidth_(40)
+            ));
+            
+            layerLayout.add(windowingLayout);
+            
+            // Store windowing GUI references
+            if (config[\gui].isNil) {
+                config[\gui] = ();
+            };
+            config[\gui][\windowingCheck] = windowingCheck;
+            config[\gui][\windowSizeField] = windowSizeField;
+            config[\gui][\triggerField] = triggerField;
+            config[\gui][\stepField] = stepField;
+        };
         
         // Status indicator
         statusIndicator = UserView()

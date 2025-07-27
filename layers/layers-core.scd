@@ -17,6 +17,7 @@
     configs: Dictionary.new,      // Layer configurations
     layerProcs: Dictionary.new,   // Child ProcMod instances for each layer
     timingData: Dictionary.new,   // Pre-calculated timing info
+    windowTasks: Dictionary.new,  // Active window tasks for each layer
     state: (
         totalDuration: 0,
         startTime: nil,
@@ -52,6 +53,12 @@
             expressionShape: \sin,
             expressionPeakPos: 0.5,
             expressionDurationScalar: 1.0
+        ),
+        windowing: (
+            enabled: false,
+            windowSize: 5,
+            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            stepSize: 1
         )
     );
     
@@ -69,6 +76,12 @@
             expressionShape: \sin,
             expressionPeakPos: 0.5,
             expressionDurationScalar: 1.0
+        ),
+        windowing: (
+            enabled: false,
+            windowSize: 5,
+            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            stepSize: 1
         )
     );
     
@@ -86,6 +99,12 @@
             expressionShape: \sin,
             expressionPeakPos: 0.5,
             expressionDurationScalar: 1.0
+        ),
+        windowing: (
+            enabled: false,
+            windowSize: 5,
+            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            stepSize: 1
         )
     );
     

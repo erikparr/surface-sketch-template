@@ -266,6 +266,11 @@
                 };
             };
             
+            // Stop all windowing tasks
+            if (~stopAllWindows.notNil) {
+                ~stopAllWindows.();
+            };
+            
             // Don't set isPlaying to false here - let control functions handle it
         }
     );
@@ -344,7 +349,25 @@
                             };
                         };
                         
-                        // Play notes using existing timing logic - use waitTimes from currentTiming if available
+                        // Check if windowing mode should be used
+                        if (~shouldUseWindowing.notNil && ~shouldUseWindowing.(layerName)) {
+                            // Use windowing playback
+                            var windowingTask;
+                            
+                            "Layer % using WINDOWING mode".format(layerName).postln;
+                            
+                            windowingTask = ~createWindowingTask.(layerName, config, parentDuration);
+                            if (windowingTask.notNil) {
+                                windowingTask.play;
+                                
+                                // Wait for the full duration
+                                parentDuration.wait;
+                                
+                                // Stop all windows for this layer
+                                ~stopLayerWindows.(layerName);
+                            };
+                        } {
+                            // Normal playback - use existing timing logic
                         if (currentTiming.notNil and: { currentTiming.hasTiming } and: { currentTiming.waitTimes.notNil }) {
                             // Use pre-calculated timing data
                             var waitTimes = currentTiming.waitTimes;
@@ -435,6 +458,7 @@
                         if (iterationCount == 1) {  // Only log first iteration
                             "Layer % completed all % notes".format(layerName, noteCount).postln;
                         };
+                        }; // End of windowing check
                     } {
                         // No melody data, just wait
                         var waitTime = (~layers.timingData.totalDuration ? 4.0);

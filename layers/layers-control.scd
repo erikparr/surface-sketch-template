@@ -450,6 +450,83 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         WINDOWING CONTROL                                  │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Enable/disable windowing for a layer
+~setLayerWindowing = { |layerName, enabled|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.windowing.notNil) {
+        config.windowing.enabled = enabled;
+        "Layer % windowing: %".format(
+            layerName, 
+            if(enabled, "ENABLED", "DISABLED")
+        ).postln;
+    };
+};
+
+// Set windowing parameters for a layer
+~setLayerWindowingParams = { |layerName, windowSize, overlapTriggerIndex, stepSize|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.windowing.notNil) {
+        if (windowSize.notNil) {
+            config.windowing.windowSize = windowSize.max(1);
+        };
+        if (overlapTriggerIndex.notNil) {
+            config.windowing.overlapTriggerIndex = overlapTriggerIndex.max(0);
+        };
+        if (stepSize.notNil) {
+            config.windowing.stepSize = stepSize.max(1);
+        };
+        
+        "Layer % windowing params: windowSize=%, triggerIndex=%, stepSize=%".format(
+            layerName,
+            config.windowing.windowSize,
+            config.windowing.overlapTriggerIndex,
+            config.windowing.stepSize
+        ).postln;
+    };
+};
+
+// Enable windowing for all layers
+~enableAllLayerWindowing = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerWindowing.(layerName, true);
+    };
+};
+
+// Disable windowing for all layers
+~disableAllLayerWindowing = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerWindowing.(layerName, false);
+    };
+};
+
+// Print windowing settings for a layer
+~printLayerWindowingSettings = { |layerName|
+    var config = ~layers.configs[layerName];
+    
+    if (config.notNil && config.windowing.notNil) {
+        var w = config.windowing;
+        "=== Layer % Windowing Settings ===".format(layerName).postln;
+        "  Enabled: %".format(w.enabled).postln;
+        "  Window Size: % notes".format(w.windowSize).postln;
+        "  Overlap Trigger: note % (0-based)".format(w.overlapTriggerIndex).postln;
+        "  Step Size: % notes".format(w.stepSize).postln;
+        "================================".postln;
+    };
+};
+
+// Print all layer windowing settings
+~printAllLayerWindowingSettings = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~printLayerWindowingSettings.(layerName);
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         FILE LOADING                                       │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
