@@ -269,6 +269,17 @@
     if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
         melodyKey = config.melodyList[0];
         melodyData = ~melodyDict[melodyKey];
+        
+        "DEBUG ~getLayerMelodyDynamic: layer=%, melodyKey=%, melodyData keys=%".format(
+            layerName, melodyKey, 
+            if(melodyData.notNil, { melodyData.keys.asArray.sort }, { "nil" })
+        ).postln;
+        
+        if (melodyData.notNil) {
+            "  patterns size: %".format(melodyData.patterns !? _.size ?? "nil").postln;
+            "  metadata: %".format(melodyData.metadata).postln;
+            "  durationType: %".format(melodyData.durationType).postln;
+        };
     };
     
     melodyData

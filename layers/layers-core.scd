@@ -57,7 +57,7 @@
         windowing: (
             enabled: false,
             windowSize: 5,
-            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1
         )
     );
@@ -80,7 +80,7 @@
         windowing: (
             enabled: false,
             windowSize: 5,
-            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1
         )
     );
@@ -103,7 +103,7 @@
         windowing: (
             enabled: false,
             windowSize: 5,
-            overlapTriggerIndex: 1,  // Trigger on 2nd note (0-based)
+            overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1
         )
     );

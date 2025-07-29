@@ -273,14 +273,14 @@
             vstGroupMenu
         ));
         
-        // Windowing controls
-        if (config.windowing.notNil) {
+        // Windowing controls - only for Layer 1
+        if (config.windowing.notNil && (layerName == \layer1)) {
             var windowingCheck, windowSizeField, triggerField, stepField;
             var windowingLayout = VLayout();
             
             // Windowing checkbox
             windowingCheck = CheckBox()
-                .string_("Windowing")
+                .string_("Windowing (uses all 3 layers)")
                 .value_(config.windowing.enabled)
                 .action_({ |cb|
                     ~setLayerWindowing.(layerName, cb.value);

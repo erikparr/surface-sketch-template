@@ -311,6 +311,7 @@
                 while { ~layers.state.loopingMode or: { iterationCount == 0 } } {
                     var melodyData, pattern, noteCount, noteInterval, parentDuration;
                     var currentTiming, velocities, noteDurations, timing;
+                    var waitCount;
                     
                     iterationCount = iterationCount + 1;
                     
@@ -358,13 +359,34 @@
                             
                             windowingTask = ~createWindowingTask.(layerName, config, parentDuration);
                             if (windowingTask.notNil) {
+                                // Store the task for tracking
+                                ~layers.windowTasks[layerName] = windowingTask;
                                 windowingTask.play;
                                 
-                                // Wait for the full duration
-                                parentDuration.wait;
+                                // Wait for the windowing task to complete with timeout
+                                waitCount = 0;
+                                while { windowingTask.isPlaying and: { waitCount < 1000 } } {
+                                    0.1.wait;
+                                    waitCount = waitCount + 1;
+                                    
+                                    // Check if parent is still running
+                                    if (~layers.parentProc.isNil or: { ~layers.parentProc.isRunning.not }) {
+                                        "Parent stopped, stopping windowing task".postln;
+                                        windowingTask.stop;
+                                        waitCount = 1000; // Force loop exit
+                                    };
+                                };
                                 
-                                // Stop all windows for this layer
+                                if (waitCount >= 1000) {
+                                    "Windowing task timeout, forcing stop".warn;
+                                    windowingTask.stop;
+                                };
+                                
+                                // Clean up
+                                ~layers.windowTasks[layerName] = nil;
                                 ~stopLayerWindows.(layerName);
+                            } {
+                                "Failed to create windowing task for layer %".format(layerName).warn;
                             };
                         } {
                             // Normal playback - use existing timing logic
@@ -507,32 +529,49 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Direct function to play a note on a layer's VST group
-~playLayerNote = { |layerName, note, velocity, duration|
-    // Get the VST group for this layer
-    var config = ~layers.configs[layerName];
-    var vstGroup = config.vstGroup;
+~playLayerNote = { |layerNameOrGroup, note, velocity, duration|
+    // Handle both layer names and direct VST group names
+    var config, vstGroup;
+    
+    // Check if it's a layer name first
+    config = ~layers.configs[layerNameOrGroup];
+    if (config.notNil) {
+        // It's a layer name, get VST group from config
+        vstGroup = config.vstGroup;
+    } {
+        // Assume it's already a VST group name (for windowing)
+        vstGroup = layerNameOrGroup;
+    };
+    
+    "DEBUG ~playLayerNote: input=%, note=%, vel=%, dur=%, vstGroup=%".format(
+        layerNameOrGroup, note, velocity, duration, vstGroup
+    ).postln;
     
     // Route to appropriate VST instances (if vstManager exists)
     if (~vstManager.notNil) {
         var instances = ~vstManager.getTargetInstances(vstGroup);
         
-        instances.do { |vst|
+        "DEBUG: Found % VST instances for group %".format(instances.size, vstGroup).postln;
+        
+        instances.do { |vst, i|
+            "DEBUG: Sending noteOn to VST instance % - note=%, vel=%".format(i, note, velocity).postln;
             vst.midi.noteOn(0, note, velocity);
             
             if (duration > 0) {
                 SystemClock.sched(duration, {
+                    "DEBUG: Sending noteOff to VST instance % - note=%".format(i, note).postln;
                     vst.midi.noteOff(0, note, 0);
                     nil  // Return nil to stop scheduling
                 });
             };
         };
     } {
-        "Warning: ~vstManager not available, cannot route note to VST".postln;
+        "ERROR: ~vstManager not available, cannot route note to VST".postln;
     };
     
-    // Trigger per-note CC envelope if single note mode is enabled
-    if (~layers.state.singleNoteCCMode) {
-        ~startPerNoteCCEnvelope.(layerName, duration);
+    // Trigger per-note CC envelope if single note mode is enabled (only for actual layers)
+    if (config.notNil && ~layers.state.singleNoteCCMode) {
+        ~startPerNoteCCEnvelope.(layerNameOrGroup, duration);
     };
 };
 
