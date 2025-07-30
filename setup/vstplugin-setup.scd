@@ -34,12 +34,12 @@ VSTPlugin.search(options: (exclude: ["/Library/Audio/Plug-Ins/VST3/Komplete Kont
         "Adding VST instances...".postln;
 
         // Add VSTs with unique names
-        // ~vstManager.addVST("Bass Tuba 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
-        // ~vstManager.addVST("Bass Tuba 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
-        // ~vstManager.addVST("Bass Tuba 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
-        ~vstManager.addVST("Bass Tuba 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3", true);
-        ~vstManager.addVST("Bass Tuba 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3", true);
-        ~vstManager.addVST("Bass Tuba 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3", true);
+        ~vstManager.addVST("Bass Tuba 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3", true);
+        ~vstManager.addVST("Bass Tuba 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3", true);
+        ~vstManager.addVST("Bass Tuba 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
+        // ~vstManager.addVST("Bass Tuba 01", ~synth1, "/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3", true);
+        // ~vstManager.addVST("Bass Tuba 02", ~synth2, "/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3", true);
+        // ~vstManager.addVST("Bass Tuba 03", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3", true);
         // ~vstManager.addVST("Euphonium 01", ~synth3, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
         // ~vstManager.addVST("Euphonium 02", ~synth4, "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3", true);
 

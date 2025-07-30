@@ -1,482 +1,213 @@
-Creating window ProcMod: id=window_33_250728_225409, VST=Layer1, duration=1.2s, notes=3
+DEBUG: Start button pressed
+DEBUG: ~startLayers called with duration: nil
+DEBUG: parentProc = nil, isRunning = false
+Starting 1 active layers with MIDI knob duration: 5.05 seconds...
+DEBUG: About to call ~createLayersParentProc...
+DEBUG: ~createLayersParentProc is: a Function
+DEBUG: ~createLayersParentProc called with duration: 5.05
+DEBUG: Creating ProcMod with id: layersParent_250729_201546
+DEBUG: ProcMod created successfully
+DEBUG: Created parentProc: a ProcMod
+DEBUG: Called play on parentProc
+
+=== Layer Status ===
+Layer layer2: No melody assigned
+Layer layer3: No melody assigned
+Layer layer1: layer0 → Layer1
+Active layers: 1
+Total duration: 5.05 seconds
+Playing: true
+==================
+
+Loop 1: Using MIDI knob duration: 5.05 seconds
+Layer layer1 note duration scalar: 35.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 64.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 61.03 (Row  Knob 2)
+Using timing data for 5 notes: start times = [0.0, 1.122, 2.244, 3.367, 4.489]
+Note duration scaling: current=5.05, original=4.5, factor=1.122
+=== Starting dependent layers (loop 1) ===
+Parent group: 1004, Duration: 5.05 seconds
+Created ProcMod for layer1
+Starting 1 layer ProcMods simultaneously
+Single note CC mode active - envelopes will trigger per note
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4.5, 'scale': phrygian, 'key': F, 'durationType': absolute)
+  durationType: absolute
+Layer layer1: 5 notes using timing data, total: 5.05 seconds
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Found durationType: absolute
+Layer layer1 using WINDOWING mode
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4.5, 'scale': phrygian, 'key': F, 'durationType': absolute)
+  durationType: absolute
+Creating windowing scheduler: 5 notes, window=3.0, trigger=2, step=1
+Windowing mode: Layer2 & Layer3 disabled for window VST routing
+DEBUG: Creating window 0 at index 0 of 5 total notes
+DEBUG ~extractWindowData: startIndex=0, endIndex=2, noteCount=5, windowSize=3
+Window 0-2: 3 notes, duration=1.2s (scaled for playability)
+Window 0 assigned to VST group Layer1 (index 0)
+DEBUG: About to create ProcMod for window 0 with VST group Layer1
+Creating window ProcMod: id=window_0_250729_201546, VST=Layer1, duration=1.2s, notes=3
 already playing
 Window trigger time: 0.16s (for trigger index 2)
-Window 33 started, next trigger in 0.16s
-Window 33 Task starting - playing 3 notes
-Window 33 playing note 0: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=71, vel=50, dur=0.32, vstGroup=Layer1
+Window 0 started, next trigger in 0.16s
+Window 0 Task starting - playing 3 notes
+Window 0 playing note 0: midi=90, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer1, note=90, vel=127, dur=0.32, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Window 33 playing note 1: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=73, vel=50, dur=0.32, vstGroup=Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=90, vel=127
+Window 0 playing note 1: midi=85, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer1, note=85, vel=127, dur=0.32, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 33 playing note 2: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=68, vel=50, dur=0.32, vstGroup=Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
+DEBUG: After play - isRunning: true
+Window 0 playing note 2: midi=82, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer1, note=82, vel=127, dur=0.32, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Window 32 Task completed
-DEBUG: Creating window 34 at index 34 of 696 total notes
-DEBUG ~extractWindowData: startIndex=34, endIndex=36, noteCount=696, windowSize=3
-Window 34-36: 3 notes, duration=1.2s (scaled for playability)
-Window 34 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 34 with VST group Layer2
-Creating window ProcMod: id=window_34_250728_225410, VST=Layer2, duration=1.2s, notes=3
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
+DEBUG: Creating window 1 at index 1 of 5 total notes
+DEBUG ~extractWindowData: startIndex=1, endIndex=3, noteCount=5, windowSize=3
+Window 1-3: 3 notes, duration=1.2s (scaled for playability)
+Window 1 assigned to VST group Layer2 (index 1)
+DEBUG: About to create ProcMod for window 1 with VST group Layer2
+Creating window ProcMod: id=window_1_250729_201546, VST=Layer2, duration=1.2s, notes=3
 already playing
 Window trigger time: 0.16s (for trigger index 2)
-Window 34 started, next trigger in 0.16s
-Window 34 Task starting - playing 3 notes
-Window 34 playing note 0: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=73, vel=50, dur=0.32, vstGroup=Layer2
+Window 1 started, next trigger in 0.16s
+Window 1 Task starting - playing 3 notes
+Window 1 playing note 0: midi=85, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer2, note=85, vel=127, dur=0.32, vstGroup=Layer2
 DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Window 34 playing note 1: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=68, vel=50, dur=0.32, vstGroup=Layer2
+DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
+Window 1 playing note 1: midi=82, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer2, note=82, vel=127, dur=0.32, vstGroup=Layer2
 DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 34 playing note 2: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=71, vel=50, dur=0.32, vstGroup=Layer2
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
+Window 1 playing note 2: midi=75, vel=95 (raw=0.75), dur=0.32s
+DEBUG ~playLayerNote: input=Layer2, note=75, vel=95, dur=0.32, vstGroup=Layer2
 DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=71
-Window 33 Task completed
-DEBUG: Creating window 35 at index 35 of 696 total notes
-DEBUG ~extractWindowData: startIndex=35, endIndex=37, noteCount=696, windowSize=3
-Window 35-37: 3 notes, duration=1.2s (scaled for playability)
-Window 35 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 35 with VST group Layer3
-Creating window ProcMod: id=window_35_250728_225410, VST=Layer3, duration=1.2s, notes=3
+DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
+DEBUG: Creating window 2 at index 2 of 5 total notes
+DEBUG ~extractWindowData: startIndex=2, endIndex=4, noteCount=5, windowSize=3
+Window 2-4: 3 notes, duration=1.2s (scaled for playability)
+Window 2 assigned to VST group Layer3 (index 2)
+DEBUG: About to create ProcMod for window 2 with VST group Layer3
+Creating window ProcMod: id=window_2_250729_201546, VST=Layer3, duration=1.2s, notes=3
 already playing
 Window trigger time: 0.16s (for trigger index 2)
-Window 35 started, next trigger in 0.16s
-Window 35 Task starting - playing 3 notes
-Window 35 playing note 0: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=68, vel=50, dur=0.32, vstGroup=Layer3
+Window 2 started, next trigger in 0.16s
+Window 2 Task starting - playing 3 notes
+Window 2 playing note 0: midi=82, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer3, note=82, vel=127, dur=0.32, vstGroup=Layer3
 DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Window 35 playing note 1: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=71, vel=50, dur=0.32, vstGroup=Layer3
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
+DEBUG: Sending noteOff to VST instance 0 - note=90
+DEBUG: Sending noteOff to VST instance 0 - note=85
+Window 2 playing note 1: midi=75, vel=95 (raw=0.75), dur=0.32s
+DEBUG ~playLayerNote: input=Layer3, note=75, vel=95, dur=0.32, vstGroup=Layer3
 DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 35 playing note 2: midi=66, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=66, vel=50, dur=0.32, vstGroup=Layer3
+DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
+DEBUG: Sending noteOff to VST instance 0 - note=82
+DEBUG: Sending noteOff to VST instance 0 - note=85
+Window 2 playing note 2: midi=90, vel=63 (raw=0.5), dur=0.32s
+DEBUG ~playLayerNote: input=Layer3, note=90, vel=63, dur=0.32, vstGroup=Layer3
 DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=66, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=66
-Window 34 Task completed
-DEBUG: Creating window 36 at index 36 of 696 total notes
-DEBUG ~extractWindowData: startIndex=36, endIndex=38, noteCount=696, windowSize=3
-Window 36-38: 3 notes, duration=1.2s (scaled for playability)
-Window 36 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 36 with VST group Layer1
-Creating window ProcMod: id=window_36_250728_225411, VST=Layer1, duration=1.2s, notes=3
+DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
+Maximum concurrent windows (3) reached - continuing
+DEBUG: Creating window 3 at index 3 of 5 total notes
+DEBUG ~extractWindowData: startIndex=3, endIndex=4, noteCount=5, windowSize=3
+Window 3-4: 2 notes, duration=0.8s (scaled for playability)
+Window 3 assigned to VST group Layer1 (index 0)
+DEBUG: About to create ProcMod for window 3 with VST group Layer1
+Creating window ProcMod: id=window_3_250729_201547, VST=Layer1, duration=0.8s, notes=2
 already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 36 started, next trigger in 0.16s
-Window 36 Task starting - playing 3 notes
-Window 36 playing note 0: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=71, vel=50, dur=0.32, vstGroup=Layer1
+Window trigger time: 0.64s (for trigger index 2)
+Window 3 started, next trigger in 0.64s
+Window 3 Task starting - playing 2 notes
+Window 3 playing note 0: midi=75, vel=95 (raw=0.75), dur=0.32s
+DEBUG ~playLayerNote: input=Layer1, note=75, vel=95, dur=0.32, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Window 36 playing note 1: midi=66, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=66, vel=50, dur=0.32, vstGroup=Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
+Window 3 playing note 1: midi=90, vel=63 (raw=0.5), dur=0.32s
+DEBUG ~playLayerNote: input=Layer1, note=90, vel=63, dur=0.32, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=66, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 36 playing note 2: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=68, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=66
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Window 35 Task completed
-DEBUG: Creating window 37 at index 37 of 696 total notes
-DEBUG ~extractWindowData: startIndex=37, endIndex=39, noteCount=696, windowSize=3
-Window 37-39: 3 notes, duration=1.2s (scaled for playability)
-Window 37 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 37 with VST group Layer2
-Creating window ProcMod: id=window_37_250728_225412, VST=Layer2, duration=1.2s, notes=3
+DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
+DEBUG: Sending noteOff to VST instance 0 - note=82
+DEBUG: Sending noteOff to VST instance 0 - note=75
+DEBUG: Sending noteOff to VST instance 0 - note=82
+DEBUG: Sending noteOff to VST instance 0 - note=75
+DEBUG: Sending noteOff to VST instance 0 - note=90
+DEBUG: Sending noteOff to VST instance 0 - note=75
+DEBUG: Sending noteOff to VST instance 0 - note=90
+Maximum concurrent windows (3) reached - continuing
+DEBUG: Creating window 4 at index 4 of 5 total notes
+DEBUG ~extractWindowData: startIndex=4, endIndex=4, noteCount=5, windowSize=3
+Window 4-4: 1 notes, duration=0.4s (scaled for playability)
+Window 4 assigned to VST group Layer2 (index 1)
+DEBUG: About to create ProcMod for window 4 with VST group Layer2
+Creating window ProcMod: id=window_4_250729_201547, VST=Layer2, duration=0.4s, notes=1
+already playing
+Window trigger time: 0.32s (for trigger index 2)
+Window 4 started, next trigger in 0.32s
+Window 4 Task starting - playing 1 notes
+Window 4 playing note 0: midi=90, vel=63 (raw=0.5), dur=0.32s
+DEBUG ~playLayerNote: input=Layer2, note=90, vel=63, dur=0.32, vstGroup=Layer2
+DEBUG: Found 1 VST instances for group Layer2
+DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
+Window 0 Task completed
+Window 3 Task completed
+Window 1 Task completed
+Maximum concurrent windows (3) reached - continuing
+Windowing: Looping back to beginning (window 5)
+DEBUG: Creating window 5 at index 0 of 5 total notes
+DEBUG ~extractWindowData: startIndex=0, endIndex=2, noteCount=5, windowSize=3
+Window 0-2: 3 notes, duration=1.2s (scaled for playability)
+Window 5 assigned to VST group Layer3 (index 2)
+DEBUG: About to create ProcMod for window 5 with VST group Layer3
+Creating window ProcMod: id=window_5_250729_201547, VST=Layer3, duration=1.2s, notes=3
 already playing
 Window trigger time: 0.16s (for trigger index 2)
-Window 37 started, next trigger in 0.16s
-Window 37 Task starting - playing 3 notes
-Window 37 playing note 0: midi=66, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=66, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=66, vel=50
-Window 37 playing note 1: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=68, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 37 playing note 2: midi=64, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=64, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=64, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=66
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=64
-Window 36 Task completed
-DEBUG: Creating window 38 at index 38 of 696 total notes
-DEBUG ~extractWindowData: startIndex=38, endIndex=40, noteCount=696, windowSize=3
-Window 38-40: 3 notes, duration=1.2s (scaled for playability)
-Window 38 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 38 with VST group Layer3
-Creating window ProcMod: id=window_38_250728_225412, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 38 started, next trigger in 0.16s
-Window 38 Task starting - playing 3 notes
-Window 38 playing note 0: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=68, vel=50, dur=0.32, vstGroup=Layer3
+Window 5 started, next trigger in 0.16s
+Window 5 Task starting - playing 3 notes
+Window 5 playing note 0: midi=90, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer3, note=90, vel=127, dur=0.32, vstGroup=Layer3
 DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Window 38 playing note 1: midi=64, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=64, vel=50, dur=0.32, vstGroup=Layer3
+DEBUG: Sending noteOn to VST instance 0 - note=90, vel=127
+DEBUG: Sending noteOff to VST instance 0 - note=90
+Window 2 Task completed
+Window 4 Task completed
+Window 5 playing note 1: midi=85, vel=127 (raw=1.0), dur=0.32s
+DEBUG ~playLayerNote: input=Layer3, note=85, vel=127, dur=0.32, vstGroup=Layer3
 DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=64, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 38 playing note 2: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=68, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=64
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Window 37 Task completed
-DEBUG: Creating window 39 at index 39 of 696 total notes
-DEBUG ~extractWindowData: startIndex=39, endIndex=41, noteCount=696, windowSize=3
-Window 39-41: 3 notes, duration=1.2s (scaled for playability)
-Window 39 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 39 with VST group Layer1
-Creating window ProcMod: id=window_39_250728_225413, VST=Layer1, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 39 started, next trigger in 0.16s
-Window 39 Task starting - playing 3 notes
-Window 39 playing note 0: midi=64, vel=50 (raw=0.39), dur=0.12s
-DEBUG ~playLayerNote: input=Layer1, note=64, vel=50, dur=0.12, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=64, vel=50
-Window 39 playing note 1: midi=68, vel=50 (raw=0.39), dur=0.12s
-DEBUG ~playLayerNote: input=Layer1, note=68, vel=50, dur=0.12, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=64
-Maximum concurrent windows (3) reached, waiting...
-Window 39 playing note 2: midi=63, vel=50 (raw=0.39), dur=0.72s
-DEBUG ~playLayerNote: input=Layer1, note=63, vel=50, dur=0.72, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=63, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Window 38 Task completed
-DEBUG: Creating window 40 at index 40 of 696 total notes
-DEBUG ~extractWindowData: startIndex=40, endIndex=42, noteCount=696, windowSize=3
-Window 40-42: 3 notes, duration=1.2s (scaled for playability)
-Window 40 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 40 with VST group Layer2
-Creating window ProcMod: id=window_40_250728_225414, VST=Layer2, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 40 started, next trigger in 0.16s
-Window 40 Task starting - playing 3 notes
-Window 40 playing note 0: midi=68, vel=50 (raw=0.39), dur=0.1s
-DEBUG ~playLayerNote: input=Layer2, note=68, vel=50, dur=0.096, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Window 40 playing note 1: midi=63, vel=50 (raw=0.39), dur=0.58s
-DEBUG ~playLayerNote: input=Layer2, note=63, vel=50, dur=0.576, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=63, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Maximum concurrent windows (3) reached, waiting...
-Window 40 playing note 2: midi=61, vel=50 (raw=0.39), dur=0.29s
-DEBUG ~playLayerNote: input=Layer2, note=61, vel=50, dur=0.288, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=61, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=63
-DEBUG: Sending noteOff to VST instance 0 - note=61
-Window 39 Task completed
-DEBUG: Sending noteOff to VST instance 0 - note=63
-DEBUG: Creating window 41 at index 41 of 696 total notes
-DEBUG ~extractWindowData: startIndex=41, endIndex=43, noteCount=696, windowSize=3
-Window 41-43: 3 notes, duration=1.2s (scaled for playability)
-Window 41 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 41 with VST group Layer3
-Creating window ProcMod: id=window_41_250728_225414, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 41 started, next trigger in 0.16s
-Window 41 Task starting - playing 3 notes
-Window 41 playing note 0: midi=63, vel=50 (raw=0.39), dur=0.55s
-DEBUG ~playLayerNote: input=Layer3, note=63, vel=50, dur=0.54857142857143, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=63, vel=50
-Window 41 playing note 1: midi=61, vel=50 (raw=0.39), dur=0.27s
-DEBUG ~playLayerNote: input=Layer3, note=61, vel=50, dur=0.27428571428571, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=61, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 41 playing note 2: midi=59, vel=50 (raw=0.39), dur=0.14s
-DEBUG ~playLayerNote: input=Layer3, note=59, vel=50, dur=0.13714285714286, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=59, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=59
-DEBUG: Sending noteOff to VST instance 0 - note=61
-Window 40 Task completed
-DEBUG: Sending noteOff to VST instance 0 - note=63
-DEBUG: Creating window 42 at index 42 of 696 total notes
-DEBUG ~extractWindowData: startIndex=42, endIndex=44, noteCount=696, windowSize=3
-Window 42-44: 3 notes, duration=1.2s (scaled for playability)
-Window 42 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 42 with VST group Layer1
-Creating window ProcMod: id=window_42_250728_225415, VST=Layer1, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 42 started, next trigger in 0.16s
-Window 42 Task starting - playing 3 notes
-Window 42 playing note 0: midi=61, vel=50 (raw=0.39), dur=0.52s
-DEBUG ~playLayerNote: input=Layer1, note=61, vel=50, dur=0.52363636363636, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=61, vel=50
-Window 42 playing note 1: midi=59, vel=50 (raw=0.39), dur=0.26s
-DEBUG ~playLayerNote: input=Layer1, note=59, vel=50, dur=0.26181818181818, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=59, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 42 playing note 2: midi=76, vel=50 (raw=0.39), dur=0.17s
-DEBUG ~playLayerNote: input=Layer1, note=76, vel=50, dur=0.17454545454545, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=76
-DEBUG: Sending noteOff to VST instance 0 - note=59
-DEBUG: Sending noteOff to VST instance 0 - note=61
-Window 41 Task completed
-DEBUG: Creating window 43 at index 43 of 696 total notes
-DEBUG ~extractWindowData: startIndex=43, endIndex=45, noteCount=696, windowSize=3
-Window 43-45: 3 notes, duration=1.2s (scaled for playability)
-Window 43 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 43 with VST group Layer2
-Creating window ProcMod: id=window_43_250728_225416, VST=Layer2, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 43 started, next trigger in 0.16s
-Window 43 Task starting - playing 3 notes
-Window 43 playing note 0: midi=59, vel=50 (raw=0.39), dur=0.41s
-DEBUG ~playLayerNote: input=Layer2, note=59, vel=50, dur=0.41142857142857, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=59, vel=50
-Window 43 playing note 1: midi=76, vel=50 (raw=0.39), dur=0.27s
-DEBUG ~playLayerNote: input=Layer2, note=76, vel=50, dur=0.27428571428571, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 43 playing note 2: midi=78, vel=50 (raw=0.39), dur=0.27s
-DEBUG ~playLayerNote: input=Layer2, note=78, vel=50, dur=0.27428571428572, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=78, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=76
-DEBUG: Sending noteOff to VST instance 0 - note=59
-DEBUG: Sending noteOff to VST instance 0 - note=78
-Window 42 Task completed
-DEBUG: Creating window 44 at index 44 of 696 total notes
-DEBUG ~extractWindowData: startIndex=44, endIndex=46, noteCount=696, windowSize=3
-Window 44-46: 3 notes, duration=1.2s (scaled for playability)
-Window 44 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 44 with VST group Layer3
-Creating window ProcMod: id=window_44_250728_225416, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 44 started, next trigger in 0.16s
-Window 44 Task starting - playing 3 notes
-Window 44 playing note 0: midi=76, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=76, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-Window 44 playing note 1: midi=78, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=78, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=78, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 44 playing note 2: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=73, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=76
-DEBUG: Sending noteOff to VST instance 0 - note=78
-DEBUG: Sending noteOff to VST instance 0 - note=73
-Window 43 Task completed
-DEBUG: Creating window 45 at index 45 of 696 total notes
-DEBUG ~extractWindowData: startIndex=45, endIndex=47, noteCount=696, windowSize=3
-Window 45-47: 3 notes, duration=1.2s (scaled for playability)
-Window 45 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 45 with VST group Layer1
-Creating window ProcMod: id=window_45_250728_225417, VST=Layer1, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 45 started, next trigger in 0.16s
-Window 45 Task starting - playing 3 notes
-Window 45 playing note 0: midi=78, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=78, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=78, vel=50
-Window 45 playing note 1: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=73, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 45 playing note 2: midi=76, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=76, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=78
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=76
-Window 44 Task completed
-DEBUG: Creating window 46 at index 46 of 696 total notes
-DEBUG ~extractWindowData: startIndex=46, endIndex=48, noteCount=696, windowSize=3
-Window 46-48: 3 notes, duration=1.2s (scaled for playability)
-Window 46 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 46 with VST group Layer2
-Creating window ProcMod: id=window_46_250728_225418, VST=Layer2, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 46 started, next trigger in 0.16s
-Window 46 Task starting - playing 3 notes
-Window 46 playing note 0: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=73, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Window 46 playing note 1: midi=76, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=76, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 46 playing note 2: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=71, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=76
-DEBUG: Sending noteOff to VST instance 0 - note=71
-Window 45 Task completed
-DEBUG: Creating window 47 at index 47 of 696 total notes
-DEBUG ~extractWindowData: startIndex=47, endIndex=49, noteCount=696, windowSize=3
-Window 47-49: 3 notes, duration=1.2s (scaled for playability)
-Window 47 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 47 with VST group Layer3
-Creating window ProcMod: id=window_47_250728_225418, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 47 started, next trigger in 0.16s
-Window 47 Task starting - playing 3 notes
-Window 47 playing note 0: midi=76, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=76, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=76, vel=50
-Window 47 playing note 1: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=71, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 47 playing note 2: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=73, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=76
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=73
-Window 46 Task completed
-DEBUG: Creating window 48 at index 48 of 696 total notes
-DEBUG ~extractWindowData: startIndex=48, endIndex=50, noteCount=696, windowSize=3
-Window 48-50: 3 notes, duration=1.2s (scaled for playability)
-Window 48 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 48 with VST group Layer1
-Creating window ProcMod: id=window_48_250728_225419, VST=Layer1, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 48 started, next trigger in 0.16s
-Window 48 Task starting - playing 3 notes
-Window 48 playing note 0: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=71, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Window 48 playing note 1: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=73, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 48 playing note 2: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=68, vel=50, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=68
-Window 47 Task completed
-DEBUG: Creating window 49 at index 49 of 696 total notes
-DEBUG ~extractWindowData: startIndex=49, endIndex=51, noteCount=696, windowSize=3
-Window 49-51: 3 notes, duration=1.2s (scaled for playability)
-Window 49 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 49 with VST group Layer2
-Creating window ProcMod: id=window_49_250728_225420, VST=Layer2, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 49 started, next trigger in 0.16s
-Window 49 Task starting - playing 3 notes
-Window 49 playing note 0: midi=73, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=73, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=73, vel=50
-Window 49 playing note 1: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=68, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 49 playing note 2: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=71, vel=50, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=73
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=71
-Window 48 Task completed
-DEBUG: Creating window 50 at index 50 of 696 total notes
-DEBUG ~extractWindowData: startIndex=50, endIndex=52, noteCount=696, windowSize=3
-Window 50-52: 3 notes, duration=1.2s (scaled for playability)
-Window 50 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 50 with VST group Layer3
-Creating window ProcMod: id=window_50_250728_225420, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 50 started, next trigger in 0.16s
-Window 50 Task starting - playing 3 notes
-Window 50 playing note 0: midi=68, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=68, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=68, vel=50
-Window 50 playing note 1: midi=71, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=71, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=71, vel=50
-Maximum concurrent windows (3) reached, waiting...
-Window 50 playing note 2: midi=66, vel=50 (raw=0.39), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=66, vel=50, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=66, vel=50
-DEBUG: Sending noteOff to VST instance 0 - note=68
-DEBUG: Sending noteOff to VST instance 0 - note=71
-DEBUG: Sending noteOff to VST instance 0 - note=66
-Window 49 Task completed
+DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
 Stopping all layers...
+nil
+Parent ProcMod releasing...
+Releasing child ProcMod: layer1_250729_201546
+nil
+Releasing layer layer1 ProcMod...
+Stopping all window ProcMods...
+nil
+nil
+nil
+nil
+nil
+nil
+Normal mode: All layers re-enabled
+All layers stopped
+Window 5 ProcMod released
+Layer layer1 ProcMod released
+Window 0 ProcMod released
+Window 1 ProcMod released
+Window 4 ProcMod released
+Window 3 ProcMod released
+Window 2 ProcMod released
+Parent ProcMod released
+Parent stopped, ending windowing
+All windows spawned, waiting for completion...
+All windows completed for layer layer1
+DEBUG: Sending noteOff to VST instance 0 - note=90
+DEBUG: Sending noteOff to VST instance 0 - note=85
+WARNING: Layers not currently playing

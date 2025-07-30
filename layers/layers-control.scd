@@ -613,4 +613,167 @@
     };
 };
 
-"Dependent layers control system loaded".postln;
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         MELODY SWITCHING CONTROL                           │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Get list of available melodies from ~melodyDict
+~getAvailableMelodies = {
+    if (~melodyDict.notNil) {
+        ~melodyDict.keys.asArray.sort
+    } {
+        []
+    }
+};
+
+// Switch to next melody for a layer
+~switchToNextMelody = { |layerName|
+    var config = ~layers.configs[layerName];
+    var currentMelody, availableMelodies, currentIndex, nextIndex, nextMelody;
+    
+    if (config.isNil) {
+        "Error: Layer % not found".format(layerName).postln;
+        ^nil;
+    };
+    
+    // Get current melody
+    if (config.melodyList.size > 0) {
+        currentMelody = config.melodyList[0];
+    } {
+        currentMelody = nil;
+    };
+    
+    // Get available melodies
+    availableMelodies = ~getAvailableMelodies.();
+    
+    if (availableMelodies.size == 0) {
+        "No melodies available in ~melodyDict".postln;
+        ^nil;
+    };
+    
+    if (availableMelodies.size == 1) {
+        "Only one melody available: %".format(availableMelodies[0]).postln;
+        ^availableMelodies[0];
+    };
+    
+    // Find current melody index
+    if (currentMelody.notNil) {
+        currentIndex = availableMelodies.indexOf(currentMelody);
+        if (currentIndex.notNil) {
+            nextIndex = (currentIndex + 1) % availableMelodies.size;
+        } {
+            nextIndex = 0; // Current melody not in list, start at beginning
+        };
+    } {
+        nextIndex = 0; // No current melody, start at beginning
+    };
+    
+    nextMelody = availableMelodies[nextIndex];
+    
+    // Switch to next melody
+    ~setLayerMelody.(layerName, nextMelody);
+    "Layer % switched to next melody: % (% of %)".format(
+        layerName, nextMelody, nextIndex + 1, availableMelodies.size
+    ).postln;
+    
+    nextMelody
+};
+
+// Switch to previous melody for a layer
+~switchToPreviousMelody = { |layerName|
+    var config = ~layers.configs[layerName];
+    var currentMelody, availableMelodies, currentIndex, prevIndex, prevMelody;
+    
+    if (config.isNil) {
+        "Error: Layer % not found".format(layerName).postln;
+        ^nil;
+    };
+    
+    // Get current melody
+    if (config.melodyList.size > 0) {
+        currentMelody = config.melodyList[0];
+    } {
+        currentMelody = nil;
+    };
+    
+    // Get available melodies
+    availableMelodies = ~getAvailableMelodies.();
+    
+    if (availableMelodies.size == 0) {
+        "No melodies available in ~melodyDict".postln;
+        ^nil;
+    };
+    
+    if (availableMelodies.size == 1) {
+        "Only one melody available: %".format(availableMelodies[0]).postln;
+        ^availableMelodies[0];
+    };
+    
+    // Find current melody index
+    if (currentMelody.notNil) {
+        currentIndex = availableMelodies.indexOf(currentMelody);
+        if (currentIndex.notNil) {
+            prevIndex = (currentIndex - 1 + availableMelodies.size) % availableMelodies.size;
+        } {
+            prevIndex = availableMelodies.size - 1; // Current melody not in list, start at end
+        };
+    } {
+        prevIndex = availableMelodies.size - 1; // No current melody, start at end
+    };
+    
+    prevMelody = availableMelodies[prevIndex];
+    
+    // Switch to previous melody
+    ~setLayerMelody.(layerName, prevMelody);
+    "Layer % switched to previous melody: % (% of %)".format(
+        layerName, prevMelody, prevIndex + 1, availableMelodies.size
+    ).postln;
+    
+    prevMelody
+};
+
+// Set up MIDI CC handlers for melody switching
+~setupMelodySwitchingMIDI = {
+    var nextMelodyFunc, prevMelodyFunc;
+    
+    // Clean up existing handlers if they exist
+    if (~melodySwitchingMIDIFuncs.notNil) {
+        ~melodySwitchingMIDIFuncs.do { |func| func.free };
+    };
+    
+    ~melodySwitchingMIDIFuncs = [];
+    
+    // CC 27: Next melody (for layer1 by default, can be extended)
+    nextMelodyFunc = MIDIFunc.cc({ |val, num, chan, src|
+        if (val > 0) { // Only trigger on noteOn (val > 0)
+            "MIDI CC 27 (Next Melody) received - switching layer1 to next melody".postln;
+            ~switchToNextMelody.(\layer1);
+        };
+    }, 27);
+    
+    // CC 22: Previous melody (for layer1 by default, can be extended)
+    prevMelodyFunc = MIDIFunc.cc({ |val, num, chan, src|
+        if (val > 0) { // Only trigger on noteOn (val > 0)
+            "MIDI CC 22 (Previous Melody) received - switching layer1 to previous melody".postln;
+            ~switchToPreviousMelody.(\layer1);
+        };
+    }, 22);
+    
+    ~melodySwitchingMIDIFuncs = [nextMelodyFunc, prevMelodyFunc];
+    
+    "Melody switching MIDI handlers set up: CC 27 (next), CC 22 (previous)".postln;
+};
+
+// Clean up melody switching MIDI handlers
+~cleanupMelodySwitchingMIDI = {
+    if (~melodySwitchingMIDIFuncs.notNil) {
+        ~melodySwitchingMIDIFuncs.do { |func| func.free };
+        ~melodySwitchingMIDIFuncs = nil;
+        "Melody switching MIDI handlers cleaned up".postln;
+    };
+};
+
+// Initialize melody switching MIDI handlers
+~setupMelodySwitchingMIDI.();
+
+"Dependent layers control system loaded with melody switching".postln;
