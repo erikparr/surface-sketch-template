@@ -347,8 +347,8 @@
             ~layers.configs[\layer3].enabled = false;
             "Windowing mode: Layer2 & Layer3 disabled for window VST routing".postln;
             
-            // Keep spawning windows until we've covered all notes
-            while { keepRunning and: { windowIndex < localTotalNotes } } {
+            // Keep spawning windows - loop if layers looping mode is enabled
+            while { keepRunning } {
                 var windowData, vstGroup, windowProcMod;
                 var triggerTime;
                 
@@ -434,8 +434,21 @@
                 windowIndex = windowIndex + localStepSize;
                 windowNumber = windowNumber + 1;
                 
+                // Check if we've reached the end of the melody
+                if (windowIndex >= localTotalNotes) {
+                    if (~layers.state.loopingMode) {
+                        // Loop back to beginning
+                        windowIndex = 0;
+                        "Windowing: Looping back to beginning (window %)".format(windowNumber).postln;
+                    } {
+                        // Single play mode - stop when done
+                        "Windowing: Reached end of melody, stopping".postln;
+                        keepRunning = false;
+                    };
+                };
+                
                 // Safety check to prevent infinite loops
-                if (windowNumber > 100) {
+                if (windowNumber > 1000) {
                     "Safety limit reached, stopping windowing".warn;
                     keepRunning = false;
                 };
