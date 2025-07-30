@@ -52,15 +52,27 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Extract window-specific data from original melody
-~extractWindowData = { |melodyData, startIndex, windowSize|
+~extractWindowData = { |melodyData, startIndex, windowSize, layerName|
     var endIndex, windowNotes, windowVelocities, windowDurations;
     var totalWindowDuration = 0;
     var originalTotalDuration, pattern, noteCount;
-    var windowTiming;
+    var windowTiming, layerConfig, noteDurationScalar;
     
     // Convert windowSize to integer to avoid float indexing issues
     windowSize = windowSize.asInteger;
     startIndex = startIndex.asInteger;
+    
+    // Get layer configuration and note duration scalar
+    layerConfig = ~layers.configs[layerName];
+    noteDurationScalar = if (layerConfig.notNil and: { layerConfig.noteDurationScalar.notNil }) {
+        layerConfig.noteDurationScalar
+    } {
+        1.0  // Default to 100% scaling if not available
+    };
+    
+    "DEBUG: Layer % noteDurationScalar = %% (Knob 2)".format(
+        layerName, (noteDurationScalar * 100).round(1)
+    ).postln;
     
     // Safety checks
     if (melodyData.isNil) {
@@ -122,33 +134,40 @@
         timingSum = windowTiming.sum;
         
         // NEW: Scale down to reasonable duration for a window
-        // Target: approximately 0.3-0.5 seconds per note
+        // Target: approximately 0.3-0.5 seconds per note (timing NOT affected by Knob 2)
         totalWindowDuration = windowNotes.size * 0.4;
         
-        "Window %-%: % notes, duration=%s (scaled for playability)".format(
+        "Window %-%: % notes, duration=%s (timing unaffected by Knob 2)".format(
             startIndex, endIndex, windowNotes.size, totalWindowDuration.round(0.01)
         ).postln;
     } {
-        // Fallback: estimate based on note count
+        // Fallback: estimate based on note count (timing NOT affected by Knob 2)
         totalWindowDuration = windowNotes.size * 0.4; // 0.4s per note
-        "Window %-%: using fallback duration=%s".format(
+        "Window %-%: using fallback duration=%s (timing unaffected by Knob 2)".format(
             startIndex, endIndex, totalWindowDuration.round(0.01)
         ).postln;
     };
     
-    // Extract durations if available (scale them proportionally)
+    // Extract durations if available (scale them proportionally, then apply Knob 2 scaling)
     windowDurations = if (melodyData.noteDurations.notNil) {
         // Scale original durations to fit our window duration
         var originalDurs = melodyData.noteDurations[startIndex..endIndex];
         var durSum = originalDurs.sum;
         if (durSum > 0) {
-            originalDurs.collect { |dur| (dur / durSum) * totalWindowDuration * 0.8 }; // 80% for note duration
+            originalDurs.collect { |dur| 
+                ((dur / durSum) * totalWindowDuration * 0.8) * noteDurationScalar // Apply Knob 2 scaling to note duration
+            };
         } {
-            Array.fill(windowNotes.size, totalWindowDuration * 0.8 / windowNotes.size)
+            Array.fill(windowNotes.size, (totalWindowDuration * 0.8 / windowNotes.size) * noteDurationScalar)
         }
     } {
-        Array.fill(windowNotes.size, totalWindowDuration * 0.8 / windowNotes.size) // Default duration
+        Array.fill(windowNotes.size, (totalWindowDuration * 0.8 / windowNotes.size) * noteDurationScalar) // Apply Knob 2 scaling to default duration
     };
+    
+    "DEBUG: Note durations scaled by Knob 2 (%%): [%]".format(
+        (noteDurationScalar * 100).round(1),
+        windowDurations.collect(_.round(0.01)).join(", ")
+    ).postln;
     
     // Return window-specific data
     (
@@ -366,7 +385,8 @@
                         windowData = ~extractWindowData.(
                             localMelodyData,
                             windowIndex,
-                            localWindowSize
+                            localWindowSize,
+                            localLayerName
                         );
                         
                         if (windowData.isNil) {
