@@ -277,6 +277,7 @@
         if (config.windowing.notNil && (layerName == \layer1)) {
             var windowingCheck, windowSizeField, triggerField, stepField;
             var windowingLayout = VLayout();
+            var melodyScalarText;
             
             // Windowing checkbox
             windowingCheck = CheckBox()
@@ -320,6 +321,13 @@
                     .fixedWidth_(40)
             ));
             
+            // Add melody duration scalar display
+            melodyScalarText = StaticText()
+                .string_("Melody Duration: 100% (K8)")
+                .font_(Font.default.size_(9).italic_(true));
+            
+            windowingLayout.add(melodyScalarText);
+            
             layerLayout.add(windowingLayout);
             
             // Store windowing GUI references
@@ -330,6 +338,7 @@
             config[\gui][\windowSizeField] = windowSizeField;
             config[\gui][\triggerField] = triggerField;
             config[\gui][\stepField] = stepField;
+            config[\gui][\melodyScalarText] = melodyScalarText;
         };
         
         // Status indicator
@@ -401,6 +410,12 @@
         .align_(\center)
     );
     
+    layout.add(StaticText()
+        .string_("Windowing: K8=Melody Speed, K3=Velocity (when manual control on)")
+        .font_(Font.default.size_(9).italic_(true))
+        .align_(\center)
+    );
+    
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         UPDATE FUNCTION                                    │
     // └─────────────────────────────────────────────────────────────────────────────┘
@@ -420,6 +435,12 @@
             if (~layers.state.manualControl) {
                 var duration = ~getLayersDurationFromKnob.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+            };
+            
+            // Add windowing melody scalar info if windowing is enabled
+            if (~layers.configs[\layer1].windowing.enabled) {
+                var scalar = ~getWindowingMelodyDurationScalar.();
+                statusString = statusString ++ " | Melody: %%".format((scalar * 100).round(1));
             };
             
             // Add live melody info if active
@@ -443,6 +464,12 @@
             if (~layers.state.manualControl) {
                 var duration = ~getLayersDurationFromKnob.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+            };
+            
+            // Show windowing melody scalar when not playing if windowing is enabled
+            if (~layers.configs[\layer1].windowing.enabled) {
+                var scalar = ~getWindowingMelodyDurationScalar.();
+                statusString = statusString ++ " | Melody: %%".format((scalar * 100).round(1));
             };
             
             // Show live melody status when not playing
@@ -483,6 +510,16 @@
         loop {
             try {
                 updateStatus.();
+                
+                // Update windowing melody scalar display if enabled
+                if (~layers.configs[\layer1].windowing.enabled) {
+                    var scalar = ~getWindowingMelodyDurationScalar.();
+                    var scalarPercent = (scalar * 100).round(1);
+                    var melodyScalarText = ~layers.configs[\layer1][\gui][\melodyScalarText];
+                    if (melodyScalarText.notNil) {
+                        melodyScalarText.string = "Melody Duration: %% (K8)".format(scalarPercent);
+                    };
+                };
                 
                 // Auto-check for VST groups every second for first 30 seconds
                 if (vstGroupsLoaded.not and: { vstCheckCounter < 30 }) {

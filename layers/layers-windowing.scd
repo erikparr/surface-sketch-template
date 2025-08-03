@@ -56,7 +56,7 @@
     var endIndex, windowNotes, windowVelocities, windowDurations;
     var totalWindowDuration = 0;
     var originalTotalDuration, pattern, noteCount;
-    var windowTiming, layerConfig, noteDurationScalar;
+    var windowTiming, layerConfig, noteDurationScalar, melodyDurationScalar;
     
     // Convert windowSize to integer to avoid float indexing issues
     windowSize = windowSize.asInteger;
@@ -70,8 +70,15 @@
         1.0  // Default to 100% scaling if not available
     };
     
-    "DEBUG: Layer % noteDurationScalar = %% (Knob 2)".format(
-        layerName, (noteDurationScalar * 100).round(1)
+    // Get melody duration scalar from knob 8 when windowing is enabled
+    melodyDurationScalar = if (layerConfig.notNil and: { layerConfig.windowing.enabled }) {
+        ~getWindowingMelodyDurationScalar.()
+    } {
+        1.0  // Default to 100% if windowing not enabled
+    };
+    
+    "DEBUG: Layer % noteDurationScalar = %% (Knob 2), melodyDurationScalar = %% (Knob 8)".format(
+        layerName, (noteDurationScalar * 100).round(1), (melodyDurationScalar * 100).round(1)
     ).postln;
     
     // Safety checks
@@ -134,17 +141,19 @@
         timingSum = windowTiming.sum;
         
         // NEW: Scale down to reasonable duration for a window
-        // Target: approximately 0.3-0.5 seconds per note (timing NOT affected by Knob 2)
-        totalWindowDuration = windowNotes.size * 0.4;
+        // Target: approximately 0.3-0.5 seconds per note (timing affected by Knob 8)
+        totalWindowDuration = windowNotes.size * 0.4 * melodyDurationScalar;
         
-        "Window %-%: % notes, duration=%s (timing unaffected by Knob 2)".format(
-            startIndex, endIndex, windowNotes.size, totalWindowDuration.round(0.01)
+        "Window %-%: % notes, duration=%s (scaled by K8: %%)".format(
+            startIndex, endIndex, windowNotes.size, totalWindowDuration.round(0.01),
+            (melodyDurationScalar * 100).round(1)
         ).postln;
     } {
-        // Fallback: estimate based on note count (timing NOT affected by Knob 2)
-        totalWindowDuration = windowNotes.size * 0.4; // 0.4s per note
-        "Window %-%: using fallback duration=%s (timing unaffected by Knob 2)".format(
-            startIndex, endIndex, totalWindowDuration.round(0.01)
+        // Fallback: estimate based on note count (timing affected by Knob 8)
+        totalWindowDuration = windowNotes.size * 0.4 * melodyDurationScalar; // 0.4s per note * scalar
+        "Window %-%: using fallback duration=%s (scaled by K8: %%)".format(
+            startIndex, endIndex, totalWindowDuration.round(0.01),
+            (melodyDurationScalar * 100).round(1)
         ).postln;
     };
     
@@ -246,12 +255,33 @@
                     // Simple approach: play notes with equal spacing within window duration
                     localNotes.do { |note, i|
                         var rawVelocity = localVelocities[i] ? 1.0;
-                        var velocity = (rawVelocity * 127).asInteger.clip(1, 127); // Scale 0.0-1.0 to 1-127
+                        var velocity;
                         var duration = localDurations[i];
                         
+                        // Check manual control mode for velocity (uses Layer 1 knob 3)
+                        if (~layers.state.manualControl) {
+                            // MANUAL CONTROL: Use Row 1, Knob 3 for all windows
+                            if (~midiController.notNil) {
+                                var knobValue = ~midiController.getKnobRow1(3);
+                                velocity = knobValue.linlin(0, 127, 1, 127).asInteger;
+                                "Window % using manual velocity from K3: knob=%, vel=%".format(
+                                    localWindowNumber, knobValue.round(0.001), velocity
+                                ).postln;
+                            } {
+                                velocity = 100; // Default if no MIDI controller
+                                "Window % using default manual velocity = %".format(localWindowNumber, velocity).postln;
+                            };
+                        } {
+                            // Use melody velocity data
+                            velocity = (rawVelocity * 127).asInteger.clip(1, 127); // Scale 0.0-1.0 to 1-127
+                            "Window % using melody velocity data = % (raw=%)".format(
+                                localWindowNumber, velocity, rawVelocity.round(0.01)
+                            ).postln;
+                        };
+                        
                         // Log what we're about to play
-                        "Window % playing note %: midi=%, vel=% (raw=%), dur=%s".format(
-                            localWindowNumber, i, note, velocity, rawVelocity.round(0.01), duration.round(0.01)
+                        "Window % playing note %: midi=%, vel=%, dur=%s".format(
+                            localWindowNumber, i, note, velocity, duration.round(0.01)
                         ).postln;
                         
                         // Play the note on assigned VST group

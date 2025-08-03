@@ -58,7 +58,8 @@
             enabled: false,
             windowSize: 5,
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
-            stepSize: 1
+            stepSize: 1,
+            melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
         )
     );
     
@@ -81,7 +82,8 @@
             enabled: false,
             windowSize: 5,
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
-            stepSize: 1
+            stepSize: 1,
+            melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
         )
     );
     
@@ -104,7 +106,8 @@
             enabled: false,
             windowSize: 5,
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
-            stepSize: 1
+            stepSize: 1,
+            melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
         )
     );
     

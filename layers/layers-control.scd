@@ -258,6 +258,29 @@
     duration
 };
 
+// Get melody duration scalar for windowing mode (row 1, position 8)
+~getWindowingMelodyDurationScalar = {
+    var scalar = 1.0; // Default 100%
+    var rawValue, normalizedValue;
+    
+    if (~midiController.notNil) {
+        // Get the raw value from the knob
+        rawValue = ~midiController.getKnobRow1(8);
+        
+        // Check if we need to normalize (if value > 1, it's likely raw MIDI 0-127)
+        if (rawValue > 1) {
+            normalizedValue = rawValue / 127.0;
+        } {
+            normalizedValue = rawValue;
+        };
+        
+        // Map to scalar range (0.1 to 2.0 = 10% to 200%)
+        scalar = normalizedValue.linlin(0, 1, 0.1, 2.0);
+    };
+    
+    scalar
+};
+
 // Enable/disable manual control mode
 ~setLayersManualControl = { |enabled|
     ~layers.state.manualControl = enabled;
