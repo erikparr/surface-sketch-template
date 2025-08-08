@@ -251,8 +251,19 @@
             normalizedValue = rawValue;
         };
         
-        // Map to duration range
-        duration = normalizedValue.linlin(0, 1, 0.1, 10.0);
+        // Clamp normalized value to prevent issues at extremes
+        normalizedValue = normalizedValue.clip(0.0, 1.0);
+        
+        // Map to duration range with smaller minimum (0.01 seconds = 10ms)
+        // Use exponential mapping for better control at low values
+        if (normalizedValue < 0.01) {
+            // If knob is very close to 0, clamp to minimum
+            duration = 0.01;
+        } {
+            // Exponential mapping: gives more resolution at lower values
+            // Maps 0.01-1.0 to 0.01-10.0 seconds exponentially
+            duration = normalizedValue.linexp(0.01, 1.0, 0.01, 10.0);
+        };
     };
     
     duration

@@ -98,7 +98,7 @@ Returns:
         if (durationType == "fractional") {
             // Convert fractional durations to absolute
             durations = noteCount.collect { |i|
-                var availableTime;
+                var availableTime, finalDuration;
                 if (i < (noteCount - 1)) {
                     availableTime = startTimes[i + 1] - startTimes[i];
                 } {
@@ -109,7 +109,40 @@ Returns:
                         availableTime = availableTime - (timing.last * totalDuration);
                     };
                 };
-                noteDurations[i] * availableTime
+                finalDuration = noteDurations[i] * availableTime;
+                
+                // Debug output for timing issues
+                if (availableTime <= 0) {
+                    "WARNING: Note % has no available time! availableTime=%, startTime=%, totalDuration=%".format(
+                        i, availableTime, startTimes[i], totalDuration
+                    ).postln;
+                    "  timing array: %, last timing value: %".format(timing, timing.last).postln;
+                };
+                
+                // Apply manual control note duration scalar if enabled
+                if (~layers.state.manualControl and: { layerName.notNil }) {
+                    var config = ~layers.configs[layerName];
+                    if (config.notNil and: { config.noteDurationScalar.notNil }) {
+                        finalDuration = finalDuration * config.noteDurationScalar;
+                    };
+                };
+                // For fractional durations with no available time, use a proportion of total duration
+                if (availableTime <= 0 and: { totalDuration > 0 }) {
+                    // Use the note's fractional duration directly against total duration
+                    finalDuration = noteDurations[i] * totalDuration;
+                    // Apply scalar
+                    if (~layers.state.manualControl and: { layerName.notNil }) {
+                        var config = ~layers.configs[layerName];
+                        if (config.notNil and: { config.noteDurationScalar.notNil }) {
+                            finalDuration = finalDuration * config.noteDurationScalar;
+                        };
+                    };
+                    "  Using fallback duration: % (fractional % × total % × scalar)".format(
+                        finalDuration, noteDurations[i], totalDuration
+                    ).postln;
+                };
+                // Minimum duration to prevent notes from becoming too short
+                finalDuration.max(0.01)
             };
         } {
             // Use absolute durations with proportional scaling

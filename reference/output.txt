@@ -1,213 +1,140 @@
-DEBUG: Start button pressed
-DEBUG: ~startLayers called with duration: nil
-DEBUG: parentProc = nil, isRunning = false
-Starting 1 active layers with MIDI knob duration: 5.05 seconds...
-DEBUG: About to call ~createLayersParentProc...
-DEBUG: ~createLayersParentProc is: a Function
-DEBUG: ~createLayersParentProc called with duration: 5.05
-DEBUG: Creating ProcMod with id: layersParent_250729_201546
-DEBUG: ProcMod created successfully
-DEBUG: Created parentProc: a ProcMod
-DEBUG: Called play on parentProc
-
-=== Layer Status ===
-Layer layer2: No melody assigned
-Layer layer3: No melody assigned
-Layer layer1: layer0 → Layer1
-Active layers: 1
-Total duration: 5.05 seconds
-Playing: true
-==================
-
-Loop 1: Using MIDI knob duration: 5.05 seconds
-Layer layer1 note duration scalar: 35.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 64.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 61.03 (Row  Knob 2)
-Using timing data for 5 notes: start times = [0.0, 1.122, 2.244, 3.367, 4.489]
-Note duration scaling: current=5.05, original=4.5, factor=1.122
-=== Starting dependent layers (loop 1) ===
-Parent group: 1004, Duration: 5.05 seconds
-Created ProcMod for layer1
-Starting 1 layer ProcMods simultaneously
-Single note CC mode active - envelopes will trigger per note
+DEBUG: Sending noteOff to VST instance 0 - note=82
+MIDIController Knob CC: 20 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 115 (norm: 0.90551181102362) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 113 (norm: 0.88976377952756) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 111 (norm: 0.8740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 120 (norm: 0.94488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
+Loop 52: Using MIDI knob duration: 0.26 seconds
+Layer layer1 note duration scalar: 145.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
+Using timing data for 1 notes: start times = [0.0]
+Note duration scaling: current=0.26, original=4.0, factor=0.064
+=== Starting dependent layers (loop 52) ===
+Parent group: 1079, Duration: 0.25590551181102 seconds
+Reusing 1 existing layer ProcMods
+Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
+MIDIController Knob CC: 20 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 125 (norm: 0.98425196850394) chan: 0 src: 1298960095
 DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
   patterns size: 1
-  metadata: ('totalDuration': 4.5, 'scale': phrygian, 'key': F, 'durationType': absolute)
-  durationType: absolute
-Layer layer1: 5 notes using timing data, total: 5.05 seconds
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
 DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Found durationType: absolute
-Layer layer1 using WINDOWING mode
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
+DEBUG: Found 1 VST instances for group Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
+DEBUG: Sending noteOff to VST instance 0 - note=82
+MIDIController Knob CC: 20 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 127 (norm: 1.0) chan: 0 src: 1298960095
 DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
   patterns size: 1
-  metadata: ('totalDuration': 4.5, 'scale': phrygian, 'key': F, 'durationType': absolute)
-  durationType: absolute
-Creating windowing scheduler: 5 notes, window=3.0, trigger=2, step=1
-Windowing mode: Layer2 & Layer3 disabled for window VST routing
-DEBUG: Creating window 0 at index 0 of 5 total notes
-DEBUG ~extractWindowData: startIndex=0, endIndex=2, noteCount=5, windowSize=3
-Window 0-2: 3 notes, duration=1.2s (scaled for playability)
-Window 0 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 0 with VST group Layer1
-Creating window ProcMod: id=window_0_250729_201546, VST=Layer1, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 0 started, next trigger in 0.16s
-Window 0 Task starting - playing 3 notes
-Window 0 playing note 0: midi=90, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=90, vel=127, dur=0.32, vstGroup=Layer1
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=90, vel=127
-Window 0 playing note 1: midi=85, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=85, vel=127, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
-DEBUG: After play - isRunning: true
-Window 0 playing note 2: midi=82, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=82, vel=127, dur=0.32, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
-DEBUG: Creating window 1 at index 1 of 5 total notes
-DEBUG ~extractWindowData: startIndex=1, endIndex=3, noteCount=5, windowSize=3
-Window 1-3: 3 notes, duration=1.2s (scaled for playability)
-Window 1 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 1 with VST group Layer2
-Creating window ProcMod: id=window_1_250729_201546, VST=Layer2, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 1 started, next trigger in 0.16s
-Window 1 Task starting - playing 3 notes
-Window 1 playing note 0: midi=85, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=85, vel=127, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
-Window 1 playing note 1: midi=82, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=82, vel=127, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
-Window 1 playing note 2: midi=75, vel=95 (raw=0.75), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=75, vel=95, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
-DEBUG: Creating window 2 at index 2 of 5 total notes
-DEBUG ~extractWindowData: startIndex=2, endIndex=4, noteCount=5, windowSize=3
-Window 2-4: 3 notes, duration=1.2s (scaled for playability)
-Window 2 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 2 with VST group Layer3
-Creating window ProcMod: id=window_2_250729_201546, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 2 started, next trigger in 0.16s
-Window 2 Task starting - playing 3 notes
-Window 2 playing note 0: midi=82, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=82, vel=127, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=127
-DEBUG: Sending noteOff to VST instance 0 - note=90
-DEBUG: Sending noteOff to VST instance 0 - note=85
-Window 2 playing note 1: midi=75, vel=95 (raw=0.75), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=75, vel=95, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
 DEBUG: Sending noteOff to VST instance 0 - note=82
-DEBUG: Sending noteOff to VST instance 0 - note=85
-Window 2 playing note 2: midi=90, vel=63 (raw=0.5), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=90, vel=63, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
-Maximum concurrent windows (3) reached - continuing
-DEBUG: Creating window 3 at index 3 of 5 total notes
-DEBUG ~extractWindowData: startIndex=3, endIndex=4, noteCount=5, windowSize=3
-Window 3-4: 2 notes, duration=0.8s (scaled for playability)
-Window 3 assigned to VST group Layer1 (index 0)
-DEBUG: About to create ProcMod for window 3 with VST group Layer1
-Creating window ProcMod: id=window_3_250729_201547, VST=Layer1, duration=0.8s, notes=2
-already playing
-Window trigger time: 0.64s (for trigger index 2)
-Window 3 started, next trigger in 0.64s
-Window 3 Task starting - playing 2 notes
-Window 3 playing note 0: midi=75, vel=95 (raw=0.75), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=75, vel=95, dur=0.32, vstGroup=Layer1
+Loop 53: Using MIDI knob duration: 0.26 seconds
+Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
+Using timing data for 1 notes: start times = [0.0]
+Note duration scaling: current=0.26, original=4.0, factor=0.064
+=== Starting dependent layers (loop 53) ===
+Parent group: 1079, Duration: 0.25590551181102 seconds
+Reusing 1 existing layer ProcMods
+Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=75, vel=95
-Window 3 playing note 1: midi=90, vel=63 (raw=0.5), dur=0.32s
-DEBUG ~playLayerNote: input=Layer1, note=90, vel=63, dur=0.32, vstGroup=Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
+DEBUG: Sending noteOff to VST instance 0 - note=82
+Loop 54: Using MIDI knob duration: 0.26 seconds
+Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
+Using timing data for 1 notes: start times = [0.0]
+Note duration scaling: current=0.26, original=4.0, factor=0.064
+=== Starting dependent layers (loop 54) ===
+Parent group: 1079, Duration: 0.25590551181102 seconds
+Reusing 1 existing layer ProcMods
+Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
 DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
 DEBUG: Sending noteOff to VST instance 0 - note=82
-DEBUG: Sending noteOff to VST instance 0 - note=75
+Loop 55: Using MIDI knob duration: 0.26 seconds
+Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
+Using timing data for 1 notes: start times = [0.0]
+Note duration scaling: current=0.26, original=4.0, factor=0.064
+=== Starting dependent layers (loop 55) ===
+Parent group: 1079, Duration: 0.25590551181102 seconds
+Reusing 1 existing layer ProcMods
+Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
+DEBUG: Found 1 VST instances for group Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
 DEBUG: Sending noteOff to VST instance 0 - note=82
-DEBUG: Sending noteOff to VST instance 0 - note=75
-DEBUG: Sending noteOff to VST instance 0 - note=90
-DEBUG: Sending noteOff to VST instance 0 - note=75
-DEBUG: Sending noteOff to VST instance 0 - note=90
-Maximum concurrent windows (3) reached - continuing
-DEBUG: Creating window 4 at index 4 of 5 total notes
-DEBUG ~extractWindowData: startIndex=4, endIndex=4, noteCount=5, windowSize=3
-Window 4-4: 1 notes, duration=0.4s (scaled for playability)
-Window 4 assigned to VST group Layer2 (index 1)
-DEBUG: About to create ProcMod for window 4 with VST group Layer2
-Creating window ProcMod: id=window_4_250729_201547, VST=Layer2, duration=0.4s, notes=1
-already playing
-Window trigger time: 0.32s (for trigger index 2)
-Window 4 started, next trigger in 0.32s
-Window 4 Task starting - playing 1 notes
-Window 4 playing note 0: midi=90, vel=63 (raw=0.5), dur=0.32s
-DEBUG ~playLayerNote: input=Layer2, note=90, vel=63, dur=0.32, vstGroup=Layer2
-DEBUG: Found 1 VST instances for group Layer2
-DEBUG: Sending noteOn to VST instance 0 - note=90, vel=63
-Window 0 Task completed
-Window 3 Task completed
-Window 1 Task completed
-Maximum concurrent windows (3) reached - continuing
-Windowing: Looping back to beginning (window 5)
-DEBUG: Creating window 5 at index 0 of 5 total notes
-DEBUG ~extractWindowData: startIndex=0, endIndex=2, noteCount=5, windowSize=3
-Window 0-2: 3 notes, duration=1.2s (scaled for playability)
-Window 5 assigned to VST group Layer3 (index 2)
-DEBUG: About to create ProcMod for window 5 with VST group Layer3
-Creating window ProcMod: id=window_5_250729_201547, VST=Layer3, duration=1.2s, notes=3
-already playing
-Window trigger time: 0.16s (for trigger index 2)
-Window 5 started, next trigger in 0.16s
-Window 5 Task starting - playing 3 notes
-Window 5 playing note 0: midi=90, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=90, vel=127, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=90, vel=127
-DEBUG: Sending noteOff to VST instance 0 - note=90
-Window 2 Task completed
-Window 4 Task completed
-Window 5 playing note 1: midi=85, vel=127 (raw=1.0), dur=0.32s
-DEBUG ~playLayerNote: input=Layer3, note=85, vel=127, dur=0.32, vstGroup=Layer3
-DEBUG: Found 1 VST instances for group Layer3
-DEBUG: Sending noteOn to VST instance 0 - note=85, vel=127
-Stopping all layers...
-nil
-Parent ProcMod releasing...
-Releasing child ProcMod: layer1_250729_201546
-nil
-Releasing layer layer1 ProcMod...
-Stopping all window ProcMods...
-nil
-nil
-nil
-nil
-nil
-nil
-Normal mode: All layers re-enabled
-All layers stopped
-Window 5 ProcMod released
-Layer layer1 ProcMod released
-Window 0 ProcMod released
-Window 1 ProcMod released
-Window 4 ProcMod released
-Window 3 ProcMod released
-Window 2 ProcMod released
-Parent ProcMod released
-Parent stopped, ending windowing
-All windows spawned, waiting for completion...
-All windows completed for layer layer1
-DEBUG: Sending noteOff to VST instance 0 - note=90
-DEBUG: Sending noteOff to VST instance 0 - note=85
-WARNING: Layers not currently playing
+DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
+  patterns size: 1
+  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
+  durationType: fractional
+DEBUG: ~shouldUseWindowing called for layer1
+DEBUG: Windowing check failed - config/windowing/enabled issue
+DEBUG: Manual control - knob raw: 49.0, velocity: 49
+DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
+DEBUG: Found 1 VST instances for group Layer1
+DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
+DEBUG: Sending noteOff to VST instance 0 - note=82
+Loop 56: Using MIDI knob duration: 0.26 seconds
+Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
+Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
+Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
+Using timing data for 1 notes: start times = [0.0]
+Note duration scaling: current=0.26, original=4.0, factor=0.064
+=== Starting dependent layers (loop 56) ===
+Parent group: 1079, Duration: 0.25590551181102 seconds
+Reusing 1 existing layer ProcMods
+Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s

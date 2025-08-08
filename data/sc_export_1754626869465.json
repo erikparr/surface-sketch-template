@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "exportDate": "2025-08-07",
+    "exportTime": "21:21:09",
+    "source": "MIDI Editor",
+    "format": "decoupled-timing"
+  },
+  "layers": {
+    "layer0": {
+      "metadata": {
+        "durationType": "fractional",
+        "totalDuration": 4,
+        "key": "F",
+        "scale": "phrygian"
+      },
+      "notes": [
+        {
+          "midi": 82,
+          "vel": 0.6929133858267716,
+          "dur": 1.0
+        }
+      ],
+      "timing": [
+        0.0,
+        1.0
+      ]
+    }
+  }
+}
