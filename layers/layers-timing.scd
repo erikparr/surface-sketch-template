@@ -47,11 +47,15 @@ Returns:
         
         // Apply timing offset if in manual control mode with fractional duration type
         if (~layers.state.manualControl and: { durationType == "fractional" }) {
-            timingOffset = ~getLayersTimingOffset.() * totalDuration;
-            "Applying timing offset: %% (% seconds)".format(
-                (~getLayersTimingOffset.() * 100).round(0.1),
-                timingOffset.round(0.001)
-            ).postln;
+            // Pass timing array for adaptive offset calculation
+            var offsetFraction = ~getLayersTimingOffset.(timing);
+            timingOffset = offsetFraction * totalDuration;
+            if (offsetFraction > 0.01) {
+                "Applying timing offset: %% (% seconds)".format(
+                    (offsetFraction * 100).round(0.1),
+                    timingOffset.round(0.001)
+                ).postln;
+            };
         };
         
         // Calculate start times for each note with offset
@@ -117,10 +121,8 @@ Returns:
                 } {
                     // Last note: use remaining time
                     availableTime = totalDuration - startTimes[i];
-                    if (timing.notNil) {
-                        // Subtract the final wait time if using timing data
-                        availableTime = availableTime - (timing.last * totalDuration);
-                    };
+                    // Don't subtract timing.last for fractional durations
+                    // The note should use all remaining time in the loop
                 };
                 finalDuration = noteDurations[i] * availableTime;
                 

@@ -293,8 +293,11 @@
 };
 
 // Get timing offset for fractional duration type (row 1, position 4)
-~getLayersTimingOffset = {
+// Bidirectional offset: center (0.5) = no offset, left = earlier, right = later
+~getLayersTimingOffset = { |melodyTiming|
     var offset = 0.0;
+    var maxBackwardOffset = 0.45; // Default max backward (earlier)
+    var maxForwardOffset = 0.45;  // Default max forward (later)
     
     if (~layers.state.manualControl and: { ~midiController.notNil }) {
         var rawValue = ~midiController.getKnobRow1(4);
@@ -310,8 +313,37 @@
         // Clamp to valid range
         normalizedValue = normalizedValue.clip(0.0, 1.0);
         
-        // Map to 0-90% of duration to prevent notes from wrapping
-        offset = normalizedValue * 0.9;
+        // Calculate adaptive offset ranges based on melody timing
+        if (melodyTiming.notNil and: { melodyTiming.size > 0 }) {
+            var originalPosition = melodyTiming[0]; // First note's start position (fraction)
+            
+            // Maximum backward offset: can't go below 5% of duration
+            maxBackwardOffset = (originalPosition - 0.05).max(0);
+            
+            // Maximum forward offset: can't go beyond 95% of duration
+            maxForwardOffset = (0.95 - originalPosition).max(0);
+            
+            // Debug output for adaptive scaling
+            if ((normalizedValue - 0.5).abs > 0.02) { // Show when not near center
+                "Bidirectional offset: original=%, max back=-%, max fwd=+%, knob=%".format(
+                    (originalPosition * 100).round(0.1),
+                    (maxBackwardOffset * 100).round(0.1),
+                    (maxForwardOffset * 100).round(0.1),
+                    (normalizedValue * 100).round(0.1)
+                ).postln;
+            };
+        };
+        
+        // Map knob to bidirectional offset
+        if (normalizedValue < 0.5) {
+            // Left half: negative offset (earlier)
+            var leftAmount = (0.5 - normalizedValue) * 2; // 0-1 range for left half
+            offset = maxBackwardOffset.neg * leftAmount;
+        } {
+            // Right half: positive offset (later)
+            var rightAmount = (normalizedValue - 0.5) * 2; // 0-1 range for right half
+            offset = maxForwardOffset * rightAmount;
+        };
     };
     
     offset

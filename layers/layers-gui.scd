@@ -442,9 +442,10 @@
                 var duration = ~getLayersDurationFromKnob.();
                 var offset = ~getLayersTimingOffset.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
-                // Show offset if non-zero
-                if (offset > 0.01) {
-                    statusString = statusString ++ " | Offset: %%".format((offset * 100).round(1));
+                // Show offset if not near zero
+                if (offset.abs > 0.01) {
+                    var sign = if(offset < 0, "-", "+");
+                    statusString = statusString ++ " | Offset: %%%".format(sign, (offset.abs * 100).round(1));
                 };
             };
             
@@ -476,9 +477,10 @@
                 var duration = ~getLayersDurationFromKnob.();
                 var offset = ~getLayersTimingOffset.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
-                // Show offset if non-zero
-                if (offset > 0.01) {
-                    statusString = statusString ++ " | Offset: %%".format((offset * 100).round(1));
+                // Show offset if not near zero
+                if (offset.abs > 0.01) {
+                    var sign = if(offset < 0, "-", "+");
+                    statusString = statusString ++ " | Offset: %%%".format(sign, (offset.abs * 100).round(1));
                 };
             };
             
