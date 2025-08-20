@@ -57,7 +57,8 @@ The layers system allows three independent layers to play different melodies thr
 - `~setLayerMelody(layerName, melodyKey)`: Assign melody to layer
 - `~setLayerVSTGroup(layerName, vstGroup)`: Route layer to VST group
 - `~setLayersManualControl(enabled)`: Enable/disable MIDI control mode with velocity integration
-- `~getLayersDurationFromKnob`: Read duration from MIDI knob (row 1, pos 8)
+- `~getLayersDurationFromKnob`: Read duration from MIDI knob (row 1, pos 8) with exponential scaling
+- `~getLayersTimingOffset`: Read timing offset from MIDI knob (row 1, pos 4) for fractional duration types
 
 ### 3. GUI (`layers-gui.scd`)
 - Transport controls (Start/Stop)
@@ -112,9 +113,10 @@ The layers system allows three independent layers to play different melodies thr
 ~setLayersManualControl.(true);
 
 // Manual control mappings (Row 1):
-// - Knob 8: Loop duration (0.1-10 seconds) - changes take effect on next loop
+// - Knob 8: Loop duration (0.01-10 seconds) - exponential scaling for fine control at low values
 // - Knob 3: Note velocity (1-127) - live control during playback
-// - Knob 2: Note duration scalar (1-150%) - scales all note durations
+// - Knob 2: Note duration scalar (1-150%) - scales all note durations (works with fractional & absolute)
+// - Knob 4: Timing offset (0-90%) - shifts note start times forward (fractional duration type only)
 // Duration changes take effect on next loop iteration
 // When disabled: Uses velocity and durations from melody data
 ```
@@ -141,6 +143,8 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 4. **Dynamic Updates**: Duration can change between loops in manual mode
 5. **Proportional Scaling**: When loop duration changes, note durations scale proportionally
 6. **Note Duration Control**: Manual mode enables additional scaling via Knob 2 (1-150%)
+7. **Timing Offset**: Knob 4 shifts all notes forward by 0-90% of duration (fractional type only)
+8. **Exponential Duration**: Knob 8 uses exponential mapping for fine control at short durations
 
 ## Integration Points
 
@@ -175,6 +179,10 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 12. **Code cleanup**: Removed 125 lines of legacy/unused code for cleaner architecture
 13. **Proportional note scaling**: Note durations scale proportionally with loop duration changes
 14. **Note duration scalar**: Manual control mode adds Knob 2 for 1-150% note duration scaling
+15. **Fractional duration scalar fix**: Note duration scalar now properly applies to fractional duration types
+16. **Exponential duration mapping**: Knob 8 uses exponential scaling (0.01-10s) for better control at low values
+17. **Timing offset control**: Knob 4 adds 0-90% timing offset for fractional duration melodies
+18. **Zero-duration fallback**: Handles edge cases where timing arrays leave no time for notes
 
 ## Expression Control System
 
@@ -186,16 +194,25 @@ Each layer now has independent expression control via CC envelopes that send MID
 - **Layer 3**: CC 13 via `ccEnvelope3` SynthDef → `/expression3` OSC path
 
 ### MIDI Knob Control
+
+#### Manual Control Mode (Row 1)
+When manual control is enabled, Row 1 knobs control global playback parameters:
+- **Knob 2**: Note duration scalar (1-150%) - applies to all layers
+- **Knob 3**: Note velocity (1-127) - overrides melody velocity data
+- **Knob 4**: Timing offset (0-90%) - shifts all note start times (fractional duration only)
+- **Knob 8**: Loop duration (0.01-10s) - exponential scaling for fine control
+
+#### Expression Control (Per Layer)
 Each layer's expression parameters are controlled by MIDI knobs on the corresponding row:
 
-- **Row 1** (Layer 1): Knobs 4-6 control Layer 1 expression
-- **Row 2** (Layer 2): Knobs 4-6 control Layer 2 expression
-- **Row 3** (Layer 3): Knobs 4-6 control Layer 3 expression
+- **Row 1** (Layer 1): Knobs 5-7 control Layer 1 expression
+- **Row 2** (Layer 2): Knobs 5-7 control Layer 2 expression
+- **Row 3** (Layer 3): Knobs 5-7 control Layer 3 expression
 
-#### Knob Functions
-- **Position 4**: Expression duration scalar (0.1-1.0) - scales envelope duration relative to layer duration
-- **Position 5**: Expression minimum value (0-127) - CC value at start/end of envelope
-- **Position 6**: Expression maximum value (0-127) - CC value at peak of envelope
+##### Expression Knob Functions
+- **Position 5**: Expression duration scalar (0.1-1.0) - scales envelope duration relative to layer duration
+- **Position 6**: Expression minimum value (0-127) - CC value at start/end of envelope
+- **Position 7**: Expression maximum value (0-127) - CC value at peak of envelope
 
 ### Configuration Structure
 Each layer's `ccControl` configuration:
@@ -289,6 +306,29 @@ var melodies = ~importLayerMelodyFromJSON.("path/to/melody.json");
 - **Example data**: `data/melody-export.json` - Sample JSON file with 3 layers
 - **Backward compatible**: Melodies without timing data automatically use equal spacing
 - **GUI testing**: Use "Load File" button on any layer to import JSON melodies
+
+## Timing Offset Feature (Knob 4)
+
+The timing offset feature allows real-time shifting of note start times for fractional duration melodies:
+
+### How It Works
+- **Control**: Row 1, Knob 4 (only active in manual control mode)
+- **Range**: 0-90% of total loop duration
+- **Applies to**: Fractional duration type melodies only
+- **Behavior**: Shifts all notes forward by the same amount while preserving relative timing
+
+### Use Cases
+1. **Groove adjustment**: Create swing or shuffle feel by offsetting notes
+2. **Polyrhythmic effects**: Offset layers relative to each other
+3. **Live performance**: Real-time rhythmic variation without changing melody data
+4. **Phase shifting**: Gradually shift timing relationships between layers
+
+### Technical Details
+- Offset is calculated as a fraction of total duration
+- Notes are clamped to 95% of duration to prevent overflow
+- Works seamlessly with note duration scalar (Knob 2)
+- Visual feedback in GUI shows current offset percentage
+- Debug output shows applied offset in console
 
 ## Requirements
 

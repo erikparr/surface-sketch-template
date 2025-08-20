@@ -405,7 +405,7 @@
     );
     
     layout.add(StaticText()
-        .string_("Manual Control: K8=Duration, K3=Velocity, K2=Note Dur (1-150%)")
+        .string_("Manual Control: K8=Duration, K3=Velocity, K2=Note Dur (1-150%), K4=Timing Offset")
         .font_(Font.default.size_(9).italic_(true))
         .align_(\center)
     );
@@ -413,6 +413,12 @@
     layout.add(StaticText()
         .string_("Windowing: K8=Melody Speed, K3=Velocity (when manual control on)")
         .font_(Font.default.size_(9).italic_(true))
+        .align_(\center)
+    );
+    
+    layout.add(StaticText()
+        .string_("K4 Timing Offset: Shifts note start times (fractional duration type only)")
+        .font_(Font.default.size_(8).italic_(true))
         .align_(\center)
     );
     
@@ -434,7 +440,12 @@
             // Add duration info if manual control is active
             if (~layers.state.manualControl) {
                 var duration = ~getLayersDurationFromKnob.();
+                var offset = ~getLayersTimingOffset.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+                // Show offset if non-zero
+                if (offset > 0.01) {
+                    statusString = statusString ++ " | Offset: %%".format((offset * 100).round(1));
+                };
             };
             
             // Add windowing melody scalar info if windowing is enabled
@@ -463,7 +474,12 @@
             // Show duration when not playing if manual control is active
             if (~layers.state.manualControl) {
                 var duration = ~getLayersDurationFromKnob.();
+                var offset = ~getLayersTimingOffset.();
                 statusString = statusString ++ " | Duration: %s".format(duration.round(0.1));
+                // Show offset if non-zero
+                if (offset > 0.01) {
+                    statusString = statusString ++ " | Offset: %%".format((offset * 100).round(1));
+                };
             };
             
             // Show windowing melody scalar when not playing if windowing is enabled

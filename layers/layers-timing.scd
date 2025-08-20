@@ -39,14 +39,27 @@ Returns:
     if (timing.notNil and: { timing.size == (noteCount + 1) }) {
         // Use provided timing data
         var currentTime = 0;
+        var timingOffset = 0;
         startTimes = Array.newClear(noteCount);
         
         // timing[0] is the wait before first note
         currentTime = timing[0] * totalDuration;
         
-        // Calculate start times for each note
+        // Apply timing offset if in manual control mode with fractional duration type
+        if (~layers.state.manualControl and: { durationType == "fractional" }) {
+            timingOffset = ~getLayersTimingOffset.() * totalDuration;
+            "Applying timing offset: %% (% seconds)".format(
+                (~getLayersTimingOffset.() * 100).round(0.1),
+                timingOffset.round(0.001)
+            ).postln;
+        };
+        
+        // Calculate start times for each note with offset
         noteCount.do { |i|
-            startTimes[i] = currentTime;
+            // Apply offset and wrap/clamp to keep within duration
+            var offsetTime = currentTime + timingOffset;
+            // Clamp to prevent notes from exceeding duration
+            startTimes[i] = offsetTime.min(totalDuration * 0.95); // Leave 5% buffer at end
             if (i < (noteCount - 1)) {
                 // Add inter-onset interval to get next note's start time
                 currentTime = currentTime + (timing[i + 1] * totalDuration);

@@ -292,6 +292,31 @@
     scalar
 };
 
+// Get timing offset for fractional duration type (row 1, position 4)
+~getLayersTimingOffset = {
+    var offset = 0.0;
+    
+    if (~layers.state.manualControl and: { ~midiController.notNil }) {
+        var rawValue = ~midiController.getKnobRow1(4);
+        var normalizedValue;
+        
+        // Check if we need to normalize (if value > 1, it's likely raw MIDI 0-127)
+        if (rawValue > 1) {
+            normalizedValue = rawValue / 127.0;
+        } {
+            normalizedValue = rawValue;
+        };
+        
+        // Clamp to valid range
+        normalizedValue = normalizedValue.clip(0.0, 1.0);
+        
+        // Map to 0-90% of duration to prevent notes from wrapping
+        offset = normalizedValue * 0.9;
+    };
+    
+    offset
+};
+
 // Enable/disable manual control mode
 ~setLayersManualControl = { |enabled|
     ~layers.state.manualControl = enabled;
