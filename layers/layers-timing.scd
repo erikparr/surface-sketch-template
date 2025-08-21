@@ -36,6 +36,22 @@ Returns:
     noteDurations = melodyData.noteDurations;
     durationType = melodyData.durationType ? "absolute";
     
+    // Auto-expand single timing value for single notes
+    if (timing.notNil and: { noteCount == 1 }) {
+        if (timing.isNumber) {
+            // Single number: convert to array [start, wait_after]
+            timing = [timing, 1.0 - timing];
+            "Expanded single timing value to: %".format(timing).postln;
+        } {
+            if (timing.isArray and: { timing.size == 1 }) {
+                // Single-element array: expand
+                timing = [timing[0], 1.0 - timing[0]];
+                "Expanded single-element timing array to: %".format(timing).postln;
+            };
+            // else: already in [start, end] format or multi-note format
+        };
+    };
+    
     if (timing.notNil and: { timing.size == (noteCount + 1) }) {
         // Use provided timing data
         var currentTime = 0;
