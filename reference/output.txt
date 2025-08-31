@@ -1,140 +1,723 @@
-DEBUG: Sending noteOff to VST instance 0 - note=82
-MIDIController Knob CC: 20 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 115 (norm: 0.90551181102362) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 113 (norm: 0.88976377952756) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 111 (norm: 0.8740157480315) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 120 (norm: 0.94488188976378) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
-Loop 52: Using MIDI knob duration: 0.26 seconds
-Layer layer1 note duration scalar: 145.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
-Using timing data for 1 notes: start times = [0.0]
-Note duration scaling: current=0.26, original=4.0, factor=0.064
-=== Starting dependent layers (loop 52) ===
-Parent group: 1079, Duration: 0.25590551181102 seconds
-Reusing 1 existing layer ProcMods
-Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
-MIDIController Knob CC: 20 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 125 (norm: 0.98425196850394) chan: 0 src: 1298960095
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-MIDIController Knob CC: 20 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
-MIDIController Knob CC: 20 val: 127 (norm: 1.0) chan: 0 src: 1298960095
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-Loop 53: Using MIDI knob duration: 0.26 seconds
-Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
-Using timing data for 1 notes: start times = [0.0]
-Note duration scaling: current=0.26, original=4.0, factor=0.064
-=== Starting dependent layers (loop 53) ===
-Parent group: 1079, Duration: 0.25590551181102 seconds
-Reusing 1 existing layer ProcMods
-Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-Loop 54: Using MIDI knob duration: 0.26 seconds
-Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
-Using timing data for 1 notes: start times = [0.0]
-Note duration scaling: current=0.26, original=4.0, factor=0.064
-=== Starting dependent layers (loop 54) ===
-Parent group: 1079, Duration: 0.25590551181102 seconds
-Reusing 1 existing layer ProcMods
-Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-Loop 55: Using MIDI knob duration: 0.26 seconds
-Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
-Using timing data for 1 notes: start times = [0.0]
-Note duration scaling: current=0.26, original=4.0, factor=0.064
-=== Starting dependent layers (loop 55) ===
-Parent group: 1079, Duration: 0.25590551181102 seconds
-Reusing 1 existing layer ProcMods
-Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-DEBUG ~getLayerMelodyDynamic: layer=layer1, melodyKey=layer0, melodyData keys=[durationType, metadata, name, noteDurations, patterns, timing, totalDuration, velocities]
-  patterns size: 1
-  metadata: ('totalDuration': 4, 'scale': phrygian, 'key': F, 'durationType': fractional)
-  durationType: fractional
-DEBUG: ~shouldUseWindowing called for layer1
-DEBUG: Windowing check failed - config/windowing/enabled issue
-DEBUG: Manual control - knob raw: 49.0, velocity: 49
-DEBUG ~playLayerNote: input=layer1, note=82, vel=49, dur=0.01, vstGroup=Layer1
-DEBUG: Found 1 VST instances for group Layer1
-DEBUG: Sending noteOn to VST instance 0 - note=82, vel=49
-DEBUG: Sending noteOff to VST instance 0 - note=82
-Loop 56: Using MIDI knob duration: 0.26 seconds
-Layer layer1 note duration scalar: 150.01 (Row  Knob 2)
-Layer layer2 note duration scalar: 2.02 (Row  Knob 2)
-Layer layer3 note duration scalar: 2.03 (Row  Knob 2)
-Using timing data for 1 notes: start times = [0.0]
-Note duration scaling: current=0.26, original=4.0, factor=0.064
-=== Starting dependent layers (loop 56) ===
-Parent group: 1079, Duration: 0.25590551181102 seconds
-Reusing 1 existing layer ProcMods
-Starting ccEnvelope1 envelope - Duration: 0.26s, Attack: 0.13s, Release: 0.13s
+compiling class library...
+	Found 865 primitives.
+	Compiling directory '/Applications/SuperCollider.app/Contents/Resources/SCClassLibrary'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/Extensions'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Tendency'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/TabbedView2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/XML'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Ctk'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JoshMisc'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JSONlib'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Singleton'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/FreeAfter'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Connection'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Collapse'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/WindowViewRecall'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/UnitTest2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Deferred'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Log'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/wslib'
+	numentries = 1725870 / 37773140 = 0.046
+	9290 method selectors, 4066 classes
+	method table size 33300936 bytes, big table size 302185120
+	Number of Symbols 22555
+	Byte Code Size 897790
+	compiled 857 files in 0.79 seconds
+
+Info: 2 methods are currently overwritten by extensions. To see which, execute:
+MethodOverride.printAll
+
+compile done
+localhost : setting clientID to 0.
+internal : setting clientID to 0.
+Class tree inited in 0.01 seconds
+Ctk init class runs
+
+
+*** Welcome to SuperCollider 3.14.0-dev. *** For help press Cmd-D.
+Booting server 'localhost' on address 127.0.0.1:57110.
+VSTPlugin 0.6
+Number of Devices: 3
+   0 : "SB242Y"
+   1 : "Mac Studio Speakers"
+   2 : "Babyface Pro (70798404)"
+
+"Babyface Pro (70798404)" Input Device
+   Streams: 1
+      0  channels 14
+
+"Babyface Pro (70798404)" Output Device
+   Streams: 1
+      0  channels 14
+
+SC_AudioDriver: sample rate = 48000.000000, driver's block size = 512
+SCDoc: Indexing help-files...
+SuperCollider 3 server ready.
+SCDoc: Indexed 2288 documents in 0.63 seconds
+Requested notification messages from server 'localhost'
+localhost: server process's maxLogins (1) matches with my options.
+localhost: keeping clientID (0) as confirmed by server process.
+Shared memory server interface initialized
+MIDI Sources:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+MIDI Destinations:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+[MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp"), MIDIEndPoint("USB MIDI Device", "USB MIDI Device"), MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)"), MIDIEndPoint("Keystation 61 MK3", "(Transport)"), MIDIEndPoint("MIDI Mix", "MIDI Mix")]
+Loading setup...
+Loading setup file: synths-setup.scd
+Loading Dependent Layer System...
+Initializing dependent layer system...
+Dependent layers initialized with default VST groups
+Forcing ProcMod SynthDef creation...
+ProcMod SynthDef sent to server
+DEBUG: Testing function definitions...
+  ~createLayersParentProc is: Function
+  ~createLayerProcMod is: Function
+Dependent layers playback system loaded
+Dependent layers windowing system loaded
+Layers timing utilities loaded successfully
+Layers live melody system loaded successfully
+Melody switching MIDI handlers set up: CC 27 (next), CC 22 (previous)
+Dependent layers control system loaded with melody switching
+Dependent layers GUI loaded
+
+=== Dependent Layer System Loaded Successfully ===
+Available functions:
+  ~createLayersGUI.()     - Open the control interface
+  ~startLayers.()         - Start all configured layers
+  ~stopLayers.()          - Stop all layers
+  ~printLayerStatus.()    - Show current configuration
+
+Timing data support:
+  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing
+  ~createTimingTestMelody.()            - Create test melody with timing
+
+Windowing support:
+  ~setLayerWindowing.(\layer1, true)    - Enable windowing for a layer
+  ~setLayerWindowingParams.(\layer1, 5, 1, 1) - Set window params
+  ~printAllLayerWindowingSettings.()     - Show windowing settings
+
+Live melody mode:
+  ~enableLiveMelodyMode.()              - Enable live OSC updates
+  ~disableLiveMelodyMode.()             - Disable live OSC updates
+  ~getLiveMelodyStatus.()               - Check status and pending updates
+
+Quick start:
+  ~setLayerMelody.(\layer1, \yourMelody)
+  ~setLayerMelody.(\layer2, \anotherMelody)
+  ~startLayers.()
+===============================================
+
+=== Layer GUI Debug ===
+~vstManager available: false
+===================
+VSTManager not available
+Loading setup file: vstplugin-setup.scd
+Searching for VST plugins...
+VST plugin search complete.
+VSTManager: Initializing... Server: %
+VSTManager: Performing initial VST search...
+WARNING: keyword arg 'completion' not found in call to Meta_VSTPlugin:search
+VSTManager: Initialization complete.
+VSTManager initialized.
+VSTManager is ready for use.
+Starting VST instance loading...
+Waiting for VST search to complete (5 seconds)...
+WARNING: already searching!
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST'...
+read cache file /Users/erikparr/Library/Application Support/vstplugin/sc/cache_amd64.ini
+found 0 plugins
+searching in '/Library/Audio/Plug-Ins/VST'...
+/Library/Audio/Plug-Ins/VST/Analog Lab V.vst
+/Library/Audio/Plug-Ins/VST/ARP 2600 V3.vst
+/Library/Audio/Plug-Ins/VST/Augmented STRINGS.vst
+/Library/Audio/Plug-Ins/VST/Augmented VOICES.vst
+/Library/Audio/Plug-Ins/VST/B-3 V2.vst
+/Library/Audio/Plug-Ins/VST/Buchla Easel V.vst
+/Library/Audio/Plug-Ins/VST/Clavinet V.vst
+/Library/Audio/Plug-Ins/VST/CMI V.vst
+/Library/Audio/Plug-Ins/VST/CS-80 V4.vst
+/Library/Audio/Plug-Ins/VST/CZ V.vst
+/Library/Audio/Plug-Ins/VST/DX7 V.vst
+/Library/Audio/Plug-Ins/VST/Emulator II V.vst
+/Library/Audio/Plug-Ins/VST/Farfisa V.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp.vst
+/Library/Audio/Plug-Ins/VST/iZotope Trash 2.vst
+/Library/Audio/Plug-Ins/VST/Jun-6 V.vst
+/Library/Audio/Plug-Ins/VST/Jup-8 V4.vst
+/Library/Audio/Plug-Ins/VST/Kontakt.vst
+/Library/Audio/Plug-Ins/VST/KORG MS-20 V.vst
+/Library/Audio/Plug-Ins/VST/Matrix-12 V2.vst
+/Library/Audio/Plug-Ins/VST/Mellotron V.vst
+/Library/Audio/Plug-Ins/VST/Mini V3.vst
+/Library/Audio/Plug-Ins/VST/Modular V3.vst
+/Library/Audio/Plug-Ins/VST/Omnisphere.vst
+/Library/Audio/Plug-Ins/VST/OP-Xa V.vst
+/Library/Audio/Plug-Ins/VST/Piano V3.vst
+/Library/Audio/Plug-Ins/VST/Pigments.vst
+/Library/Audio/Plug-Ins/VST/Prophet-5 V.vst
+/Library/Audio/Plug-Ins/VST/Prophet-VS V.vst
+/Library/Audio/Plug-Ins/VST/SEM V2.vst
+/Library/Audio/Plug-Ins/VST/Solina V2.vst
+/Library/Audio/Plug-Ins/VST/SQ80 V.vst
+/Library/Audio/Plug-Ins/VST/Stage-73 V2.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Baritone Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Tuba.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Cello 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Contrabassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM English Horn 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Euphonium.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn Bb.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn F.vst
+/Library/Audio/Plug-Ins/VST/SWAM Oboe 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Soprano Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet C.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tuba Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Viola 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Violin 3.vst
+/Library/Audio/Plug-Ins/VST/Synclavier V.vst
+/Library/Audio/Plug-Ins/VST/Synthi V.vst
+/Library/Audio/Plug-Ins/VST/ValhallaFreqEcho.vst
+/Library/Audio/Plug-Ins/VST/ValhallaShimmer_x64.vst
+/Library/Audio/Plug-Ins/VST/Vocoder V.vst
+/Library/Audio/Plug-Ins/VST/VOX Continental V2.vst
+/Library/Audio/Plug-Ins/VST/Wurli V2.vst
+found 80 plugins
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST3'...
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/adelay.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again-sampleaccurate.vst3
+	[1/2] AGain Sample Accurate
+	[2/2] Advanced Tutorial
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again.vst3
+	[1/2] AGain VST3
+	[2/2] AGain SideChain VST3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/againsimple.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/BasicVST.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/channelcontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/dataexchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/hostchecker.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/legacymidiccout.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/mda-vst3.vst3
+	[1/34] mda Detune
+	[2/34] mda JX10
+	[3/34] mda EPiano
+	[4/34] mda RezFilter
+	[5/34] mda SpecMeter
+	[6/34] mda Combo
+	[7/34] mda Delay
+	[8/34] mda TalkBox
+	[9/34] mda Dynamics
+	[10/34] mda MultiBand
+	[11/34] mda Stereo Simulator
+	[12/34] mda TestTone
+	[13/34] mda Loudness
+	[14/34] mda DeEsser
+	[15/34] mda BeatBox
+	[16/34] mda Round Panner
+	[17/34] mda DX10
+	[18/34] mda Piano
+	[19/34] mda Splitter
+	[20/34] mda Tracker
+	[21/34] mda Degrade
+	[22/34] mda Overdrive
+	[23/34] mda Thru-Zero Flanger
+	[24/34] mda Image
+	[25/34] mda Dither
+	[26/34] mda Limiter
+	[27/34] mda RePsycho!
+	[28/34] mda DubDelay
+	[29/34] mda Ambience
+	[30/34] mda Leslie
+	[31/34] mda Bandisto
+	[32/34] mda RingMod
+	[33/34] mda Shepard
+	[34/34] mda Sub-Bass Synthesizer
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/MIDI Warp.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/multiple-program-changes.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressionsynth.vst3
+	[1/2] Note Expression Synth With UI
+	[2/2] Note Expression Synth
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressiontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/panner.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/pitchnames.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/prefetchable.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/programchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/syncdelay.vst3
+found 55 plugins
+searching in '/Library/Audio/Plug-Ins/VST3'...
+'/Library/Audio/Plug-Ins/VST3/Analog Lab V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/ARP 2600 V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented STRINGS.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented VOICES.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/B-3 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Buchla Easel V.vst3
+'/Library/Audio/Plug-Ins/VST3/Clavinet V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CMI V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CS-80 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/CZ V.vst3
+'/Library/Audio/Plug-Ins/VST3/DX7 V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Emulator II V.vst3
+'/Library/Audio/Plug-Ins/VST3/Eventide/Physion Mk II.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Eventide/SplitEQ.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Farfisa V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Contrast.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Equalize.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM EqualizeMono.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Shift.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Warp.vst3
+/Library/Audio/Plug-Ins/VST3/iZotope Trash 2.vst3
+'/Library/Audio/Plug-Ins/VST3/Jun-6 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Jup-8 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Kontakt 7.vst3
+/Library/Audio/Plug-Ins/VST3/Kontakt 8.vst3
+/Library/Audio/Plug-Ins/VST3/Kontakt.vst3
+'/Library/Audio/Plug-Ins/VST3/KORG MS-20 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MagicBlur.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MagicDelay.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFilter.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFusion.vst3
+'/Library/Audio/Plug-Ins/VST3/MagicPitch.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Matrix-12 V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mellotron V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MIDI Warp.vst3
+'/Library/Audio/Plug-Ins/VST3/Mini V3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MMM.vst3
+/Library/Audio/Plug-Ins/VST3/MMMm.vst3
+/Library/Audio/Plug-Ins/VST3/Modular V3.vst3
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 DualMonoIn VST3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 VST3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Neutone FX.vst3
+/Library/Audio/Plug-Ins/VST3/Neutone Morpho.vst3
+/Library/Audio/Plug-Ins/VST3/Omnisphere.vst3
+'/Library/Audio/Plug-Ins/VST3/OP-Xa V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Piano V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Pigments.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-5 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-VS V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/QuantumDelay.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/QuantumDistortion.vst3
+/Library/Audio/Plug-Ins/VST3/QuantumFilter.vst3
+/Library/Audio/Plug-Ins/VST3/Rift Feedback Lite.vst3
+/Library/Audio/Plug-Ins/VST3/SEM V2.vst3
+'/Library/Audio/Plug-Ins/VST3/SimpleVST.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Solina V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/SQ80 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Stage-73 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Baritone Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Cello 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Contrabassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM English Horn 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn Bb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn F.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Oboe 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Soprano Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet C.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Viola 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Violin 3.vst3
+'/Library/Audio/Plug-Ins/VST3/Synclavier V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Synthi V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/ValhallaFreqEcho.vst3
+/Library/Audio/Plug-Ins/VST3/ValhallaShimmer.vst3
+/Library/Audio/Plug-Ins/VST3/Vocoder V.vst3
+'/Library/Audio/Plug-Ins/VST3/VOX Continental V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Wurli V2.vst3' is black-listed.
+found 62 plugins
+Loading setup file: vst-management.scd
+Updating VST manager UI...
+VST Manager: Group selector refreshed.
+ERROR: Failed to read tmp file!
+Loading setup file: midi-setup.scd
+MIDI setup function defined. Call ~initMIDISetup.() when VST Manager is ready.
+Loading setup file: osc-setup.scd
+Loading setup file: parameter-monitor-gui.scd
+Parameter Monitor GUI loaded. Use ~debugParameterMonitor.() to check state.
+All setup files loaded successfully!
+Adding VST instances...
+VSTManager: VST loaded: Bass Tuba 01
+VSTManager: Updated  127  parameters for  Bass Tuba 01
+VSTManager: VST loaded: Bass Tuba 02
+VSTManager: Group 'Layer1' created with members: [Bass Tuba 01]
+VSTManager: Group 'Layer2' created with members: [Bass Tuba 02]
+VSTManager: Group 'Layer3' created with members: [Bass Tuba 03]
+VST instances added. Waiting for initialization to complete...
+VSTs loaded, updating UI...
+Updating all VST manager UIs...
+Updating VST manager UI...
+Calling ~initMIDISetup.() now that VST Manager is ready...
+~initMIDISetup called #1 times
+Before cleanup: 2 total MIDIFuncs
+After cleanup: 2 total MIDIFuncs
+Initializing MIDI controller with VST instances...
+Current working directory: /
+User home directory: /Users/erikparr
+Using project path: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light
+Using snapshot directory: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+Directory already exists: /Users/erikparr/Documents/_Music/sc-projects/intro/first-light/snapshotData
+TEMP DEBUG: LiveParameterRegistry.init called with debug: true
+[LiveParameterRegistry] LiveParameterRegistry initialized
+TEMP DEBUG: LiveParameterRegistry initialization complete
+[LiveInputRouter] LiveInputRouter initialized
+[LiveInputRouter] Registered input source: osc (priority: 10)
+[LiveOSCController] LiveOSCController initialized on port 57121
+[LiveInputRouter] Registered input source: midi (priority: 20)
+[LiveOSCController] OSC discovery responder active on /osc/discover
+TEMP DEBUG: registerParameter called - id: midi_slider_0, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_0 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:19 -> midi_slider_0
+TEMP DEBUG: registerParameter called - id: midi_slider_1, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_1 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:23 -> midi_slider_1
+TEMP DEBUG: registerParameter called - id: midi_slider_2, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_2 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:27 -> midi_slider_2
+TEMP DEBUG: registerParameter called - id: midi_slider_3, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_3 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:31 -> midi_slider_3
+TEMP DEBUG: registerParameter called - id: midi_slider_4, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_4 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:49 -> midi_slider_4
+TEMP DEBUG: registerParameter called - id: midi_slider_5, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_5 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:53 -> midi_slider_5
+TEMP DEBUG: registerParameter called - id: midi_slider_6, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_6 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:57 -> midi_slider_6
+TEMP DEBUG: registerParameter called - id: midi_slider_7, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_7 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:61 -> midi_slider_7
+TEMP DEBUG: registerParameter called - id: midi_slider_8, spec: a ControlSpec(0, 1, 'linear', 0, 0, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Registered parameter: midi_slider_8 with spec a ControlSpec(0, 1, 'linear', 0, 0, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:62 -> midi_slider_8
+TEMP DEBUG: registerParameter called - id: midi_row1_pos1, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos1 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:16 -> midi_row1_pos1
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_1 -> midi_row1_pos1
+TEMP DEBUG: registerParameter called - id: midi_row1_pos2, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos2 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:20 -> midi_row1_pos2
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_2 -> midi_row1_pos2
+TEMP DEBUG: registerParameter called - id: midi_row1_pos3, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos3 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:24 -> midi_row1_pos3
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_3 -> midi_row1_pos3
+TEMP DEBUG: registerParameter called - id: midi_row1_pos4, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos4 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:28 -> midi_row1_pos4
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_4 -> midi_row1_pos4
+TEMP DEBUG: registerParameter called - id: midi_row1_pos5, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos5 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:46 -> midi_row1_pos5
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_5 -> midi_row1_pos5
+TEMP DEBUG: registerParameter called - id: midi_row1_pos6, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos6 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:50 -> midi_row1_pos6
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_6 -> midi_row1_pos6
+TEMP DEBUG: registerParameter called - id: midi_row1_pos7, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos7 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:54 -> midi_row1_pos7
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_7 -> midi_row1_pos7
+TEMP DEBUG: registerParameter called - id: midi_row1_pos8, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row1_pos8 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:58 -> midi_row1_pos8
+[LiveParameterRegistry] Added address mapping: midi_row_pos:1_8 -> midi_row1_pos8
+TEMP DEBUG: registerParameter called - id: midi_row2_pos1, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos1 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:17 -> midi_row2_pos1
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_1 -> midi_row2_pos1
+TEMP DEBUG: registerParameter called - id: midi_row2_pos2, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos2 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:21 -> midi_row2_pos2
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_2 -> midi_row2_pos2
+TEMP DEBUG: registerParameter called - id: midi_row2_pos3, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos3 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:25 -> midi_row2_pos3
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_3 -> midi_row2_pos3
+TEMP DEBUG: registerParameter called - id: midi_row2_pos4, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos4 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:29 -> midi_row2_pos4
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_4 -> midi_row2_pos4
+TEMP DEBUG: registerParameter called - id: midi_row2_pos5, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos5 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:47 -> midi_row2_pos5
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_5 -> midi_row2_pos5
+TEMP DEBUG: registerParameter called - id: midi_row2_pos6, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos6 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:51 -> midi_row2_pos6
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_6 -> midi_row2_pos6
+TEMP DEBUG: registerParameter called - id: midi_row2_pos7, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos7 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:55 -> midi_row2_pos7
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_7 -> midi_row2_pos7
+TEMP DEBUG: registerParameter called - id: midi_row2_pos8, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row2_pos8 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:59 -> midi_row2_pos8
+[LiveParameterRegistry] Added address mapping: midi_row_pos:2_8 -> midi_row2_pos8
+TEMP DEBUG: registerParameter called - id: midi_row3_pos1, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos1 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:18 -> midi_row3_pos1
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_1 -> midi_row3_pos1
+TEMP DEBUG: registerParameter called - id: midi_row3_pos2, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos2 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:22 -> midi_row3_pos2
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_2 -> midi_row3_pos2
+TEMP DEBUG: registerParameter called - id: midi_row3_pos3, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos3 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:26 -> midi_row3_pos3
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_3 -> midi_row3_pos3
+TEMP DEBUG: registerParameter called - id: midi_row3_pos4, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos4 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:30 -> midi_row3_pos4
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_4 -> midi_row3_pos4
+TEMP DEBUG: registerParameter called - id: midi_row3_pos5, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos5 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:48 -> midi_row3_pos5
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_5 -> midi_row3_pos5
+TEMP DEBUG: registerParameter called - id: midi_row3_pos6, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos6 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:52 -> midi_row3_pos6
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_6 -> midi_row3_pos6
+TEMP DEBUG: registerParameter called - id: midi_row3_pos7, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos7 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:56 -> midi_row3_pos7
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_7 -> midi_row3_pos7
+TEMP DEBUG: registerParameter called - id: midi_row3_pos8, spec: a ControlSpec(0, 127, 'linear', 1, 64, ""), spec.isNil: false
+TEMP DEBUG: Final paramSpec: a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Registered parameter: midi_row3_pos8 with spec a ControlSpec(0, 127, 'linear', 1, 64, "")
+[LiveParameterRegistry] Added address mapping: midi_cc:60 -> midi_row3_pos8
+[LiveParameterRegistry] Added address mapping: midi_row_pos:3_8 -> midi_row3_pos8
+Successfully set MIDI controller to MIDIMix preset
+midiMix: Akai MIDIMix
+Setting up MIDI Control Mapping integration...
+MIDI Control Mapping system not detected, using standard mode
+MIDI Control Mapping GUI creation function not available yet
+=== DEBUG: Parameter System Status ===
+Parameter IDs: 33
+Active preset: midiMix
+Slider CCs: [19, 23, 27, 31, 49, 53, 57, 61, 62]
+=====================================
+Auto-creating Parameter Monitor GUI...
+VSTManager setup complete with 3 SWAM instrument instances
+VST groups detected! Auto-refreshing...
+Refreshed VST group menus with 3 groups
+VST Manager: Group selector refreshed.
+VSTManager: Updated  127  parameters for  Bass Tuba 02
+VSTManager: VST loaded: Bass Tuba 03
+VSTManager: Updated  127  parameters for  Bass Tuba 03
+vstplugin-setup: Explicitly refreshing VST Manager group UI.
+VST Manager: Group selector refreshed.
+Opening VST editors...
+VST editors opened.
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 03'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 02'
+WARNING: Program 'control-group-1' not found in VST 'Bass Tuba 01'
+Set program 'control-group-1' on 0 of 3 total VST instances
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 1
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 1, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 1, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+[LiveParameterRegistry] Parameter midi_slider_0 updated: 0 -> 1.0 (source: midi)
+TEMP DEBUG InputRouter: updateParameter returned: true
+[LiveInputRouter] Direct parameter update: midi_slider_0 = 1 (source: midi)
+MIDIController Slider CC: 19 val: 1 (norm: 0.0078740157480315) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 2
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 2, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 2, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 2 (norm: 0.015748031496063) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 4
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 4, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 4, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 4 (norm: 0.031496062992126) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 5
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 5, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 5, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 5 (norm: 0.039370078740157) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 7
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 7, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 7, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 7 (norm: 0.05511811023622) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 8
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 8, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 8, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 8 (norm: 0.062992125984252) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 9
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 9, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 9, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 9 (norm: 0.070866141732283) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 10
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 10, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 10, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 10 (norm: 0.078740157480315) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 11
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 11, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 11, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 11 (norm: 0.086614173228346) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 12
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 12, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 12, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 12 (norm: 0.094488188976378) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 14
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 14, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 14, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 14 (norm: 0.11023622047244) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 15
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 15, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 15, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 15 (norm: 0.11811023622047) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 16
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 16, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 16, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 16 (norm: 0.1259842519685) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 17
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 17, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 17, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 17 (norm: 0.13385826771654) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 18
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 18, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 18, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 18 (norm: 0.14173228346457) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 20
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 20, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 20, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 20 (norm: 0.15748031496063) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 21
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 21, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 21, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 21 (norm: 0.16535433070866) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 23
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 23, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 23, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 23 (norm: 0.18110236220472) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 24
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 24, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 24, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 24 (norm: 0.18897637795276) index: 0 chan: 0 src: 1298960095
+TEMP DEBUG InputRouter: About to call updateParameter - id: midi_slider_0, value: 25
+TEMP DEBUG: updateParameter called - id: midi_slider_0, value: 25, source: midi
+TEMP DEBUG: Before constrain - id: midi_slider_0, input value: 25, spec: a ControlSpec(0, 1, 'linear', 0, 0, "")
+TEMP DEBUG: After constrain - id: midi_slider_0, constrained value: 1.0
+TEMP DEBUG InputRouter: updateParameter returned: false
+MIDIController Slider CC: 19 val: 25 (norm: 0.19685039370079) index: 0 chan: 0 src: 1298960095

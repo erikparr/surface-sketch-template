@@ -17,7 +17,8 @@ if (~setupAlreadyLoaded == true) {
             "midi-setup.scd",            // 4. Then MIDI setup (depends on VST manager)
             // "midi-control-mapping.scd",  // 5. Then MIDI control mapping (depends on MIDI controller)
             "osc-setup.scd",             // 6. Then OSC setup (depends on VST manager)
-            "melody-management.scd"      // 7. Finally melody management (depends on VST manager)
+            "parameter-monitor-gui.scd", // 7. Then parameter monitor GUI (depends on MIDI controller)
+            // "melody-management.scd"      // 8. Finally melody management (depends on VST manager)
         ];
         
         // Recursive function to load files in sequence

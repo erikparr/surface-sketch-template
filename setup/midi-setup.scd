@@ -28,10 +28,10 @@
     "Initializing MIDI controller with VST instances...".postln;
     
     // Initialize MIDI controller for note handling
-    // Defaulting to all VST instances
+    // Defaulting to all VST instances, with OSC enabled
     ~midiController = MIDIController(
         ~vstManager.getInstances(), // Get all VST instances by default
-        NetAddr.localAddr, nil, 16, 0, true
+        NetAddr.localAddr, nil, 16, 0, true, true  // enableOSC: true
     );
     
     // Configure MIDI controller
@@ -120,6 +120,28 @@
         ~createMIDIControlMappingGUIWhenReady.();
     } {
         "MIDI Control Mapping GUI creation function not available yet".postln;
+    };
+
+    // DEBUG: Show current parameter mappings
+    if (~midiController.notNil and: { ~midiController.oscEnabled }) {
+        "=== DEBUG: Parameter System Status ===".postln;
+        "Parameter IDs: %".format(~midiController.getParameterIDs().size).postln;
+        "Active preset: %".format(~midiController.activePresetName).postln;
+        if (~midiController.activePreset.notNil and: { ~midiController.activePreset.sliders.notNil }) {
+            "Slider CCs: %".format(~midiController.activePreset.sliders).postln;
+        };
+        "=====================================".postln;
+    };
+
+    // Auto-create Parameter Monitor GUI if MIDIController has OSC enabled
+    if (~midiController.notNil and: { ~midiController.oscEnabled }) {
+        "Auto-creating Parameter Monitor GUI...".postln;
+        // Defer GUI creation to AppClock to avoid Qt thread issues
+        {
+            ~createParameterMonitorGUI.(~midiController);
+        }.defer;
+    } {
+        "Parameter Monitor GUI not created: MIDIController OSC not enabled".postln;
     };
 
     nil; // return nil to prevent rescheduling

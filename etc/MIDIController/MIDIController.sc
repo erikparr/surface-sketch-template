@@ -51,15 +51,21 @@ MIDIController {
     var <groupParameterCallback; // Callback for parameter updates
     var <mappingMode;           // Enable/disable mapping processing
 
-    *new { |vstList, oscNetAddr, bendSynth = nil, numKnobs = 16, startCC = 0, debug = false|
-        ^super.new.init(vstList, oscNetAddr, bendSynth, numKnobs, startCC, debug);
+    // OSC Integration properties (optional)
+    var <oscEnabled = false;
+    var <parameterRegistry, <inputRouter, <oscController;
+    var <parameterMappings;  // Maps legacy accessors to parameter IDs
+
+    *new { |vstList, oscNetAddr, bendSynth = nil, numKnobs = 16, startCC = 0, debug = false, enableOSC = false|
+        ^super.new.init(vstList, oscNetAddr, bendSynth, numKnobs, startCC, debug, enableOSC);
     }
 
-    init { |inVstList, inOscNetAddr, inBendSynth, inNumKnobs, inStartCC, inDebug|
+    init { |inVstList, inOscNetAddr, inBendSynth, inNumKnobs, inStartCC, inDebug, enableOSCParam = false|
         debug = inDebug;
+        oscEnabled = enableOSCParam;
         disabledKnobCCs = Set.new; // Initialize the set for disabled knob CCs
         
-        this.debug("Initializing MIDIController");
+        this.debug("Initializing MIDIController (OSC: %)".format(oscEnabled));
         
         // Initialize MIDI client if not already initialized
         MIDIClient.initialized.not.if {
@@ -79,7 +85,7 @@ MIDIController {
         startCC = inStartCC;
         
         // Initialize arrays for sliders and dictionary for knobs
-        sliderValues = Array.fill(9, 0.0);
+        sliderValues = Array.fill(9, 0);
         knobValues = Dictionary.new;
         midiFuncs = IdentityDictionary.new;
         numNotesPlaying = 0;
@@ -122,6 +128,88 @@ MIDIController {
         this.initControllerPresets;
         this.setControllerPreset(\midiMix); // Default to MIDIMix
         
+        // Initialize OSC components if enabled
+        if (oscEnabled) {
+            this.initOSCComponents();
+        };
+        
+    }
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         OSC COMPONENT INITIALIZATION                        │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+    
+    initOSCComponents {
+        // Create core components
+        parameterRegistry = LiveParameterRegistry.new(debug);
+        inputRouter = LiveInputRouter.new(parameterRegistry, debug);
+        oscController = LiveOSCController.new(inputRouter, parameterRegistry, debug: debug);
+        
+        parameterMappings = Dictionary.new;
+        
+        // Register MIDI as input source with high priority
+        inputRouter.registerInputSource(\midi, this, priority: 20);
+        
+        // Setup OSC discovery responder
+        oscController.setupDiscoveryResponder();
+        
+        // Initialize parameter system
+        this.initializeOSCParameters();
+        
+        this.debug("[MIDIController] OSC components initialized");
+    }
+    
+    initializeOSCParameters {
+        // Register all slider parameters
+        9.do { |i|
+            var parameterId, spec, metadata;
+            parameterId = "midi_slider_" ++ i;
+            spec = ControlSpec(0, 127, \lin, 0, 0);
+            metadata = (
+                description: "MIDI Slider " ++ (i + 1),
+                type: \slider,
+                index: i,
+                ccNum: if(activePreset.notNil and: { activePreset.sliders.notNil }, 
+                    { activePreset.sliders[i] }, { nil })
+            );
+            
+            parameterRegistry.registerParameter(parameterId, spec, metadata);
+            this.debug("Registered slider parameter % with spec %".format(parameterId, spec));
+            parameterMappings[("slider_" ++ i).asSymbol] = parameterId;
+            
+            // Add MIDI CC address if known
+            if (metadata.ccNum.notNil) {
+                parameterRegistry.addAddress(parameterId, \midi_cc, metadata.ccNum);
+            };
+        };
+        
+        // Register all knob parameters using preset layout
+        if (activePreset.notNil and: { activePreset.knobRows.notNil }) {
+            activePreset.knobRows.do { |rowCCs, rowIndex|
+                rowCCs.do { |ccNum, posIndex|
+                    var parameterId, spec, metadata;
+                    parameterId = "midi_row" ++ (rowIndex + 1) ++ "_pos" ++ (posIndex + 1);
+                    spec = ControlSpec(0, 127, \lin, 1, 64);  // MIDI range
+                    metadata = (
+                        description: "MIDI Row % Knob %".format(rowIndex + 1, posIndex + 1),
+                        type: \knob,
+                        row: rowIndex + 1,
+                        pos: posIndex + 1,
+                        ccNum: ccNum
+                    );
+                    
+                    parameterRegistry.registerParameter(parameterId, spec, metadata);
+                    parameterRegistry.addAddress(parameterId, \midi_cc, ccNum);
+                    parameterRegistry.addAddress(parameterId, \midi_row_pos, 
+                        (rowIndex + 1).asString ++ "_" ++ (posIndex + 1).asString);
+                    
+                    // Store mapping for legacy access
+                    parameterMappings[("row" ++ (rowIndex + 1) ++ "_pos" ++ (posIndex + 1)).asSymbol] = parameterId;
+                };
+            };
+        };
+        
+        this.debug("[MIDIController] Registered % OSC parameters".format(parameterRegistry.getParameterIDs.size));
     }
 
     // Class method to get the snapshot data path
@@ -283,10 +371,11 @@ MIDIController {
 
     // List all available snapshot files
     listSnapshotFiles {
-        var dir = PathName(snapshotDataPath);
+        var dir, files;
+        dir = PathName(snapshotDataPath);
         
         if(dir.isFolder) {
-            var files = dir.files.select { |f| f.extension == "scd" };
+            files = dir.files.select { |f| f.extension == "scd" };
             this.debug("Available snapshot files:");
             files.do { |f| "  %".format(f.fileName).postln };
             ^files;
@@ -351,6 +440,15 @@ MIDIController {
 
     // Get slider value with programmed mode support
     getSliderValue { |index|
+        // Use parameter system if OSC is enabled
+        if (oscEnabled && parameterRegistry.notNil) {
+            var parameterId = parameterMappings[("slider_" ++ index).asSymbol];
+            if (parameterId.notNil) {
+                ^parameterRegistry.getParameterValue(parameterId);
+            };
+            // Fallback to traditional method if parameter not found
+        };
+        
         if(this.isProgrammedMode) {
             // In programmed mode, return the snapshot value
             var snapshot = snapshots.at(currentSnapshot);
@@ -367,6 +465,15 @@ MIDIController {
 
     // Get knob value with programmed mode support
     getKnobValueByCC { |ccNum| 
+        // Use parameter system if OSC is enabled
+        if (oscEnabled && parameterRegistry.notNil) {
+            var parameterId = parameterRegistry.getParameterByAddress(\midi_cc, ccNum);
+            if (parameterId.notNil) {
+                ^parameterRegistry.getParameterValue(parameterId);
+            };
+            // Fallback to traditional method if parameter not found
+        };
+        
         if(programmedMode && currentSnapshot.notNil) {
             var snapshot = snapshots.at(currentSnapshot);
             // Assuming snapshots store knobs as a Dictionary mapping CCs to values
@@ -410,10 +517,11 @@ MIDIController {
         // Note On
         midiFuncs[\noteOn] = MIDIFunc.noteOn({ |veloc, pitch, chan, src|
             var outChan, effectiveVelocity;
+            var shouldProcessNote, usedChannels, availableChannels, vstIndex, vstKey, vst;
             
             // Skip processing if note handling is disabled
             if(noteHandlingEnabled) {
-                var shouldProcessNote = true; // Flag to control processing
+                shouldProcessNote = true; // Flag to control processing
                 
                 // Determine channel based on mode
                 if(multiChannelMode) {
@@ -430,8 +538,8 @@ MIDIController {
                         }
                     } {
                         // Find the first available channel (not currently in use)
-                        var usedChannels = activeNotes.values.asSet;
-                        var availableChannels = (0..15).difference(usedChannels);
+                        usedChannels = activeNotes.values.asSet;
+                        availableChannels = (0..15).difference(usedChannels);
                         
                         if(availableChannels.size > 0) {
                             // Use the first available channel
@@ -472,9 +580,9 @@ MIDIController {
                     } {
                         if(multiInstrumentMode && multiChannelMode && vstList.notNil) {
                             // In multi-instrument mode, send to the VST that corresponds to the channel
-                            var vstIndex = outChan % vstList.size;
-                            var vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
-                            var vst = vstList[vstKey];
+                            vstIndex = outChan % vstList.size;
+                            vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
+                            vst = vstList[vstKey];
                             
                             if(vst.notNil) {
                                 vst.midi.noteOn(0, pitch, effectiveVelocity); // Always use channel 0 for VST
@@ -513,6 +621,7 @@ MIDIController {
         // Note Off
         midiFuncs[\noteOff] = MIDIFunc.noteOff({ |veloc, pitch, chan|
             var outChan;
+            var vstIndex, vstKey, vst;
             
             // Skip processing if note handling is disabled
             if(noteHandlingEnabled) {
@@ -527,9 +636,9 @@ MIDIController {
                         
                         if(multiInstrumentMode && multiChannelMode && vstList.notNil) {
                             // In multi-instrument mode, send to the VST that corresponds to the channel
-                            var vstIndex = outChan % vstList.size;
-                            var vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
-                            var vst = vstList[vstKey];
+                            vstIndex = outChan % vstList.size;
+                            vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
+                            vst = vstList[vstKey];
                             
                             if(vst.notNil) {
                                 vst.midi.noteOff(0, pitch, veloc); // Always use channel 0 for VST
@@ -560,9 +669,9 @@ MIDIController {
                     
                     if(multiInstrumentMode && multiChannelMode && vstList.notNil) {
                         // In multi-instrument mode, send to the VST that corresponds to the channel
-                        var vstIndex = outChan % vstList.size;
-                        var vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
-                        var vst = vstList[vstKey];
+                        vstIndex = outChan % vstList.size;
+                        vstKey = vstList.keys.asArray.sort[vstIndex]; // Use sorted keys for stable ordering
+                        vst = vstList[vstKey];
                         
                         if(vst.notNil) {
                             vst.midi.noteOff(0, pitch, veloc); // Always use channel 0 for VST
@@ -600,6 +709,22 @@ MIDIController {
         // MIDI CC (Control Change)
         midiFuncs[\control] = MIDIFunc.cc({ |val, num, chan, src|
             var normalizedVal, mappingHandled = false;
+            var parameterId;
+
+            // NEW: Route through parameter system first if OSC is enabled
+            if (oscEnabled && parameterRegistry.notNil) {
+                parameterId = parameterRegistry.getParameterByAddress(\midi_cc, num);
+                if (parameterId.notNil) {
+                    var paramValue, metadata;
+                    metadata = parameterRegistry.getParameterMetadata(parameterId);
+                    
+                    // Use raw MIDI value (0-127) for both sliders and knobs in parameter system
+                    paramValue = val;
+                    
+                    
+                    inputRouter.updateParameterDirect(parameterId, paramValue, \midi, Main.elapsedTime);
+                };
+            };
 
             // NEW: Check if mapping system should handle this CC first
             if(mappingMode && rowMappings.notNil) {
@@ -625,7 +750,7 @@ MIDIController {
                 if(sliderIndex.notNil) {
                     normalizedVal = val / 127.0;
                     if(sliderIndex < sliderValues.size) {
-                        sliderValues[sliderIndex] = normalizedVal;
+                        sliderValues[sliderIndex] = val;  // Store raw MIDI value (0-127)
                     };
                     if(debug) {
                         "MIDIController Slider CC: % val: % (norm: %) index: % chan: % src: %".format(num, val, normalizedVal, sliderIndex, chan, src).postln;
@@ -712,6 +837,17 @@ MIDIController {
     free {
         this.freeBend;
         midiFuncs.do(_.free);
+        
+        // Cleanup OSC components if they exist
+        if (oscController.notNil) {
+            oscController.free;
+        };
+        if (inputRouter.notNil) {
+            inputRouter.free;
+        };
+        if (parameterRegistry.notNil) {
+            parameterRegistry.free;
+        };
     }
 
     stop{ 
@@ -914,7 +1050,18 @@ MIDIController {
     // ========== MIDIMix-Specific Access Methods (and general row/pos access) ==========    
     // Method to get knob value by row (1-3) and position (1-8)
     getKnobRow { |row=1, pos=1| // 1-based indexing for row and position (MIDIMix only)
-        var midiMixRows = [
+        var parameterId, midiMixRows;
+        
+        // Use parameter system if OSC is enabled
+        if (oscEnabled && parameterMappings.notNil) {
+            parameterId = parameterMappings[("row" ++ row ++ "_pos" ++ pos).asSymbol];
+            if (parameterId.notNil) {
+                ^parameterRegistry.getParameterValue(parameterId);
+            };
+            // Fallback to traditional method if parameter not found
+        };
+        
+        midiMixRows = [
             [16,20,24,28,46,50,54,58],  // Row 1 CCs
             [17,21,25,29,47,51,55,59],  // Row 2 CCs
             [18,22,26,30,48,52,56,60]   // Row 3 CCs
@@ -1315,4 +1462,141 @@ MIDIController {
             "--- routeCCThroughMappings END".postln;
         };
     }
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         OSC CONTROL API                                     │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    // Enable OSC control for a parameter
+    enableOSCForParameter { |parameterId, oscAddress=nil|
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^nil;
+        };
+        ^oscController.enableParameter(parameterId, oscAddress);
+    }
+
+    // Disable OSC control for a parameter
+    disableOSCForParameter { |parameterId|
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^false;
+        };
+        ^oscController.disableParameter(parameterId);
+    }
+
+    // Get OSC address for a parameter
+    getParameterOSCAddress { |parameterId|
+        if (oscController.isNil) {
+            ^nil;
+        };
+        ^oscController.getOSCAddress(parameterId);
+    }
+
+    // Enable OSC for a knob by row/position
+    enableOSCForKnob { |row, pos, oscAddress=nil|
+        var parameterId;
+        
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^nil;
+        };
+        parameterId = parameterMappings[("row" ++ row ++ "_pos" ++ pos).asSymbol];
+        if (parameterId.notNil) {
+            ^this.enableOSCForParameter(parameterId, oscAddress);
+        } {
+            if (debug) { "Knob row % pos % not found".format(row, pos).postln; };
+            ^nil;
+        };
+    }
+
+    // Enable OSC for a slider
+    enableOSCForSlider { |index, oscAddress=nil|
+        var parameterId;
+        
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^nil;
+        };
+        parameterId = parameterMappings[("slider_" ++ index).asSymbol];
+        if (parameterId.notNil) {
+            ^this.enableOSCForParameter(parameterId, oscAddress);
+        } {
+            if (debug) { "Slider % not found".format(index).postln; };
+            ^nil;
+        };
+    }
+
+    // Get all available parameter IDs
+    getParameterIDs {
+        if (parameterRegistry.isNil) {
+            ^[];
+        };
+        ^parameterRegistry.getParameterIDs;
+    }
+
+    // Get parameter specification
+    getParameterSpec { |parameterId|
+        if (parameterRegistry.isNil) {
+            ^nil;
+        };
+        ^parameterRegistry.getParameterSpec(parameterId);
+    }
+
+    // Get parameter metadata
+    getParameterMetadata { |parameterId|
+        if (parameterRegistry.isNil) {
+            ^nil;
+        };
+        ^parameterRegistry.getParameterMetadata(parameterId);
+    }
+
+    // List all OSC-enabled parameters
+    listOSCAddresses {
+        if (oscController.isNil) {
+            ^Dictionary.new;
+        };
+        ^oscController.listOSCAddresses();
+    }
+
+    // Generate OSC addresses for all parameters automatically
+    generateOSCAddresses {
+        var addresses;
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^Dictionary.new;
+        };
+        addresses = Dictionary.new;
+        parameterRegistry.getParameterIDs.do { |parameterId|
+            var address = this.enableOSCForParameter(parameterId);
+            if (address.notNil) {
+                addresses[parameterId] = address;
+            };
+        };
+        if (debug) { "Generated OSC addresses for % parameters".format(addresses.size).postln; };
+        ^addresses;
+    }
+
+    // Enable bidirectional OSC sync
+    enableBidirectionalOSC { |enabled=true|
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^this;
+        };
+        oscController.setBidirectionalSync(enabled);
+        ^this;
+    }
+
+    // Add OSC client for bidirectional sync
+    addOSCClient { |hostname, port|
+        var netAddr;
+        if (oscController.isNil) {
+            if (debug) { "OSC not enabled for this MIDIController instance".postln; };
+            ^this;
+        };
+        netAddr = NetAddr(hostname, port);
+        oscController.addOSCClient(netAddr);
+        ^this;
+    }
+
 }
