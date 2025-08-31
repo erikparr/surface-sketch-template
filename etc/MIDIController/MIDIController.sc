@@ -141,9 +141,9 @@ MIDIController {
     
     initOSCComponents {
         // Create core components
-        parameterRegistry = LiveParameterRegistry.new(debug);
-        inputRouter = LiveInputRouter.new(parameterRegistry, debug);
-        oscController = LiveOSCController.new(inputRouter, parameterRegistry, debug: debug);
+        parameterRegistry = LiveParameterRegistry.new(false);
+        inputRouter = LiveInputRouter.new(parameterRegistry, false);
+        oscController = LiveOSCController.new(inputRouter, parameterRegistry, debug: false);
         
         parameterMappings = Dictionary.new;
         
@@ -772,7 +772,7 @@ MIDIController {
                         knobValues.put(num, val);
                         
                         if(debug) {
-                            "MIDIController Knob CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln;
+                            if(debug) { "MIDIController Knob CC: % val: % (norm: %) chan: % src: %".format(num, val, normalizedVal, chan, src).postln; };
                         };
                         
                         if(oscNetAddr.notNil) {

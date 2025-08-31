@@ -119,11 +119,11 @@ The OSC Parameter Control System extends the existing MIDIController with OSC ca
 
 ```supercollider
 // From SuperCollider
-var addr = NetAddr("127.0.0.1", 57121);
+var addr = NetAddr("127.0.0.1", );
 addr.sendMsg("/midi/row1/pos8", 0.5);    // Set duration knob to 50%
 addr.sendMsg("/midi/row1/pos3", 100);    // Set velocity to 100
 
-// From external applications, send OSC to port 57121:
+// From external applications, send OSC to port :
 // /midi/row1/pos8 0.5
 // /midi/row1/pos3 100
 // /midi/cc/58 64
@@ -242,9 +242,9 @@ Override auto-generated addresses:
 (thisProcess.nowExecutingPath.dirname +/+ "layers-osc-integration.scd").load;
 
 // Now control layers via OSC:
-NetAddr("127.0.0.1", 57121).sendMsg("/layers/start", 3.0);      // Start with 3s duration
-NetAddr("127.0.0.1", 57121).sendMsg("/param/layer1/velocity", 120); // Set layer 1 velocity
-NetAddr("127.0.0.1", 57121).sendMsg("/layers/stop");           // Stop layers
+NetAddr("127.0.0.1", ).sendMsg("/layers/start", 3.0);      // Start with 3s duration
+NetAddr("127.0.0.1", ).sendMsg("/param/layer1/velocity", 120); // Set layer 1 velocity
+NetAddr("127.0.0.1", ).sendMsg("/layers/stop");           // Stop layers
 ```
 
 ### TouchOSC Setup
@@ -275,7 +275,7 @@ NetAddr("127.0.0.1", 57121).sendMsg("/layers/stop");           // Stop layers
 
 ```supercollider
 // Create test OSC sender
-~testOSC = NetAddr("127.0.0.1", 57121);
+~testOSC = NetAddr("127.0.0.1", );
 
 // Test parameter updates
 ~testOSC.sendMsg("/midi/row1/pos8", 0.75);  // Set duration to 75%
@@ -291,7 +291,7 @@ NetAddr("127.0.0.1", 57121).sendMsg("/layers/stop");           // Stop layers
 
 1. **OSC not working**: 
    - Ensure `enableOSC: true` when creating MIDIControllerEnhanced
-   - Check OSC port conflicts (default: 57121)
+   - Check OSC port conflicts (default: )
 
 2. **Parameter not found**:
    - Use `~midiController.getParameterIDs()` to see available parameters

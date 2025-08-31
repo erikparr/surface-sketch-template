@@ -147,25 +147,25 @@ layerControlOSC.do { |controlInfo|
 "Step 8: Usage examples...".postln;
 
 ~layerOSCExamples = {
-    var testAddr = NetAddr("127.0.0.1", 57121);
+    var testAddr = NetAddr("127.0.0.1", );
     
     "\\n=== Layer OSC Control Examples ===".postln;
     "// Set global duration to 2.5 seconds".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/param/global/duration\", 2.5)".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/param/global/duration\", 2.5)".postln;
     
     "// Set layer 1 velocity to 120".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/param/layer1/velocity\", 120)".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/param/layer1/velocity\", 120)".postln;
     
     "// Start layers with 3 second duration".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/layers/start\", 3.0)".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/layers/start\", 3.0)".postln;
     
     "// Control via MIDI row/position addresses".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/midi/row1/pos8\", 0.3)  // Duration knob".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/midi/row1/pos3\", 110)  // Layer 1 velocity".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/midi/row1/pos8\", 0.3)  // Duration knob".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/midi/row1/pos3\", 110)  // Layer 1 velocity".postln;
     
     "// High-level layer control".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/layers/stop\")".postln;
-    "NetAddr(\"127.0.0.1\", 57121).sendMsg(\"/layers/kill\")".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/layers/stop\")".postln;
+    "NetAddr(\"127.0.0.1\", ).sendMsg(\"/layers/kill\")".postln;
     
     "\\n=== Available OSC Addresses ===".postln;
     ~midiController.listOSCAddresses().keysValuesDo { |paramId, address|
@@ -176,7 +176,7 @@ layerControlOSC.do { |controlInfo|
 // Step 9: Test integration
 "Step 9: Testing integration...".postln;
 fork {
-    var testAddr = NetAddr("127.0.0.1", 57121);
+    var testAddr = NetAddr("127.0.0.1", );
     
     2.wait;
     

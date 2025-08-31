@@ -13,7 +13,7 @@ LiveOSCController {
     var <bidirectionalSync;  // Enable sending parameter changes back via OSC
     var <oscClients;         // List of OSC client addresses for broadcasting
     
-    *new { |inputRouter, parameterRegistry, oscPort=57121, debug=false|
+    *new { |inputRouter, parameterRegistry, oscPort=57120, debug=false|
         ^super.new.init(inputRouter, parameterRegistry, oscPort, debug);
     }
     

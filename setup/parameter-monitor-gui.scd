@@ -16,9 +16,7 @@
     var oscControlSection, statusSection;
     var statusText, updateRoutine, updateDisplay;
     var parameterViews = Dictionary.new;
-    var oscCheckboxes = Dictionary.new;
-    var oscAddressLabels = Dictionary.new;
-    var sliderLayout, bulkOSCLayout, oscScrollView, oscContentView;
+    var sliderLayout, oscToggleButton, oscEnabled = true;
     
     // Check if window already exists
     if (~parameterMonitorWindow.notNil) {
@@ -45,7 +43,7 @@
     };
     
     // Create window
-    win = Window("Parameter Monitor", Rect(100, 100, 800, 900));
+    win = Window("Parameter Monitor", Rect(100, 100, 600, 400));
     layout = VLayout();
     
     // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -81,7 +79,7 @@
         
         // Circular visualization
         userView = UserView()
-            .fixedSize_(Size(50, 28))
+            .fixedSize_(Size(40, 24))
             .background_(Color.clear);
             
         // Initialize view properties
@@ -177,7 +175,7 @@
             
             // Circular visualization
             userView = UserView()
-                .fixedSize_(Size(50, 28))
+                .fixedSize_(Size(40, 24))
                 .background_(Color.clear);
                 
             // Initialize view properties
@@ -204,11 +202,11 @@
                 Pen.addArc(center, radius, 0, 2pi);
                 Pen.stroke;
                 
-                // Draw filled pie slice (0 = top, clockwise)
+                // Draw filled pie slice (0 = bottom, clockwise)
                 sweepAngle = normalizedValue * 2pi;
                 if (sweepAngle > 0) {
                     var startAngle, endAngle, startPoint, endPoint;
-                    startAngle = -0.5pi;  // Start at top
+                    startAngle = 0.5pi;  // Start at bottom (6 o'clock)
                     endAngle = startAngle + sweepAngle;
                     
                     // Calculate start and end points on circumference
@@ -259,89 +257,33 @@
     // │                         OSC CONTROL SECTION                                │
     // └─────────────────────────────────────────────────────────────────────────────┘
     
-    layout.add(View().fixedHeight_(10)); // Separator
+    layout.add(View().fixedHeight_(5)); // Separator
     
-    layout.add(StaticText()
-        .string_("OSC CONTROL")
-        .font_(Font.default.size_(14).bold_(true))
-        .align_(\center)
-    );
-    
-    // Bulk OSC controls
-    bulkOSCLayout = HLayout();
-    bulkOSCLayout.add(Button()
-        .states_([["Enable All OSC", Color.black, Color.green.alpha_(0.3)]])
-        .action_({
-            midiController.generateOSCAddresses();
-            statusText.string_("OSC enabled for all parameters");
-        })
-    );
-    
-    bulkOSCLayout.add(Button()
-        .states_([["Disable All OSC", Color.black, Color.red.alpha_(0.3)]])
-        .action_({
-            midiController.getParameterIDs().do { |paramId|
-                midiController.disableOSCForParameter(paramId);
-            };
-            statusText.string_("OSC disabled for all parameters");
-        })
-    );
-    
-    layout.add(bulkOSCLayout);
-    
-    // Scrollable OSC parameter list
-    oscScrollView = ScrollView().hasHorizontalScroller_(false).hasVerticalScroller_(true);
-    oscContentView = View().layout_(VLayout());
-    
-    // Create OSC controls for each parameter
-    midiController.getParameterIDs().do { |parameterId|
-        var paramLayout, metadata, paramName, checkbox, addressLabel;
-        paramLayout = HLayout();
-        metadata = midiController.getParameterMetadata(parameterId);
-        paramName = if (metadata.notNil and: { metadata.description.notNil }) {
-            metadata.description
-        } {
-            parameterId
-        };
-        
-        // Checkbox for OSC enable/disable
-        checkbox = CheckBox()
-            .string_(paramName)
-            .value_(false)
-            .action_({ |cb|
-                var address;
-                if (cb.value) {
-                    address = midiController.enableOSCForParameter(parameterId);
-                    if (address.notNil and: { oscAddressLabels[parameterId].notNil }) {
-                        oscAddressLabels[parameterId].string_(address);
-                    };
-                } {
-                    midiController.disableOSCForParameter(parameterId);
-                    if (oscAddressLabels[parameterId].notNil) {
-                        oscAddressLabels[parameterId].string_("");
-                    };
+    // Single OSC toggle button
+    oscToggleButton = Button()
+        .states_([
+            ["OSC: OFF", Color.white, Color.red.alpha_(0.7)],
+            ["OSC: ON", Color.white, Color.green.alpha_(0.7)]
+        ])
+        .value_(1) // Default to ON
+        .action_({ |btn|
+            oscEnabled = btn.value.asBoolean;
+            if (oscEnabled) {
+                midiController.generateOSCAddresses();
+                statusText.string_("OSC enabled for all parameters");
+            } {
+                midiController.getParameterIDs().do { |paramId|
+                    midiController.disableOSCForParameter(paramId);
                 };
-            })
-            .fixedWidth_(200);
-        
-        // OSC address display
-        addressLabel = StaticText()
-            .string_("")
-            .font_(Font.default.size_(9))
-            .align_(\left);
-        
-        paramLayout.add(checkbox);
-        paramLayout.add(addressLabel);
-        oscContentView.layout.add(paramLayout);
-        
-        // Store references
-        oscCheckboxes[parameterId] = checkbox;
-        oscAddressLabels[parameterId] = addressLabel;
-    };
+                statusText.string_("OSC disabled for all parameters");
+            };
+        })
+        .fixedHeight_(30);
     
-    oscScrollView.canvas_(oscContentView);
-    oscScrollView.fixedHeight_(200);
-    layout.add(oscScrollView);
+    layout.add(oscToggleButton);
+    
+    // Enable OSC by default on startup
+    { midiController.generateOSCAddresses(); }.defer(0.1);
     
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
@@ -389,7 +331,7 @@
                 // Normalized value for visualization (0.0-1.0)
                 normalizedValue = value / 127.0;
                 
-                bgColor = if (isOSCEnabled) {
+                bgColor = if (oscEnabled) {
                     Color.green.alpha_(0.3)  // OSC enabled
                 } {
                     Color.blue.alpha_(0.3)   // MIDI only
@@ -404,23 +346,12 @@
                 }.defer;
             };
             
-            // Update OSC checkboxes and addresses
-            if (oscCheckboxes[parameterId].notNil) {
-                {
-                    oscCheckboxes[parameterId].value_(isOSCEnabled);
-                }.defer;
-            };
-            
-            if (oscAddressLabels[parameterId].notNil and: { isOSCEnabled }) {
-                {
-                    oscAddressLabels[parameterId].string_(oscAddress);
-                }.defer;
-            };
+            // OSC status is now handled globally by the toggle button
         };
         
         // Update status text
-        statusString = "Status: % total parameters, % OSC enabled".format(
-            totalParams, oscEnabledCount
+        statusString = "Status: % parameters, OSC %".format(
+            totalParams, if(oscEnabled, "ON", "OFF")
         );
         
         {
