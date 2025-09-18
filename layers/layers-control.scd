@@ -914,16 +914,33 @@
     peakTimeRatio;
 };
 
+// Enable/disable simple ramp mode globally
+~setLayersBendSimpleRamp = { |enabled|
+    ~layers.configs.keysValuesDo { |layerName, config|
+        config.bendControl.simpleRamp = enabled;
+    };
+
+    "Layers bend simple ramp mode: %".format(if(enabled, "ON", "OFF")).postln;
+};
+
+// Get simple ramp mode setting
+~getLayerBendSimpleRamp = {
+    // Check layer1's setting (all layers should have same value)
+    var config = ~layers.configs[\layer1];
+    config.bendControl.simpleRamp;
+};
+
 // Create bend envelope for a specific note
 ~createLayerBendEnvelope = { |layerName, pitch, noteDuration, noteIndex|
     var config = ~layers.configs[layerName];
-    var bendAmount, peakTimeRatio, bendSynth;
+    var bendAmount, peakTimeRatio, simpleRamp, bendSynth;
     var bendCenter = 8192;  // MIDI pitch bend center
     var bendRange, peakValue, vstIndex;
 
     // Read current bend parameters
     bendAmount = ~getLayerBendAmount.();
     peakTimeRatio = ~getLayerBendPeakTime.();
+    simpleRamp = ~getLayerBendSimpleRamp.();
 
     // Calculate bend envelope parameters
     bendRange = (bendAmount * 8192).round.asInteger;
@@ -934,18 +951,36 @@
 
     // Create bend envelope synth using note's actual duration
     if(SynthDescLib.global[\BendEnvelope].notNil) {
-        bendSynth = Synth(\BendEnvelope, [
-            \start, bendCenter,
-            \peak, peakValue,
-            \end, bendCenter,
-            \peakTime, peakTimeRatio * noteDuration,
-            \returnTime, (1.0 - peakTimeRatio) * noteDuration,
-            \chanIndex, vstIndex
-        ]);
+        if (simpleRamp) {
+            // Simple ramp mode: start → end only (two-point envelope)
+            bendSynth = Synth(\BendEnvelope, [
+                \start, bendCenter,
+                \peak, peakValue,
+                \end, peakValue,        // End at peak value (no return)
+                \peakTime, noteDuration,  // Use full duration to reach peak
+                \returnTime, 0.01,      // Minimal return time (required by SynthDef)
+                \chanIndex, vstIndex
+            ]);
 
-        "Bend envelope created for layer % note % (pitch: %, duration: %s, amount: % octaves)".format(
-            layerName, noteIndex, pitch, noteDuration.round(0.01), bendAmount.round(0.01)
-        ).postln;
+            "Simple ramp bend envelope created for layer % note % (pitch: %, duration: %s, bend: % → %)".format(
+                layerName, noteIndex, pitch, noteDuration.round(0.01),
+                bendCenter, peakValue
+            ).postln;
+        } {
+            // Normal mode: start → peak → return (three-point envelope)
+            bendSynth = Synth(\BendEnvelope, [
+                \start, bendCenter,
+                \peak, peakValue,
+                \end, bendCenter,
+                \peakTime, peakTimeRatio * noteDuration,
+                \returnTime, (1.0 - peakTimeRatio) * noteDuration,
+                \chanIndex, vstIndex
+            ]);
+
+            "Standard bend envelope created for layer % note % (pitch: %, duration: %s, amount: % octaves)".format(
+                layerName, noteIndex, pitch, noteDuration.round(0.01), bendAmount.round(0.01)
+            ).postln;
+        };
     } {
         "WARNING: BendEnvelope SynthDef not found, bend envelope disabled".warn;
         bendSynth = nil;

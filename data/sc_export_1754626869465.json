@@ -28,7 +28,8 @@
         "enabled": true,
         "bendAmount": 2,
         "peakTimeRatio": 0.3,
-        "returnTimeRatio": 0.7
+        "returnTimeRatio": 0.7,
+        "simpleRamp": false
       }
     }
   }

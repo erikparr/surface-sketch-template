@@ -67,6 +67,7 @@
             bendAmount: 0.0,         // -1 to +1 octave range
             peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
             returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            simpleRamp: false,       // When true: start→end only, false: start→peak→return
             activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );
@@ -98,6 +99,7 @@
             bendAmount: 0.0,         // -1 to +1 octave range
             peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
             returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            simpleRamp: false,       // When true: start→end only, false: start→peak→return
             activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );
@@ -129,6 +131,7 @@
             bendAmount: 0.0,         // -1 to +1 octave range
             peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
             returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            simpleRamp: false,       // When true: start→end only, false: start→peak→return
             activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );

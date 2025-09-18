@@ -15,6 +15,7 @@
     var win, layout;
     var transportSection, layerSections, statusSection;
     var startButton, stopButton, statusText;
+    var bendModeCheckbox, simpleRampCheckbox;
     var updateStatus, vstGroupMenus = [];
     var refreshButton;
     
@@ -126,15 +127,26 @@
     );
 
     // Note Bending mode checkbox
-    layout.add(
-        CheckBox()
-            .string_("Note Bending Mode (Per-note pitch envelopes)")
-            .value_(~layers.state.bendMode)
-            .action_({ |cb|
-                ~setLayersBendMode.(cb.value);
-                updateStatus.();
-            })
-    );
+    bendModeCheckbox = CheckBox()
+        .string_("Note Bending Mode (Per-note pitch envelopes)")
+        .value_(~layers.state.bendMode)
+        .action_({ |cb|
+            ~setLayersBendMode.(cb.value);
+            simpleRampCheckbox.enabled_(cb.value);  // Update simple ramp enabled state
+            updateStatus.();
+        });
+    layout.add(bendModeCheckbox);
+
+    // Simple Ramp mode checkbox (sub-option for bend mode)
+    simpleRampCheckbox = CheckBox()
+        .string_("  └─ Simple Ramp (start→end only, not start→peak→return)")
+        .value_(~getLayerBendSimpleRamp.())
+        .enabled_(~layers.state.bendMode)  // Only enabled when bend mode is on
+        .action_({ |cb|
+            ~setLayersBendSimpleRamp.(cb.value);
+            updateStatus.();
+        });
+    layout.add(simpleRampCheckbox);
     
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
@@ -491,10 +503,18 @@
             if (~layers.state.bendMode) {
                 var bendAmount = ~getLayerBendAmount.();
                 var peakTime = ~getLayerBendPeakTime.();
-                statusString = statusString ++ " | Bend: %% @ %% peak".format(
-                    (bendAmount * 100).round(1),
-                    (peakTime * 100).round(1)
-                );
+                var simpleRamp = ~getLayerBendSimpleRamp.();
+
+                if (simpleRamp) {
+                    statusString = statusString ++ " | Bend: %% (simple ramp)".format(
+                        (bendAmount * 100).round(1)
+                    );
+                } {
+                    statusString = statusString ++ " | Bend: %% @ %% peak".format(
+                        (bendAmount * 100).round(1),
+                        (peakTime * 100).round(1)
+                    );
+                };
             };
         } {
             statusString = "Ready: % layers configured".format(activeCount);
@@ -526,10 +546,18 @@
             if (~layers.state.bendMode) {
                 var bendAmount = ~getLayerBendAmount.();
                 var peakTime = ~getLayerBendPeakTime.();
-                statusString = statusString ++ " | Bend: %% @ %% peak".format(
-                    (bendAmount * 100).round(1),
-                    (peakTime * 100).round(1)
-                );
+                var simpleRamp = ~getLayerBendSimpleRamp.();
+
+                if (simpleRamp) {
+                    statusString = statusString ++ " | Bend: %% (simple ramp)".format(
+                        (bendAmount * 100).round(1)
+                    );
+                } {
+                    statusString = statusString ++ " | Bend: %% @ %% peak".format(
+                        (bendAmount * 100).round(1),
+                        (peakTime * 100).round(1)
+                    );
+                };
             };
         };
         
