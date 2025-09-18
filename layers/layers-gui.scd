@@ -124,6 +124,17 @@
                 };
             })
     );
+
+    // Note Bending mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Note Bending Mode (Per-note pitch envelopes)")
+            .value_(~layers.state.bendMode)
+            .action_({ |cb|
+                ~setLayersBendMode.(cb.value);
+                updateStatus.();
+            })
+    );
     
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         STATUS SECTION                                     │
@@ -421,6 +432,12 @@
         .font_(Font.default.size_(8).italic_(true))
         .align_(\center)
     );
+
+    layout.add(StaticText()
+        .string_("Bend Controls (Row 2): K1=Bend Amount (-1 to +1 octave), K2=Peak Time (0.1-0.9)")
+        .font_(Font.default.size_(8).italic_(true))
+        .align_(\center)
+    );
     
     // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         UPDATE FUNCTION                                    │
@@ -469,6 +486,16 @@
                     statusString = statusString ++ " | Live: active";
                 };
             };
+
+            // Add bend mode info if active
+            if (~layers.state.bendMode) {
+                var bendAmount = ~getLayerBendAmount.();
+                var peakTime = ~getLayerBendPeakTime.();
+                statusString = statusString ++ " | Bend: %% @ %% peak".format(
+                    (bendAmount * 100).round(1),
+                    (peakTime * 100).round(1)
+                );
+            };
         } {
             statusString = "Ready: % layers configured".format(activeCount);
             
@@ -493,6 +520,16 @@
             // Show live melody status when not playing
             if (~layers.state.liveMelodyMode) {
                 statusString = statusString ++ " | Live mode enabled";
+            };
+
+            // Show bend mode status when not playing
+            if (~layers.state.bendMode) {
+                var bendAmount = ~getLayerBendAmount.();
+                var peakTime = ~getLayerBendPeakTime.();
+                statusString = statusString ++ " | Bend: %% @ %% peak".format(
+                    (bendAmount * 100).round(1),
+                    (peakTime * 100).round(1)
+                );
             };
         };
         

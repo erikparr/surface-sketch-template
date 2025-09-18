@@ -27,7 +27,8 @@
         pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
         backupProcessNote: nil,   // Backup of sketch system's processNote function
         noteDurationScalar: 1.0,  // Note duration scalar (1.0-1.5) from Row 1 Knob 2
-        singleNoteCCMode: false   // Toggle for per-note CC envelopes
+        singleNoteCCMode: false,  // Toggle for per-note CC envelopes
+        bendMode: false           // Enable basic note bending mode
     )
 );
 
@@ -60,6 +61,13 @@
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1,
             melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
+        ),
+        bendControl: (
+            enabled: true,
+            bendAmount: 0.0,         // -1 to +1 octave range
+            peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
+            returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );
     
@@ -84,6 +92,13 @@
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1,
             melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
+        ),
+        bendControl: (
+            enabled: true,
+            bendAmount: 0.0,         // -1 to +1 octave range
+            peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
+            returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );
     
@@ -108,6 +123,13 @@
             overlapTriggerIndex: 2,  // Trigger on 3rd note (0-based)
             stepSize: 1,
             melodyDurationScalar: 1.0  // Melody duration scaling (0.1-2.0) from Knob 8
+        ),
+        bendControl: (
+            enabled: true,
+            bendAmount: 0.0,         // -1 to +1 octave range
+            peakTimeRatio: 0.5,      // 0.1-0.9 of note duration
+            returnTimeRatio: 0.5,    // Calculated as 1.0 - peakTimeRatio
+            activeBendSynths: Dictionary.new  // Track bend synths per note
         )
     );
     

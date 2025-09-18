@@ -43,7 +43,7 @@
     var replyID = msg[2];
     var chanIndex = msg[3].asInteger; // This is the VST index (0, 1, 2...)
     var bendValue = msg[4].asInteger;
-    var vst;
+    var vst, targetGroupName, instances;
 
     // Periodic Logging for /bend OSC
     if(~bendLogCounter.isNil) { ~bendLogCounter = 0 };
@@ -52,13 +52,35 @@
          ["[/bend OSC]: VST Index:", chanIndex, "BendVal:", bendValue].postln;
     };
 
-    // Get VST controller using the new VSTManager system
-    vst = ~getVSTByChannel.(chanIndex);
+    // NEW: Map chanIndex to layer VST groups for layers system compatibility
+    if(~layers.notNil and: { ~layers.configs.notNil }) {
+        // Layer system is active - use layer VST groups
+        targetGroupName = switch(chanIndex,
+            0, { ~layers.configs[\layer1].vstGroup },
+            1, { ~layers.configs[\layer2].vstGroup },
+            2, { ~layers.configs[\layer3].vstGroup },
+            { nil } // Fallback
+        );
 
-    // *** DEBUG VST VARIABLE ***
-    "VST lookup result for chanIndex %: %".format(chanIndex, vst).postln;
-    "VST is nil: %".format(vst.isNil).postln;
-    "VST is notNil: %".format(vst.notNil).postln;
+        if(targetGroupName.notNil) {
+            instances = ~vstManager.getTargetInstances(targetGroupName);
+            if(instances.notNil and: { instances.size > 0 }) {
+                if((~bendLogCounter % 50 == 1) || (bendValue != 8192) ) {
+                    ["[/bend OSC]: Routing to layer VST group:", targetGroupName, "instances:", instances.size].postln;
+                };
+
+                instances.values.do { |vst|
+                    if(vst.notNil && (bendValue >= 0) && (bendValue <= 16383)) {
+                        vst.midi.bend(0, bendValue); // Send to all VSTs in the group
+                    };
+                };
+                ^nil; // Exit early - we've handled the message
+            };
+        };
+    };
+
+    // FALLBACK: Original single VST lookup for backwards compatibility
+    vst = ~getVSTByChannel.(chanIndex);
 
     if(vst.notNil && (bendValue >= 0) && (bendValue <= 16383)) {
         // Send bend on MIDI Channel 0, not chanIndex

@@ -81,15 +81,18 @@
 ~stopLayers = {
     if (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) {
         "Stopping all layers...".postln;
-        
+
+        // Clean up all bend synths before stopping
+        ~cleanupAllBendSynths.();
+
         // The parent's onRelease function will handle releasing child ProcMods
         if (~layers.parentProc.notNil) {
             ~layers.parentProc.release;
             ~layers.parentProc = nil;
         };
-        
+
         ~layers.state.startTime = nil;
-        
+
         "All layers stopped".postln;
     } {
         "Layers not currently playing".warn;
@@ -99,6 +102,9 @@
 // Emergency stop
 ~killLayers = {
     if (~layers.parentProc.notNil) {
+        // Clean up all bend synths first
+        ~cleanupAllBendSynths.();
+
         // Kill all child ProcMods first
         ~layers.layerProcs.do { |proc|
             if (proc.notNil and: { proc.isRunning }) {
@@ -106,18 +112,18 @@
                 proc.kill;
             };
         };
-        
+
         // Then kill parent
         ~layers.parentProc.kill;
         ~layers.parentProc = nil;
     };
-    
+
     // Clear layer procs dictionary and timing data
     ~layers.layerProcs.clear;
     ~layers.timingData.clear;
-    
+
     ~layers.state.startTime = nil;
-    
+
     "All layers killed".postln;
 };
 
@@ -867,4 +873,195 @@
 // Initialize melody switching MIDI handlers
 ~setupMelodySwitchingMIDI.();
 
-"Dependent layers control system loaded with melody switching".postln;
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         BEND CONTROL FUNCTIONS                             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Enable/disable bend mode globally
+~setLayersBendMode = { |enabled|
+    ~layers.state.bendMode = enabled;
+
+    if(enabled.not) {
+        // Clean up all active bend synths when disabling
+        ~cleanupAllBendSynths.();
+    };
+
+    "Layers bend mode: %".format(if(enabled, "ON", "OFF")).postln;
+};
+
+// Read bend amount from MIDI or return stored value
+~getLayerBendAmount = {
+    var bendAmount = 0.0;
+
+    if(~layers.state.manualControl and: { ~midiController.notNil }) {
+        // Read from Row 2, Knob 1 - map to -1 to +1 octave range
+        var knobValue = ~midiController.getKnobRow2(1).linlin(0, 127, 0, 1);
+        bendAmount = (knobValue - 0.5) * 2;  // Convert to -1 to +1 range
+    };
+
+    bendAmount;
+};
+
+// Read peak time ratio from MIDI or return stored value
+~getLayerBendPeakTime = {
+    var peakTimeRatio = 0.5;
+
+    if(~layers.state.manualControl and: { ~midiController.notNil }) {
+        // Read from Row 2, Knob 2 - map to 0.1-0.9 range
+        peakTimeRatio = ~midiController.getKnobRow2(2).linlin(0, 127, 0.1, 0.9);
+    };
+
+    peakTimeRatio;
+};
+
+// Create bend envelope for a specific note
+~createLayerBendEnvelope = { |layerName, pitch, noteDuration, noteIndex|
+    var config = ~layers.configs[layerName];
+    var bendAmount, peakTimeRatio, bendSynth;
+    var bendCenter = 8192;  // MIDI pitch bend center
+    var bendRange, peakValue, vstIndex;
+
+    // Read current bend parameters
+    bendAmount = ~getLayerBendAmount.();
+    peakTimeRatio = ~getLayerBendPeakTime.();
+
+    // Calculate bend envelope parameters
+    bendRange = (bendAmount * 8192).round.asInteger;
+    peakValue = (bendCenter + bendRange).clip(0, 16383);
+
+    // Get VST index for this layer
+    vstIndex = ~getLayerVSTIndex.(layerName) ? 0;
+
+    // Create bend envelope synth using note's actual duration
+    if(SynthDescLib.global[\BendEnvelope].notNil) {
+        bendSynth = Synth(\BendEnvelope, [
+            \start, bendCenter,
+            \peak, peakValue,
+            \end, bendCenter,
+            \peakTime, peakTimeRatio * noteDuration,
+            \returnTime, (1.0 - peakTimeRatio) * noteDuration,
+            \chanIndex, vstIndex
+        ]);
+
+        "Bend envelope created for layer % note % (pitch: %, duration: %s, amount: % octaves)".format(
+            layerName, noteIndex, pitch, noteDuration.round(0.01), bendAmount.round(0.01)
+        ).postln;
+    } {
+        "WARNING: BendEnvelope SynthDef not found, bend envelope disabled".warn;
+        bendSynth = nil;
+    };
+
+    bendSynth;
+};
+
+// Get VST index for a layer (used for bend envelope routing)
+~getLayerVSTIndex = { |layerName|
+    var vstIndex = 0;
+
+    // Map layer names to VST indices
+    switch(layerName,
+        \layer1, { vstIndex = 0 },
+        \layer2, { vstIndex = 1 },
+        \layer3, { vstIndex = 2 },
+        { vstIndex = 0 }  // Default fallback
+    );
+
+    vstIndex;
+};
+
+// Clean up bend synth for a specific note
+~cleanupLayerBendSynth = { |layerName, noteKey|
+    var config = ~layers.configs[layerName];
+    var bendSynth;
+
+    if(config.notNil and: { config.bendControl.notNil }) {
+        bendSynth = config.bendControl.activeBendSynths[noteKey];
+
+        if(bendSynth.notNil) {
+            bendSynth.free;
+            config.bendControl.activeBendSynths.removeAt(noteKey);
+            "Cleaned up bend synth for layer % note %".format(layerName, noteKey).postln;
+        };
+    };
+};
+
+// Clean up all bend synths for a specific layer
+~cleanupLayerBendSynths = { |layerName|
+    var config = ~layers.configs[layerName];
+
+    if(config.notNil and: { config.bendControl.notNil }) {
+        config.bendControl.activeBendSynths.do { |bendSynth|
+            if(bendSynth.notNil) {
+                bendSynth.free;
+            };
+        };
+        config.bendControl.activeBendSynths.clear;
+        "Cleaned up all bend synths for layer %".format(layerName).postln;
+    };
+};
+
+// Clean up all bend synths across all layers
+~cleanupAllBendSynths = {
+    ~layers.configs.keysValuesDo { |layerName, config|
+        ~cleanupLayerBendSynths.(layerName);
+    };
+    "Cleaned up all bend synths across all layers".postln;
+};
+
+// Enable/disable bend control for a specific layer
+~setLayerBendEnabled = { |layerName, enabled|
+    var config = ~layers.configs[layerName];
+
+    if(config.notNil and: { config.bendControl.notNil }) {
+        config.bendControl.enabled = enabled;
+
+        if(enabled.not) {
+            // Clean up bend synths for this layer when disabling
+            ~cleanupLayerBendSynths.(layerName);
+        };
+
+        "Layer % bend control: %".format(
+            layerName,
+            if(enabled, "ENABLED", "DISABLED")
+        ).postln;
+    };
+};
+
+// Enable bend control for all layers
+~enableAllLayerBend = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerBendEnabled.(layerName, true);
+    };
+};
+
+// Disable bend control for all layers
+~disableAllLayerBend = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~setLayerBendEnabled.(layerName, false);
+    };
+};
+
+// Print bend settings for a layer
+~printLayerBendSettings = { |layerName|
+    var config = ~layers.configs[layerName];
+
+    if(config.notNil and: { config.bendControl.notNil }) {
+        var bc = config.bendControl;
+        "=== Layer % Bend Settings ===".format(layerName).postln;
+        "  Enabled: %".format(bc.enabled).postln;
+        "  Bend Amount: % octaves".format(bc.bendAmount.round(0.01)).postln;
+        "  Peak Time Ratio: %".format(bc.peakTimeRatio.round(0.01)).postln;
+        "  Return Time Ratio: %".format(bc.returnTimeRatio.round(0.01)).postln;
+        "  Active Bend Synths: %".format(bc.activeBendSynths.size).postln;
+        "=============================".postln;
+    };
+};
+
+// Print all layer bend settings
+~printAllLayerBendSettings = {
+    [\layer1, \layer2, \layer3].do { |layerName|
+        ~printLayerBendSettings.(layerName);
+    };
+};
+
+"Dependent layers control system loaded with melody switching and bend control".postln;

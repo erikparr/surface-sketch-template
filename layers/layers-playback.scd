@@ -248,7 +248,10 @@
         // onRelease function - executes when release is triggered
         { |parentGroup, envbus|
             "Parent ProcMod releasing...".postln;
-            
+
+            // Clean up all bend synths first
+            ~cleanupAllBendSynths.();
+
             // Release all CC synths first
             ~layers.timingData.keysValuesDo { |layerName, timing|
                 if (timing.ccSynth.notNil) {
@@ -257,7 +260,7 @@
                     timing.ccSynth = nil;
                 };
             };
-            
+
             // Release all child ProcMods
             ~layers.layerProcs.do { |proc|
                 if (proc.notNil and: { proc.isRunning }) {
@@ -265,12 +268,12 @@
                     proc.release;
                 };
             };
-            
+
             // Stop all windowing tasks
             if (~stopAllWindows.notNil) {
                 ~stopAllWindows.();
             };
-            
+
             // Don't set isPlaying to false here - let control functions handle it
         }
     );
@@ -432,7 +435,8 @@
                                     layerName,
                                     note,
                                     velocity,
-                                    noteDuration
+                                    noteDuration,
+                                    noteIndex
                                 );
                             };
                             
@@ -471,7 +475,8 @@
                                     layerName,
                                     note,
                                     velocity,
-                                    duration
+                                    duration,
+                                    i
                                 );
                                 noteInterval.wait;
                             };
@@ -516,7 +521,10 @@
         // onRelease function - executes when release is triggered
         { |group, envbus|
             "Releasing layer % ProcMod...".format(layerName).postln;
-            
+
+            // Clean up bend synths for this layer
+            ~cleanupLayerBendSynths.(layerName);
+
             // Could add per-layer cleanup here if needed
             // For example, releasing any stuck notes for this layer
         }
@@ -529,10 +537,10 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Direct function to play a note on a layer's VST group
-~playLayerNote = { |layerNameOrGroup, note, velocity, duration|
+~playLayerNote = { |layerNameOrGroup, note, velocity, duration, noteIndex|
     // Handle both layer names and direct VST group names
-    var config, vstGroup;
-    
+    var config, vstGroup, bendSynth, noteKey;
+
     // Check if it's a layer name first
     config = ~layers.configs[layerNameOrGroup];
     if (config.notNil) {
@@ -542,21 +550,42 @@
         // Assume it's already a VST group name (for windowing)
         vstGroup = layerNameOrGroup;
     };
-    
+
     "DEBUG ~playLayerNote: input=%, note=%, vel=%, dur=%, vstGroup=%".format(
         layerNameOrGroup, note, velocity, duration, vstGroup
     ).postln;
-    
+
+    // Create bend envelope if bend mode enabled and this is an actual layer
+    if (config.notNil and: { ~layers.state.bendMode } and: { config.bendControl.enabled }) {
+        bendSynth = ~createLayerBendEnvelope.(
+            layerNameOrGroup, note, duration, noteIndex ? 0
+        );
+
+        // Store reference for cleanup using unique key
+        if (bendSynth.notNil) {
+            noteKey = note.asString ++ "_" ++ (noteIndex ? 0).asString ++ "_" ++ Date.getDate.stamp;
+            config.bendControl.activeBendSynths.put(noteKey, bendSynth);
+
+            // Schedule cleanup of bend synth when note ends
+            if (duration > 0) {
+                SystemClock.sched(duration + 0.1, {  // Small buffer after note ends
+                    ~cleanupLayerBendSynth.(layerNameOrGroup, noteKey);
+                    nil  // Return nil to stop scheduling
+                });
+            };
+        };
+    };
+
     // Route to appropriate VST instances (if vstManager exists)
     if (~vstManager.notNil) {
         var instances = ~vstManager.getTargetInstances(vstGroup);
-        
+
         "DEBUG: Found % VST instances for group %".format(instances.size, vstGroup).postln;
-        
+
         instances.do { |vst, i|
             "DEBUG: Sending noteOn to VST instance % - note=%, vel=%".format(i, note, velocity).postln;
             vst.midi.noteOn(0, note, velocity);
-            
+
             if (duration > 0) {
                 SystemClock.sched(duration, {
                     "DEBUG: Sending noteOff to VST instance % - note=%".format(i, note).postln;
@@ -568,7 +597,7 @@
     } {
         "ERROR: ~vstManager not available, cannot route note to VST".postln;
     };
-    
+
     // Trigger per-note CC envelope if single note mode is enabled (only for actual layers)
     if (config.notNil && ~layers.state.singleNoteCCMode) {
         ~startPerNoteCCEnvelope.(layerNameOrGroup, duration);

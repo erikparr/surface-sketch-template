@@ -23,7 +23,13 @@
       "timing": [
         0.5,
         0.5
-      ]
+      ],
+      "bendControl": {
+        "enabled": true,
+        "bendAmount": 2,
+        "peakTimeRatio": 0.3,
+        "returnTimeRatio": 0.7
+      }
     }
   }
 }
