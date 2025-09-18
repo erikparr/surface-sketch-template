@@ -13,9 +13,9 @@
 
 // Main container for the dependent layer system
 ~layers = (
-    parentProc: nil,              // Parent ProcMod instance
+    parentProc: nil,              // Parent ProcMod instance (DEPRECATED - will be removed)
     configs: Dictionary.new,      // Layer configurations
-    layerProcs: Dictionary.new,   // Child ProcMod instances for each layer
+    layerProcs: Dictionary.new,   // Child ProcMod instances for each layer (DEPRECATED - will be removed)
     timingData: Dictionary.new,   // Pre-calculated timing info
     windowTasks: Dictionary.new,  // Active window tasks for each layer
     state: (
@@ -29,6 +29,24 @@
         noteDurationScalar: 1.0,  // Note duration scalar (1.0-1.5) from Row 1 Knob 2
         singleNoteCCMode: false,  // Toggle for per-note CC envelopes
         bendMode: false           // Enable basic note bending mode
+    ),
+
+    // NEW: Direct state management (replaces ProcMod functionality)
+    directState: (
+        parentGroup: nil,         // Main Group for all layers
+        parentTask: nil,          // Main Task for coordination
+        controlBus: nil,          // Control bus for amplitude envelope
+        envSynth: nil,           // Synth for amplitude envelope
+        childGroups: Dictionary.new,    // Groups for each layer
+        childTasks: Dictionary.new,     // Tasks for each layer
+        perNoteCCSynths: Dictionary.new, // Track active per-note CC synths per layer
+        isRunning: false,        // Direct running state
+        resources: (             // Track all resources for cleanup
+            groups: Set.new,
+            buses: Set.new,
+            synths: Set.new,
+            tasks: Set.new
+        )
     )
 );
 
@@ -246,7 +264,8 @@
     "Active layers: %".format(~getActiveLayerCount.()).postln;
     "Total duration: % seconds".format(~layers.state.totalDuration).postln;
     "Playing: %".format(
-        ~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }
+        (~layers.parentProc.notNil and: { ~layers.parentProc.isRunning }) or:
+        { ~layers.directState.isRunning }
     ).postln;
     "==================\n".postln;
 };
