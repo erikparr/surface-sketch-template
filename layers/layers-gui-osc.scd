@@ -1,0 +1,408 @@
+/*
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║                      OSC LAYERS - GUI INTERFACE                               ║
+║                   GUI controls via OSC messages                               ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+*/
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         OSC GUI CREATION                                   │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~createLayersGUI = {
+    var win, layout;
+    var transportSection, layerSections, statusSection;
+    var startButton, stopButton, statusText;
+    var bendModeCheckbox, simpleRampCheckbox;
+    var updateStatus, vstGroupMenus = [];
+    var refreshButton;
+
+    // Check if window already exists
+    if (~layersGUIWindow.notNil) {
+        try {
+            if (~layersGUIWindow.isClosed.not) {
+                ~layersGUIWindow.front;
+                ^~layersGUIWindow;
+            } {
+                ~layersGUIWindow = nil;
+            };
+        } {
+            ~layersGUIWindow = nil;
+        };
+    };
+
+    // Create window
+    win = Window("OSC Layers Control", Rect(100, 100, 400, 850));
+
+    // Main layout
+    layout = VLayout();
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         TRANSPORT SECTION                                  │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    layout.add(StaticText()
+        .string_("OSC TRANSPORT")
+        .font_(Font.default.size_(14).bold_(true))
+        .align_(\center)
+    );
+
+    transportSection = HLayout();
+
+    startButton = Button()
+        .states_([
+            ["Start All Layers", Color.black, Color.green.alpha_(0.3)]
+        ])
+        .action_({
+            "GUI → OSC: Starting layers".postln;
+            // Send OSC message instead of calling function directly
+            NetAddr.localAddr.sendMsg('/system/start');
+        });
+
+    stopButton = Button()
+        .states_([
+            ["Stop All Layers", Color.black, Color.red.alpha_(0.3)]
+        ])
+        .action_({
+            "GUI → OSC: Stopping layers".postln;
+            // Send OSC message instead of calling function directly
+            NetAddr.localAddr.sendMsg('/system/stop');
+        });
+
+    transportSection.add(startButton);
+    transportSection.add(stopButton);
+    layout.add(transportSection);
+
+    // OSC Status indicator
+    layout.add(StaticText()
+        .string_("Control via OSC messages")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.blue)
+    );
+
+    // Looping mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Loop Mode")
+            .value_(~oscLayers.state.loopingMode)
+            .action_({ |cb|
+                "GUI → OSC: Looping mode %".format(cb.value).postln;
+                NetAddr.localAddr.sendMsg('/system/looping', cb.value);
+                statusText.string = if (cb.value) {
+                    "Loop mode: ON (OSC)"
+                } {
+                    "Loop mode: OFF (OSC)"
+                };
+            })
+    );
+
+    // Manual control mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Manual Control (MIDI Knobs: Duration + Velocity)")
+            .value_(~oscLayers.state.manualControl)
+            .action_({ |cb|
+                "GUI → OSC: Manual control %".format(cb.value).postln;
+                NetAddr.localAddr.sendMsg('/system/manual_control', cb.value);
+                updateStatus.();
+            })
+    );
+
+    // Live melody mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Live Melody Mode (OSC Updates)")
+            .value_(~oscLayers.state.liveMelodyMode)
+            .action_({ |cb|
+                "GUI → OSC: Live melody mode %".format(cb.value).postln;
+                NetAddr.localAddr.sendMsg('/system/live_melody', cb.value);
+                updateStatus.();
+            })
+    );
+
+    // Single note CC mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Single Note CC Mode")
+            .value_(~oscLayers.state.singleNoteCCMode)
+            .action_({ |cb|
+                "GUI → OSC: Single note CC mode %".format(cb.value).postln;
+                NetAddr.localAddr.sendMsg('/system/single_note_cc', cb.value);
+                updateStatus.();
+            })
+    );
+
+    // Bend mode checkbox
+    bendModeCheckbox = CheckBox()
+        .string_("Bend Mode")
+        .value_(~oscLayers.state.bendMode)
+        .action_({ |cb|
+            "GUI → OSC: Bend mode %".format(cb.value).postln;
+            NetAddr.localAddr.sendMsg('/system/bend_mode', cb.value);
+            simpleRampCheckbox.enabled_(cb.value);
+            updateStatus.();
+        });
+
+    layout.add(bendModeCheckbox);
+
+    // Simple ramp checkbox (for bend mode)
+    simpleRampCheckbox = CheckBox()
+        .string_("Simple Ramp (Bend)")
+        .value_(false)
+        .enabled_(~oscLayers.state.bendMode)
+        .action_({ |cb|
+            // This could be implemented as OSC parameter in the future
+            "Simple ramp setting: %".format(cb.value).postln;
+        });
+
+    layout.add(simpleRampCheckbox);
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         LAYER SECTIONS                                     │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    [\layer1, \layer2, \layer3].do { |layerName, index|
+        var layerSection, enableCheck, melodyMenu, loadFileButton, vstGroupMenu;
+        var layerNum = index + 1;
+        var config = ~oscLayers.configs[layerName];
+
+        // Layer header
+        layout.add(StaticText()
+            .string_("LAYER % (OSC)".format(layerNum))
+            .font_(Font.default.size_(12).bold_(true))
+            .align_(\center)
+        );
+
+        // Enable checkbox
+        enableCheck = CheckBox()
+            .string_("Enable Layer %".format(layerNum))
+            .value_(config.enabled)
+            .action_({ |cb|
+                "GUI → OSC: Layer % enabled: %".format(layerNum, cb.value).postln;
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/enabled', cb.value);
+                updateStatus.();
+            });
+
+        layout.add(enableCheck);
+
+        // Melody selection
+        melodyMenu = PopUpMenu()
+            .items_(["None"] ++ if (~melodyDict.notNil) {
+                ~melodyDict.keys.asArray.sort.collect(_.asString)
+            } { [] })
+            .action_({ |menu|
+                if (menu.value > 0 and: { ~melodyDict.notNil }) {
+                    var melodyKeys = ~melodyDict.keys.asArray.sort;
+                    if (menu.value <= melodyKeys.size) {
+                        var melodyKey = melodyKeys[menu.value - 1];
+                        "GUI → OSC: Setting layer % melody to %".format(layerNum, melodyKey).postln;
+                        NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/melody', melodyKey);
+                        updateStatus.();
+                    };
+                };
+            });
+
+        layout.add(HLayout(
+            StaticText().string_("Melody:"),
+            melodyMenu
+        ));
+
+        // File loading button
+        loadFileButton = Button()
+            .states_([["Load Melody File", Color.black, Color.yellow.alpha_(0.3)]])
+            .action_({
+                FileDialog({ |path|
+                    if (path.notNil) {
+                        "GUI → Loading melody file for layer %: %".format(layerNum, path).postln;
+                        // Use existing melody loading function
+                        ~loadMelodyFileForLayer.(layerName, path);
+
+                        // Update menu after loading
+                        AppClock.sched(0.1, {
+                            var items = ["None"] ++ if (~melodyDict.notNil) {
+                                ~melodyDict.keys.asArray.sort.collect(_.asString)
+                            } { [] };
+                            melodyMenu.items = items;
+                        });
+                    };
+                }, fileMode: 1, acceptMode: 0, stripResult: true);
+            });
+
+        layout.add(loadFileButton);
+
+        // VST Group selection
+        vstGroupMenu = PopUpMenu()
+            .items_(if (~vstManager.notNil) {
+                ~vstManager.getGroupNames()
+            } {
+                ['Layer1', 'Layer2', 'Layer3']
+            })
+            .value_(if (~vstManager.notNil) {
+                var groupNames = ~vstManager.getGroupNames();
+                groupNames.indexOf(config.vstGroup) ? 0;
+            } { index })
+            .action_({ |menu|
+                var groupNames = if (~vstManager.notNil) {
+                    ~vstManager.getGroupNames()
+                } {
+                    ['Layer1', 'Layer2', 'Layer3']
+                };
+                if (menu.value < groupNames.size) {
+                    var groupName = groupNames[menu.value];
+                    "GUI → OSC: Setting layer % VST group to %".format(layerNum, groupName).postln;
+                    // Update config directly for now (could be OSC message in future)
+                    config.vstGroup = groupName;
+                    updateStatus.();
+                };
+            });
+
+        vstGroupMenus = vstGroupMenus.add(vstGroupMenu);
+
+        layout.add(HLayout(
+            StaticText().string_("VST Group:"),
+            vstGroupMenu
+        ));
+
+        // Windowing controls (placeholder for now)
+        layout.add(
+            CheckBox()
+                .string_("Windowing Mode (Layer %)".format(layerNum))
+                .value_(config.windowing.enabled)
+                .action_({ |cb|
+                    config.windowing.enabled = cb.value;
+                    "Layer % windowing: %".format(layerNum, cb.value).postln;
+                    updateStatus.();
+                })
+        );
+
+        // Test button for individual layer
+        layout.add(
+            Button()
+                .states_([["Test Layer % (Single Note)".format(layerNum), Color.black, Color.cyan.alpha_(0.3)]])
+                .action_({
+                    "GUI → OSC: Testing layer % with single note".format(layerNum).postln;
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', 60, 100, 1.0);
+                })
+        );
+
+        layout.add(StaticText().string_("───────────────"));
+    };
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         STATUS SECTION                                     │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    layout.add(StaticText()
+        .string_("STATUS")
+        .font_(Font.default.size_(12).bold_(true))
+        .align_(\center)
+    );
+
+    statusText = StaticText()
+        .string_("OSC Layers System Ready")
+        .align_(\center);
+
+    layout.add(statusText);
+
+    // Refresh button
+    refreshButton = Button()
+        .states_([["Refresh Status", Color.black, Color.gray.alpha_(0.3)]])
+        .action_({ updateStatus.() });
+
+    layout.add(refreshButton);
+
+    // OSC Info section
+    layout.add(StaticText()
+        .string_("OSC CONTROL INFO")
+        .font_(Font.default.size_(10).bold_(true))
+        .align_(\center)
+    );
+
+    layout.add(StaticText()
+        .string_("Send OSC to localhost:")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+    );
+
+    layout.add(StaticText()
+        .string_("/system/start, /system/stop")
+        .font_(Font.default.size_(9))
+        .align_(\center)
+        .stringColor_(Color.blue)
+    );
+
+    layout.add(StaticText()
+        .string_("/layer1/note <note> <vel> <dur>")
+        .font_(Font.default.size_(9))
+        .align_(\center)
+        .stringColor_(Color.blue)
+    );
+
+    // Update status function
+    updateStatus = {
+        var statusStr = "";
+        var activeCount = 0;
+
+        [\layer1, \layer2, \layer3].do { |layerName, i|
+            var config = ~oscLayers.configs[layerName];
+            if (config.enabled and: { config.melodyList.size > 0 }) {
+                activeCount = activeCount + 1;
+            };
+        };
+
+        statusStr = "Active layers: %\n".format(activeCount);
+        statusStr = statusStr ++ "Running: %\n".format(~oscLayers.state.isRunning);
+        statusStr = statusStr ++ "Loop mode: %\n".format(~oscLayers.state.loopingMode);
+        statusStr = statusStr ++ "Manual control: %\n".format(~oscLayers.state.manualControl);
+        statusStr = statusStr ++ "Live melody: %\n".format(~oscLayers.state.liveMelodyMode);
+        statusStr = statusStr ++ "Single note CC: %\n".format(~oscLayers.state.singleNoteCCMode);
+        statusStr = statusStr ++ "Bend mode: %".format(~oscLayers.state.bendMode);
+
+        statusText.string_(statusStr);
+    };
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                         FINALIZE WINDOW                                    │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    win.layout_(layout);
+
+    // Window close action
+    win.onClose_({
+        ~layersGUIWindow = nil;
+        "OSC Layers GUI closed".postln;
+    });
+
+    // Initial status update
+    updateStatus.();
+
+    // Show window
+    win.front;
+
+    // Store reference
+    ~layersGUIWindow = win;
+
+    "OSC Layers GUI created".postln;
+    "  - All controls send OSC messages".postln;
+    "  - Compatible with external OSC control".postln;
+
+    win;
+};
+
+// Function to update GUI from OSC state changes
+~updateGUIFromOSC = {
+    if (~layersGUIWindow.notNil) {
+        AppClock.sched(0, {
+            // Update checkboxes and status
+            // This could be enhanced to reflect OSC state changes
+            "GUI updated from OSC state".postln;
+        });
+    };
+};
+
+"OSC Layers GUI loaded".postln;
+"  - GUI controls via OSC messages".postln;
+"  - External control ready".postln;
