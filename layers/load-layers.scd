@@ -30,8 +30,14 @@
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-control.scd").load;
 
+// Load timing controller system
+(thisProcess.nowExecutingPath.dirname +/+ "layers-timing-controller.scd").load;
+
 // Load OSC-compatible GUI
 (thisProcess.nowExecutingPath.dirname +/+ "layers-gui-osc.scd").load;
+
+// Load timing controller GUI
+(thisProcess.nowExecutingPath.dirname +/+ "layers-timing-gui.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        OSC SYSTEM SUCCESS MESSAGE                          │
@@ -59,6 +65,11 @@
 "  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing".postln;
 "  ~setLayerWindowing.(\\layer1, true)    - Enable windowing".postln;
 "  ~enableLiveMelodyMode.()              - Enable live OSC updates".postln;
+"\nNEW: Layer Timing Controller:".postln;
+"  Sequential mode with MIDI control (Row 1 Knobs 1&2)".postln;
+"  ~setTimingPreset.(\\medium)           - Quick timing presets".postln;
+"  ~getTimingControlStatus.()           - Show timing status".postln;
+"  Real-time GUI visualization automatically loaded".postln;
 "\nQuick start (same as before):".postln;
 "  ~setLayerMelody.(\\layer1, \\yourMelody)".postln;
 "  ~setLayerMelody.(\\layer2, \\anotherMelody)".postln;
@@ -67,6 +78,14 @@
 
 // External control is now automatically enabled during OSC system initialization
 
+// Initialize timing controller
+~initTimingController.();
+
 // Create GUI immediately (now OSC-powered)
 ~createLayersGUI.();
+
+// Create timing controller GUI
+AppClock.sched(0.5, { // Small delay to ensure main GUI is created first
+    ~createTimingControllerGUI.();
+});
 

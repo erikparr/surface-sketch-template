@@ -24,7 +24,11 @@
         bendMode: false,
         isRunning: false,
         noteDurationScalar: 1.0,
-        pendingUpdates: Dictionary.new
+        pendingUpdates: Dictionary.new,
+        // Layer timing controller state
+        offsetTimingEnabled: false,
+        offsetTime: 0.5,
+        layerTriggerStates: Dictionary.new
     ),
 
     // Layer configurations (preserved from original system)
@@ -354,6 +358,41 @@
         }, '/system/live_melody')
     );
 
+    // Offset timing control: /system/offset_timing
+    responders = responders.add(
+        OSCFunc({|msg|
+            var enabled = msg[1].asBoolean;
+            ~oscLayers.state.offsetTimingEnabled = enabled;
+            "OSC: Offset timing mode: %".format(enabled).postln;
+        }, '/system/offset_timing')
+    );
+
+    // Offset time control: /system/offset_time
+    responders = responders.add(
+        OSCFunc({|msg|
+            var offsetTime = msg[1].asFloat.clip(0.1, 2.0);
+            ~oscLayers.state.offsetTime = offsetTime;
+            "OSC: Offset time set to: %s".format(offsetTime).postln;
+        }, '/system/offset_time')
+    );
+
+    // Offset status query: /system/offset_status
+    responders = responders.add(
+        OSCFunc({|msg, time, addr|
+            var status = (
+                enabled: ~oscLayers.state.offsetTimingEnabled,
+                offsetTime: ~oscLayers.state.offsetTime,
+                triggerStates: ~oscLayers.state.layerTriggerStates
+            );
+            "OSC: Offset status query - enabled: %, time: %s".format(status.enabled, status.offsetTime).postln;
+
+            // Send acknowledgment with current status
+            if (addr.notNil) {
+                addr.sendMsg('/ack', '/system/offset_status', status.enabled, status.offsetTime);
+            };
+        }, '/system/offset_status')
+    );
+
     ~oscLayers.responders[\system] = responders;
 
     "Created % system OSC responders".format(responders.size).postln;
@@ -473,18 +512,63 @@
                         ~updateAllLayerExpressionParams.();
                     };
 
-                    // Start all enabled layers
-                    [\layer1, \layer2, \layer3].do {|layerKey|
-                        var config = ~oscLayers.configs[layerKey];
-                        if (config.enabled and: { config.melodyList.size > 0 }) {
-                            ~startOSCLayer.(layerKey, currentDuration);
-                            activeLayerCount = activeLayerCount + 1;
+                    // Start layers - sequential or simultaneous based on offset timing mode
+                    if (~oscLayers.state.offsetTimingEnabled) {
+                        // Sequential triggering with offsets
+                        var layerIndex = 0;
+                        [\layer1, \layer2, \layer3].do {|layerKey|
+                            var config = ~oscLayers.configs[layerKey];
+                            if (config.enabled and: { config.melodyList.size > 0 }) {
+                                var triggerTime = layerIndex * ~oscLayers.state.offsetTime;
+
+                                // Store trigger time for GUI visualization
+                                ~oscLayers.state.layerTriggerStates[layerKey] = (
+                                    scheduledTime: triggerTime,
+                                    triggered: false,
+                                    layerIndex: layerIndex
+                                );
+
+                                // Schedule layer start
+                                SystemClock.sched(triggerTime, {
+                                    "OSC Coordinator: Starting % at offset %s".format(layerKey, triggerTime).postln;
+                                    ~startOSCLayer.(layerKey, currentDuration);
+
+                                    // Update trigger state for GUI
+                                    ~oscLayers.state.layerTriggerStates[layerKey].triggered = true;
+
+                                    nil; // Don't reschedule
+                                });
+
+                                activeLayerCount = activeLayerCount + 1;
+                                layerIndex = layerIndex + 1;
+                            };
+                        };
+                    } {
+                        // Original simultaneous triggering
+                        [\layer1, \layer2, \layer3].do {|layerKey|
+                            var config = ~oscLayers.configs[layerKey];
+                            if (config.enabled and: { config.melodyList.size > 0 }) {
+                                ~startOSCLayer.(layerKey, currentDuration);
+                                activeLayerCount = activeLayerCount + 1;
+
+                                // Store simultaneous trigger state
+                                ~oscLayers.state.layerTriggerStates[layerKey] = (
+                                    scheduledTime: 0,
+                                    triggered: true,
+                                    layerIndex: 0
+                                );
+                            };
                         };
                     };
 
                     if (activeLayerCount > 0) {
                         // Wait for this iteration to complete
-                        currentDuration.wait;
+                        // In sequential mode, add extra wait time for the last layer's offset
+                        var totalWaitTime = currentDuration;
+                        if (~oscLayers.state.offsetTimingEnabled and: { activeLayerCount > 1 }) {
+                            totalWaitTime = totalWaitTime + ((activeLayerCount - 1) * ~oscLayers.state.offsetTime);
+                        };
+                        totalWaitTime.wait;
 
                         if (~oscLayers.state.loopingMode) {
                             "Loop % complete, starting next...".format(loopCount).postln;
@@ -514,6 +598,9 @@
             coordinator.currentTask.stop;
             coordinator.currentTask = nil;
         };
+
+        // Clear timing controller trigger states
+        ~oscLayers.state.layerTriggerStates.clear;
 
         "OSC Coordinator: All layers stopped".postln;
     };
