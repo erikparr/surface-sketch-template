@@ -78,14 +78,10 @@
 
 // External control is now automatically enabled during OSC system initialization
 
-// Initialize timing controller
-~initTimingController.();
+// Timing controller now integrated directly (no initialization needed)
 
 // Create GUI immediately (now OSC-powered)
 ~createLayersGUI.();
 
-// Create timing controller GUI
-AppClock.sched(0.5, { // Small delay to ensure main GUI is created first
-    ~createTimingControllerGUI.();
-});
+// Timing controller GUI removed - using direct MIDI knob control only
 

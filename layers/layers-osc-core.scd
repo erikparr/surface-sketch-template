@@ -25,10 +25,7 @@
         isRunning: false,
         noteDurationScalar: 1.0,
         pendingUpdates: Dictionary.new,
-        // Layer timing controller state
-        offsetTimingEnabled: false,
-        offsetTime: 0.5,
-        layerTriggerStates: Dictionary.new
+        // Simplified - no timing state needed
     ),
 
     // Layer configurations (preserved from original system)
@@ -358,39 +355,18 @@
         }, '/system/live_melody')
     );
 
-    // Offset timing control: /system/offset_timing
-    responders = responders.add(
-        OSCFunc({|msg|
-            var enabled = msg[1].asBoolean;
-            ~oscLayers.state.offsetTimingEnabled = enabled;
-            "OSC: Offset timing mode: %".format(enabled).postln;
-        }, '/system/offset_timing')
-    );
-
-    // Offset time control: /system/offset_time
-    responders = responders.add(
-        OSCFunc({|msg|
-            var offsetTime = msg[1].asFloat.clip(0.1, 2.0);
-            ~oscLayers.state.offsetTime = offsetTime;
-            "OSC: Offset time set to: %s".format(offsetTime).postln;
-        }, '/system/offset_time')
-    );
-
-    // Offset status query: /system/offset_status
+    // Timing status query: /system/timing_status
     responders = responders.add(
         OSCFunc({|msg, time, addr|
-            var status = (
-                enabled: ~oscLayers.state.offsetTimingEnabled,
-                offsetTime: ~oscLayers.state.offsetTime,
-                triggerStates: ~oscLayers.state.layerTriggerStates
-            );
-            "OSC: Offset status query - enabled: %, time: %s".format(status.enabled, status.offsetTime).postln;
+            var offsets = ~getLayerOffsets.();
+            "OSC: Timing status query - offsets: %".format(offsets).postln;
 
-            // Send acknowledgment with current status
+            // Send acknowledgment with current offsets
             if (addr.notNil) {
-                addr.sendMsg('/ack', '/system/offset_status', status.enabled, status.offsetTime);
+                addr.sendMsg('/ack', '/system/timing_status',
+                    offsets.layer1, offsets.layer2, offsets.layer3);
             };
-        }, '/system/offset_status')
+        }, '/system/timing_status')
     );
 
     ~oscLayers.responders[\system] = responders;
@@ -493,7 +469,7 @@
         // Create coordination task
         coordinator.currentTask = Task({
                 var loopCount = 0;
-                var currentDuration;
+                var currentDuration, layerOffsets, maxOffset, totalWaitTime;
 
                 while { ~oscLayers.state.loopingMode or: { loopCount == 0 } } {
                     loopCount = loopCount + 1;
@@ -512,67 +488,35 @@
                         ~updateAllLayerExpressionParams.();
                     };
 
-                    // Start layers - sequential or simultaneous based on offset timing mode
-                    if (~oscLayers.state.offsetTimingEnabled) {
-                        // Sequential triggering with offsets
-                        var layerIndex = 0;
-                        [\layer1, \layer2, \layer3].do {|layerKey|
-                            var config = ~oscLayers.configs[layerKey];
-                            if (config.enabled and: { config.melodyList.size > 0 }) {
-                                var triggerTime = layerIndex * ~oscLayers.state.offsetTime;
+                    // Start layers using simplified offset calculation
+                    layerOffsets = ~getLayerOffsets.();
+                    maxOffset = 0;
 
-                                // Store trigger time for GUI visualization
-                                ~oscLayers.state.layerTriggerStates[layerKey] = (
-                                    scheduledTime: triggerTime,
-                                    triggered: false,
-                                    layerIndex: layerIndex
-                                );
+                    [\layer1, \layer2, \layer3].do {|layerKey|
+                        var config = ~oscLayers.configs[layerKey];
+                        if (config.enabled and: { config.melodyList.size > 0 }) {
+                            var triggerTime = layerOffsets[layerKey];
+                            maxOffset = max(maxOffset, triggerTime);
 
-                                // Schedule layer start
-                                SystemClock.sched(triggerTime, {
-                                    "OSC Coordinator: Starting % at offset %s".format(layerKey, triggerTime).postln;
-                                    ~startOSCLayer.(layerKey, currentDuration);
-
-                                    // Update trigger state for GUI
-                                    ~oscLayers.state.layerTriggerStates[layerKey].triggered = true;
-
-                                    nil; // Don't reschedule
-                                });
-
-                                activeLayerCount = activeLayerCount + 1;
-                                layerIndex = layerIndex + 1;
-                            };
-                        };
-                    } {
-                        // Original simultaneous triggering
-                        [\layer1, \layer2, \layer3].do {|layerKey|
-                            var config = ~oscLayers.configs[layerKey];
-                            if (config.enabled and: { config.melodyList.size > 0 }) {
+                            // Schedule layer start
+                            SystemClock.sched(triggerTime, {
+                                "OSC Coordinator: Starting % at offset %s".format(layerKey, triggerTime).postln;
                                 ~startOSCLayer.(layerKey, currentDuration);
-                                activeLayerCount = activeLayerCount + 1;
+                                nil; // Don't reschedule
+                            });
 
-                                // Store simultaneous trigger state
-                                ~oscLayers.state.layerTriggerStates[layerKey] = (
-                                    scheduledTime: 0,
-                                    triggered: true,
-                                    layerIndex: 0
-                                );
-                            };
+                            activeLayerCount = activeLayerCount + 1;
                         };
                     };
 
                     if (activeLayerCount > 0) {
-                        // Wait for this iteration to complete
-                        // In sequential mode, add extra wait time for the last layer's offset
-                        var totalWaitTime = currentDuration;
-                        if (~oscLayers.state.offsetTimingEnabled and: { activeLayerCount > 1 }) {
-                            totalWaitTime = totalWaitTime + ((activeLayerCount - 1) * ~oscLayers.state.offsetTime);
-                        };
+                        // Wait for layers to complete: max offset + note duration
+                        totalWaitTime = maxOffset + currentDuration;
                         totalWaitTime.wait;
 
                         if (~oscLayers.state.loopingMode) {
-                            "Loop % complete, starting next...".format(loopCount).postln;
-                            0.1.wait; // Small gap between loops
+                            "Loop % complete, next starts immediately".format(loopCount).postln;
+                            // No gap - seamless looping
                         } {
                             "Single iteration complete".postln;
                         };
@@ -599,8 +543,7 @@
             coordinator.currentTask = nil;
         };
 
-        // Clear timing controller trigger states
-        ~oscLayers.state.layerTriggerStates.clear;
+        // No state cleanup needed for simplified timing
 
         "OSC Coordinator: All layers stopped".postln;
     };
@@ -765,9 +708,20 @@
 // Main control functions that work via OSC
 ~startLayersOSC = {|duration|
     duration = duration ?? { 2.0 };
-    // Ensure duration is never 0 or negative
-    if (duration <= 0) { duration = 2.0 };
 
+    // Robust duration validation
+    if (duration.isNumber.not) {
+        "Duration must be a number, got %. Using 2.0s".format(duration.class).warn;
+        duration = 2.0;
+    };
+
+    // Clip to reasonable bounds
+    if (duration <= 0) {
+        "Duration must be positive, got %. Using 2.0s".format(duration).warn;
+        duration = 2.0;
+    };
+
+    duration = duration.clip(0.1, 60.0); // Reasonable bounds: 0.1s to 60s
 
     if (~oscLayers.coordinator.notNil) {
         ~oscLayers.coordinator[\startAll].value(duration);
