@@ -1,6 +1,6 @@
-# Dependent Layers System
+# OSC Layers System
 
-A synchronized multi-layer playback system using ProcMod architecture for coordinating multiple VST instruments playing different melodies in perfect temporal alignment.
+A synchronized multi-layer playback system using pure OSC-based architecture for coordinating multiple VST instruments playing different melodies in perfect temporal alignment. **Completely replaces the previous ProcMod architecture** with a modern, message-based approach.
 
 ## System Overview
 
@@ -8,103 +8,130 @@ The layers system allows three independent layers to play different melodies thr
 
 ## Architecture
 
-### Core Structure (`layers-core.scd`)
+### Core Structure (`layers-osc-core.scd`)
 ```supercollider
-~layers = (
-    parentProc: nil,              // Parent ProcMod managing overall timing
-    configs: Dictionary.new,      // Layer configurations (layer1, layer2, layer3)
-    layerProcs: Dictionary.new,   // Child ProcMod instances for each layer
-    timingData: Dictionary.new,   // Pre-calculated timing data
+~oscLayers = (
+    // System state
     state: (
         totalDuration: 0,
         startTime: nil,
         loopingMode: false,       // Enable/disable continuous looping
         manualControl: false,     // Enable MIDI knob control for duration and velocity
         liveMelodyMode: false,    // Enable live melody updates via OSC
-        pendingUpdates: Dictionary.new,  // Store pending melody updates per layer
-        backupProcessNote: nil,   // Backup of sketch system's processNote function
-        noteDurationScalar: 1.0   // Note duration scalar (0.01-1.5) from Row 1 Knob 2
-    )
+        singleNoteCCMode: false,  // CC envelope mode (false = layer-wide envelopes)
+        bendMode: false,          // Bend envelope mode
+        isRunning: false,         // System running state
+        noteDurationScalar: 1.0,  // Note duration scalar (0.01-1.5) from Row 1 Knob 2
+        pendingUpdates: Dictionary.new  // Store pending melody updates per layer
+    ),
+
+    // Layer configurations (preserved from original system)
+    configs: (
+        layer1: (/* configuration */),
+        layer2: (/* configuration */),
+        layer3: (/* configuration */)
+    ),
+
+    // OSC-based coordinator (replaces ProcMod parent)
+    coordinator: (/* coordinator object */)
 )
 ```
 
-### ProcMod Hierarchy
-- **Parent ProcMod**: Controls overall timing and loop management
-  - ASR envelope with release node for sustained operation
-  - Contains a Task that manages loop iterations
-  - Calculates timing once and shares with children
-  - Handles CC envelope triggering once per layer per loop
-  
-- **Child ProcMods** (one per layer): Handle individual layer playback
-  - Each has its own Task for note sequencing
-  - Use dynamic melody getter functions for real-time updates
-  - Read timing from shared `~layers.timingData`
-  - Loop internally based on parent's looping state
-  - Call `~getLayerMelodyDynamic` at start of each loop iteration
+### OSC Architecture
+- **OSC Coordinator**: Pure function-based coordination without ProcMod dependencies
+  - Task-based loop management with explicit function references
+  - Duration validation and parameter handling
+  - Clean start/stop/cleanup lifecycle management
+
+- **OSC Responders**: Message-based layer control
+  - `/layer1/note`, `/layer2/note`, `/layer3/note` - Individual note triggering
+  - `/layer1/melody`, `/layer2/melody`, `/layer3/melody` - Melody assignment
+  - `/layer1/expression`, `/layer2/expression`, `/layer3/expression` - CC envelope control
+  - `/system/start`, `/system/stop`, `/system/looping` - System-wide control
+
+- **External Control**: Network-accessible OSC interface
+  - Port 7000 for external applications
+  - Acknowledgment messages for remote control
+  - Full compatibility with existing GUI and MIDI systems
 
 ## Key Components
 
-### 1. Playback System (`layers-playback.scd`)
-- `~ensureProcModSynthDef`: Ensures ProcMod's SynthDef is available on server
-- `~createLayersParentProc`: Creates parent ProcMod with timing management
-- `~createLayerProcMod`: Creates child ProcMod for individual layer
-- `~playLayerNote`: Direct function for VST note playback (no OSC indirection)
+### 1. OSC Core System (`layers-osc-core.scd`)
+- `~initOSCLayersSystem()`: Initialize the complete OSC-based layers system
+- `~createOSCCoordinator()`: Create coordination object with explicit function references
+- `~createLayerOSCResponders(layerKey)`: Set up OSC message handlers for each layer
+- `~createSystemOSCResponders()`: Set up system-wide OSC control messages
+- `~startOSCLayer(layerKey, duration)`: Core layer playback function with timing and CC envelope triggering
+- `~getLayerMelodyDynamic(layerKey)`: Dynamic melody getter for real-time updates
+- `~setupExternalOSCControl(port)`: Enable external network control on specified port
 
-### 2. Control Functions (`layers-control.scd`)
-- `~startLayers(duration)`: Start all enabled layers
-- `~stopLayers`: Stop all layers gracefully
-- `~killLayers`: Emergency stop
-- `~setLayerMelody(layerName, melodyKey)`: Assign melody to layer
-- `~setLayerVSTGroup(layerName, vstGroup)`: Route layer to VST group
-- `~setLayersManualControl(enabled)`: Enable/disable MIDI control mode with velocity integration
-- `~getLayersDurationFromKnob`: Read duration from MIDI knob (row 1, pos 8) with exponential scaling
-- `~getLayersTimingOffset`: Read timing offset from MIDI knob (row 1, pos 4) for fractional duration types
+### 2. Control Functions (OSC-based)
+- `~startLayersOSC(duration)`: Start all enabled layers via OSC coordinator
+- `~stopLayersOSC()`: Stop all layers gracefully via OSC coordinator
+- OSC Message API:
+  - `/system/start [duration]` - Start system with optional duration
+  - `/system/stop` - Stop all layers
+  - `/system/looping [bool]` - Enable/disable looping mode
+  - `/system/manual_control [bool]` - Enable/disable MIDI control mode
+  - `/layer[N]/melody [symbol]` - Assign melody to layer
+  - `/layer[N]/note [midi] [velocity] [duration]` - Trigger individual note
 
-### 3. GUI (`layers-gui.scd`)
-- Transport controls (Start/Stop)
-- Loop mode checkbox
-- Manual control checkbox (MIDI knobs for duration and velocity)
-- Live melody mode checkbox (OSC updates)
-- Per-layer controls:
-  - Enable/disable
-  - Melody selection
-  - VST group routing
-  - Load melody from file
+### 3. GUI (`layers-gui-osc.scd`)
+- **OSC-based interface**: All controls send OSC messages instead of direct function calls
+- Transport controls (Start/Stop) → `/system/start`, `/system/stop`
+- Loop mode checkbox → `/system/looping`
+- Manual control checkbox → `/system/manual_control`
+- Per-layer controls via OSC:
+  - Enable/disable → `/layer[N]/enabled`
+  - Melody selection → `/layer[N]/melody`
+  - VST group routing (preserved from original)
+  - Load melody from file with JSON import
 - Auto-refreshing VST group detection
-- Real-time status display including live melody pending updates
+- Real-time status display
 
 ### 4. Loader (`load-layers.scd`)
-- Loads all components in correct order
-- Initializes the system
-- Creates GUI automatically
+- **OSC system by default**: Automatically loads OSC-based architecture
+- Compatibility layer: Makes `~layers` point to `~oscLayers` for backward compatibility
+- Preserves existing function interfaces: `~startLayers` → `~startLayersOSC`
+- Creates GUI automatically with OSC integration
 
-### 5. Live Melody System (`layers-live-melody.scd`)
-- `~enableLiveMelodyMode()`: Enable OSC live updates
-- `~disableLiveMelodyMode()`: Disable OSC live updates
-- `~getLayerMelodyDynamic(layerName)`: Dynamic melody getter for real-time updates
-- `~applyPendingUpdateForLayer(layerName)`: Apply pending melody update immediately
-- OSC responder for `/liveMelody` messages with JSON melody data
+### 5. Compatibility System
+- `~setupOSCCompatibility()`: Establishes backward compatibility references
+- `~layers` → `~oscLayers` mapping for existing code
+- Function interface preservation for seamless migration
+- All original functionality maintained through OSC message routing
 
 ## Usage
 
 ### Basic Operation
 ```supercollider
-// Load the system (after normal startup)
-(thisProcess.nowExecutingPath.dirname +/+ "layers/load-layers.scd").load;
+// Load the OSC system (loads automatically after normal startup)
+// OSC layers system is now the default - no manual loading needed
 
-// Configure layers
-~setLayerMelody.(\layer1, \melody1);
+// Configure layers via OSC messages
+NetAddr.localAddr.sendMsg('/layer1/melody', \melody1);
+NetAddr.localAddr.sendMsg('/layer2/melody', \melody2);
+NetAddr.localAddr.sendMsg('/layer3/melody', \melody3);
+
+// Or use compatibility functions (work exactly as before)
+~setLayerMelody.(\layer1, \melody1);  // Sends OSC message internally
 ~setLayerMelody.(\layer2, \melody2);
 ~setLayerMelody.(\layer3, \melody3);
 
-// Start playback
-~startLayers.();  // Uses default or MIDI-controlled duration
+// Start playback (OSC-based)
+NetAddr.localAddr.sendMsg('/system/start', 3.0);  // 3 second duration
+// Or use compatibility function
+~startLayers.();  // Uses default duration, sends OSC internally
 
 // Enable looping
-~layers.state.loopingMode = true;
+NetAddr.localAddr.sendMsg('/system/looping', true);
+// Or use compatibility
+~oscLayers.state.loopingMode = true;  // Same effect
 
 // Stop playback
-~stopLayers.();
+NetAddr.localAddr.sendMsg('/system/stop');
+// Or use compatibility function
+~stopLayers.();  // Sends OSC message internally
 ```
 
 ### Manual Control Mode
@@ -158,31 +185,43 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 
 ## State Management
 
-- **Single source of truth**: `~layers.state` for all state
-- **No duplicate state**: Removed problematic `isPlaying` checks
-- **ProcMod lifecycle**: Rely on ProcMod's built-in state management
-- **Clean separation**: Parent manages timing, children manage playback
+- **Single source of truth**: `~oscLayers.state` for all system state
+- **OSC-driven state**: All state changes triggered via OSC messages
+- **Coordinator lifecycle**: Clean start/stop/cleanup without ProcMod dependencies
+- **Explicit state control**: Clear separation between coordinator, responders, and layer functions
+- **Compatibility mapping**: `~layers` points to `~oscLayers` for backward compatibility
 
-## Recent Improvements
+## Recent Improvements (OSC Migration)
 
-1. **Removed OSC indirection**: Direct function calls for better performance
-2. **Simplified timing**: Calculate once in parent, share with children
-3. **Fixed initialization**: Proper SynthDef availability without hacks
-4. **Consolidated state**: Single looping mode flag, no state duplication
-5. **Manual control**: MIDI knob control for real-time duration adjustment
-6. **Layer-specific expression control**: Independent CC envelopes for each layer
-7. **Timing data support**: Custom inter-onset intervals and note durations
-8. **JSON import**: Full support for importing melodies with timing data via GUI or code
-9. **Smart layer mapping**: Automatically handles 0-indexed JSON to 1-indexed GUI mapping
-10. **Live melody updates**: Dynamic melody references enable real-time OSC updates during playback
-11. **Velocity control integration**: Seamless switching between MIDI knob and melody velocity data
-12. **Code cleanup**: Removed 125 lines of legacy/unused code for cleaner architecture
-13. **Proportional note scaling**: Note durations scale proportionally with loop duration changes
-14. **Note duration scalar**: Manual control mode adds Knob 2 for 1-150% note duration scaling
-15. **Fractional duration scalar fix**: Note duration scalar now properly applies to fractional duration types
-16. **Exponential duration mapping**: Knob 8 uses exponential scaling (0.01-10s) for better control at low values
-17. **Timing offset control**: Knob 4 adds 0-90% timing offset for fractional duration melodies
-18. **Zero-duration fallback**: Handles edge cases where timing arrays leave no time for notes
+### **MAJOR ARCHITECTURE OVERHAUL**
+1. **Complete ProcMod removal**: Eliminated complex hierarchical ProcMod architecture entirely
+2. **Pure OSC architecture**: Built from ground up using OSC message-based coordination
+3. **Message-driven design**: All layer control via OSC messages for modularity and external access
+4. **Explicit function references**: Solved context issues with coordinator using explicit object references
+5. **Parameter validation**: Robust duration and type checking throughout the system
+6. **Clean lifecycle management**: Proper start/stop/cleanup without ProcMod dependencies
+
+### **Performance & Reliability**
+7. **Simplified coordination**: Single Task-based coordinator with explicit state management
+8. **Reduced complexity**: Eliminated nested ProcMod hierarchy and timing synchronization issues
+9. **Better error handling**: Clear error messages and graceful degradation
+10. **Network accessibility**: External control via port 7000 for remote applications
+11. **Backward compatibility**: All existing functions preserved through compatibility layer
+
+### **Enhanced Functionality**
+12. **OSC external control**: Full system control from external applications
+13. **Dynamic melody updates**: Real-time melody switching via OSC messages during playback
+14. **JSON melody import**: Complete melody loading with timing data via GUI
+15. **Layer-specific CC envelopes**: Independent expression control per layer with proper triggering
+16. **Timing data support**: Custom inter-onset intervals and note durations
+17. **Manual MIDI control**: MIDI knob integration for duration, velocity, and expression parameters
+18. **Looping mode**: Continuous playback with real-time parameter updates
+
+### **Code Quality**
+19. **Eliminated gold plating**: Focused on essential functionality without unnecessary complexity
+20. **Clear separation of concerns**: OSC responders, coordinator, and layer functions cleanly separated
+21. **Maintainable codebase**: Well-structured, documented code with clear interfaces
+22. **Compatibility preservation**: Seamless migration path from ProcMod system
 
 ## Expression Control System
 

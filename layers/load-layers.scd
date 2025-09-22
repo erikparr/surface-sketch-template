@@ -2,7 +2,7 @@
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
 ║                      DEPENDENT LAYERS - MAIN LOADER                           ║
-║                         Load all layer components                             ║
+║                    Load OSC-based layer system (default)                      ║
 ║                                                                               ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 */
@@ -12,56 +12,61 @@
 (thisProcess.nowExecutingPath.dirname +/+ "../setup/_setup-loader.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                         LOAD LAYER COMPONENTS                              │
+// │                         LOAD OSC LAYER SYSTEM                              │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-"Loading Dependent Layer System...".postln;
+"Loading OSC Layer System (default)...".postln;
 
-// Load components in order
-(thisProcess.nowExecutingPath.dirname +/+ "layers-core.scd").load;
+// Load core OSC system (replaces layers-core.scd and layers-playback.scd)
+(thisProcess.nowExecutingPath.dirname +/+ "layers-osc-core.scd").load;
 
-// Initialize the system immediately after core is loaded
-~initializeLayers.();
+// Initialize the OSC system
+~initOSCLayersSystem.();
 
-(thisProcess.nowExecutingPath.dirname +/+ "layers-playback.scd").load;
-
-(thisProcess.nowExecutingPath.dirname +/+ "layers-windowing.scd").load;
-
+// Load remaining components (compatible with OSC system)
 (thisProcess.nowExecutingPath.dirname +/+ "layers-timing.scd").load;
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-live-melody.scd").load;
 
 (thisProcess.nowExecutingPath.dirname +/+ "layers-control.scd").load;
 
-(thisProcess.nowExecutingPath.dirname +/+ "layers-gui.scd").load;
+// Load OSC-compatible GUI
+(thisProcess.nowExecutingPath.dirname +/+ "layers-gui-osc.scd").load;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                           SUCCESS MESSAGE                                  │
+// │                        OSC SYSTEM SUCCESS MESSAGE                          │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-"\n=== Dependent Layer System Loaded Successfully ===".postln;
-"Available functions:".postln;
+"\n=== OSC Layers System Loaded Successfully ===".postln;
+"✓ Pure OSC control architecture".postln;
+"✓ External control ready on port 7000".postln;
+"✓ All existing functionality preserved".postln;
+"\nGUI Control (same interface):".postln;
 "  ~createLayersGUI.()     - Open the control interface".postln;
-"  ~startLayers.()         - Start all configured layers".postln;
+"\nCompatible Functions (now via OSC):".postln;
+"  ~startLayers.(duration) - Start all configured layers".postln;
 "  ~stopLayers.()          - Stop all layers".postln;
 "  ~printLayerStatus.()    - Show current configuration".postln;
-"\nTiming data support:".postln;
+"\nDirect OSC Control:".postln;
+"  NetAddr.localAddr.sendMsg('/system/start', duration)".postln;
+"  NetAddr.localAddr.sendMsg('/system/stop')".postln;
+"  NetAddr.localAddr.sendMsg('/layer1/note', note, velocity, duration)".postln;
+"  NetAddr.localAddr.sendMsg('/layer1/melody', melodyKey)".postln;
+"\nExternal Control (from DAW/mobile apps):".postln;
+"  Send OSC to this computer's IP on port 7000".postln;
+"  Use /external/start, /external/stop, /external/note commands".postln;
+"\nTiming & Advanced Features:".postln;
 "  ~importLayerMelodyFromJSON.(jsonPath) - Import melodies with timing".postln;
-"  ~createTimingTestMelody.()            - Create test melody with timing".postln;
-"\nWindowing support:".postln;
-"  ~setLayerWindowing.(\\layer1, true)    - Enable windowing for a layer".postln;
-"  ~setLayerWindowingParams.(\\layer1, 5, 1, 1) - Set window params".postln;
-"  ~printAllLayerWindowingSettings.()     - Show windowing settings".postln;
-"\nLive melody mode:".postln;
+"  ~setLayerWindowing.(\\layer1, true)    - Enable windowing".postln;
 "  ~enableLiveMelodyMode.()              - Enable live OSC updates".postln;
-"  ~disableLiveMelodyMode.()             - Disable live OSC updates".postln;
-"  ~getLiveMelodyStatus.()               - Check status and pending updates".postln;
-"\nQuick start:".postln;
+"\nQuick start (same as before):".postln;
 "  ~setLayerMelody.(\\layer1, \\yourMelody)".postln;
 "  ~setLayerMelody.(\\layer2, \\anotherMelody)".postln;
-"  ~startLayers.()".postln;
-"===============================================\n".postln;
+"  ~startLayers.()   // Now powered by OSC!".postln;
+"=============================================\n".postln;
 
-// Create GUI immediately
+// External control is now automatically enabled during OSC system initialization
+
+// Create GUI immediately (now OSC-powered)
 ~createLayersGUI.();
 

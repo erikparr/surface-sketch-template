@@ -256,7 +256,13 @@
     responders = responders.add(
         OSCFunc({|msg|
             var melodyKey = msg[1].asSymbol;
-            ~setLayerMelody.(layerKey, melodyKey);
+            if (~setLayerMelody.notNil) {
+                ~setLayerMelody.(layerKey, melodyKey);
+            } {
+                // Fallback: set melody directly in OSC config
+                config.melodyList = [melodyKey];
+                "Layer % melody set to: % (OSC direct)".format(layerKey, melodyKey).postln;
+            };
         }, '/layer' ++ layerNum ++ '/melody')
     );
 
@@ -355,28 +361,98 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       OSC LAYER CONTROL FUNCTIONS                          │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Start individual layer via OSC messages
+~startOSCLayer = {|layerKey, duration|
+    var config = ~oscLayers.configs[layerKey];
+    var melodyData, pattern, layerNum, noteInterval, velocity;
+
+    // Ensure duration is a number
+    if (duration.isKindOf(Number).not) {
+        "ERROR: Duration must be a number, got %".format(duration.class).error;
+        ^this;
+    };
+
+    // Get melody data
+    melodyData = ~getLayerMelodyDynamic.(layerKey);
+
+    if (melodyData.isNil) {
+        "Layer % has no melody to play".format(layerKey).warn;
+        ^this;
+    };
+
+    // Extract the actual note pattern
+    if (melodyData.isKindOf(Dictionary) and: { melodyData.patterns.notNil }) {
+        pattern = melodyData.patterns[0]; // Use first pattern
+    } {
+        if (melodyData.isKindOf(Array)) {
+            pattern = melodyData; // Direct array of notes
+        } {
+            "Layer % melody data format not recognized".format(layerKey).warn;
+            ^this;
+        };
+    };
+
+    if (pattern.isNil or: { pattern.size == 0 }) {
+        "Layer % pattern is empty".format(layerKey).warn;
+        ^this;
+    };
+
+    layerNum = layerKey.asString.last.asString.asInteger;
+    "Starting layer % with % notes, duration: %s".format(layerKey, pattern.size, duration).postln;
+
+    // Calculate timing
+    noteInterval = duration / pattern.size;
+
+    // Get velocity
+    velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+        ~midiController.getKnobRow1(3).linlin(0, 127, 1, 127).asInteger;
+    } {
+        127; // Default velocity
+    };
+
+    // Send melody via OSC messages with timing
+    pattern.do {|note, i|
+        var when = i * noteInterval;
+        var noteDuration = noteInterval * 0.8; // Note duration is 80% of interval
+
+        SystemClock.sched(when, {
+            NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
+        });
+    };
+
+    // Trigger layer expression envelope if not in single note mode
+    if (~oscLayers.state.singleNoteCCMode.not and: { config.ccControl.enabled }) {
+        NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       OSC LAYER COORDINATOR                                │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Create the OSC-based layer coordinator (replaces ProcMod parent)
 ~createOSCCoordinator = {
-    var coordinator = (
-        // Currently running task
-        currentTask: nil,
+    var coordinator = ();
 
-        // Start all layers with coordinated timing
-        startAll: {|duration|
-            var syncTime = Main.elapsedTime + 0.1; // 100ms coordination buffer
-            var activeLayerCount = 0;
+    // Add properties
+    coordinator.currentTask = nil;
 
-            "OSC Coordinator: Starting all layers, duration: %s".format(duration).postln;
+    // Add methods
+    coordinator.startAll = {|duration|
+        var syncTime = Main.elapsedTime + 0.1; // 100ms coordination buffer
+        var activeLayerCount = 0;
 
-            ~oscLayers.state.totalDuration = duration;
-            ~oscLayers.state.startTime = syncTime;
-            ~oscLayers.state.isRunning = true;
+        "OSC Coordinator: Starting all layers, duration: %s".format(duration).postln;
 
-            // Create coordination task
-            this.currentTask = Task({
+        ~oscLayers.state.totalDuration = duration;
+        ~oscLayers.state.startTime = syncTime;
+        ~oscLayers.state.isRunning = true;
+
+        // Create coordination task
+        coordinator.currentTask = Task({
                 var loopCount = 0;
                 var currentDuration;
 
@@ -401,7 +477,7 @@
                     [\layer1, \layer2, \layer3].do {|layerKey|
                         var config = ~oscLayers.configs[layerKey];
                         if (config.enabled and: { config.melodyList.size > 0 }) {
-                            this.startLayer(layerKey, currentDuration);
+                            ~startOSCLayer.(layerKey, currentDuration);
                             activeLayerCount = activeLayerCount + 1;
                         };
                     };
@@ -423,76 +499,126 @@
                 };
 
                 // Cleanup when finished
-                this.cleanup();
+                coordinator.cleanup();
             });
 
             // Start the coordination task
-            this.currentTask.play;
-        },
+            coordinator.currentTask.play;
+        };
 
-        // Start individual layer via OSC messages
-        startLayer: {|layerKey, duration|
-            var config = ~oscLayers.configs[layerKey];
-            var melody = ~getLayerMelodyDynamic.(layerKey);
-            var layerNum = layerKey.asString.last.asString.asInteger;
-            var noteInterval, velocity;
+    coordinator.stopAll = {
+        ~oscLayers.state.isRunning = false;
+        ~oscLayers.state.loopingMode = false;
 
-            if (melody.isNil or: { melody.size == 0 }) {
-                "Layer % has no melody to play".format(layerKey).warn;
-                ^this;
-            };
+        if (coordinator.currentTask.notNil) {
+            coordinator.currentTask.stop;
+            coordinator.currentTask = nil;
+        };
 
-            "Starting layer % with % notes".format(layerKey, melody.size).postln;
+        "OSC Coordinator: All layers stopped".postln;
+    };
 
-            // Calculate timing
-            noteInterval = duration / melody.size;
-
-            // Get velocity
-            velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
-                ~midiController.getKnobRow1(3).linlin(0, 127, 1, 127).asInteger;
-            } {
-                127; // Default velocity
-            };
-
-            // Send melody via OSC messages with timing
-            melody.do {|note, i|
-                var when = i * noteInterval;
-                var noteDuration = noteInterval * 0.8; // Note duration is 80% of interval
-
-                SystemClock.sched(when, {
-                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
-                });
-            };
-
-            // Trigger layer expression envelope if not in single note mode
-            if (~oscLayers.state.singleNoteCCMode.not and: { config.ccControl.enabled }) {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
-            };
-        },
-
-        // Stop all layers
-        stopAll: {
-            ~oscLayers.state.isRunning = false;
-            ~oscLayers.state.loopingMode = false;
-
-            if (this.currentTask.notNil) {
-                this.currentTask.stop;
-                this.currentTask = nil;
-            };
-
-            "OSC Coordinator: All layers stopped".postln;
-        },
-
-        // Cleanup resources
-        cleanup: {
-            ~oscLayers.state.isRunning = false;
-            ~oscLayers.state.startTime = nil;
-            this.currentTask = nil;
-            "OSC Coordinator: Cleanup complete".postln;
-        }
-    );
+    coordinator.cleanup = {
+        ~oscLayers.state.isRunning = false;
+        ~oscLayers.state.startTime = nil;
+        coordinator.currentTask = nil;
+        "OSC Coordinator: Cleanup complete".postln;
+    };
 
     coordinator;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       EXTERNAL CONTROL SETUP                               │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Setup external OSC control (automatic network control)
+~setupExternalOSCControl = { |port = 7000|
+    var externalResponders = [];
+
+    "Setting up external OSC control on port %...".format(port).postln;
+
+    // Open UDP port for external control
+    thisProcess.openUDPPort(port);
+
+    // External system control with acknowledgment
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var duration = msg[1] ? 2.0;
+            "EXTERNAL OSC: Start request from % (duration: %s)".format(addr.ip, duration).postln;
+            NetAddr.localAddr.sendMsg('/system/start', duration);
+            addr.sendMsg('/ack', '/external/start', 'started', duration);
+        }, '/external/start')
+    );
+
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            "EXTERNAL OSC: Stop request from %".format(addr.ip).postln;
+            NetAddr.localAddr.sendMsg('/system/stop');
+            addr.sendMsg('/ack', '/external/stop', 'stopped');
+        }, '/external/stop')
+    );
+
+    // External layer note control
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var layerNum = msg[1];
+            var note = msg[2];
+            var velocity = msg[3] ? 100;
+            var duration = msg[4] ? 1.0;
+
+            "EXTERNAL OSC: Layer % note % from %".format(layerNum, note, addr.ip).postln;
+            NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, duration);
+            addr.sendMsg('/ack', '/external/note', layerNum, note, 'played');
+        }, '/external/note')
+    );
+
+    // External melody updates
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var layerNum = msg[1];
+            var melodyData = msg[2];
+
+            "EXTERNAL OSC: Melody update for layer % from %".format(layerNum, addr.ip).postln;
+
+            if (melodyData.isKindOf(Array)) {
+                var melodyKey = ('external_' ++ Date.getDate.stamp).asSymbol;
+
+                // Create melody entry
+                if (~melodyDict.isNil) { ~melodyDict = Dictionary.new };
+                ~melodyDict[melodyKey] = (
+                    patterns: [melodyData],
+                    velocities: melodyData.collect({ 100 }),
+                    noteDurations: melodyData.collect({ 0.5 })
+                );
+
+                // Set melody for layer
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/melody', melodyKey);
+                addr.sendMsg('/ack', '/external/melody', layerNum, melodyData.size, 'updated');
+            } {
+                addr.sendMsg('/error', '/external/melody', 'invalid_format');
+            };
+        }, '/external/melody')
+    );
+
+    // External CC control
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var layerNum = msg[1];
+            var ccNum = msg[2];
+            var value = msg[3];
+
+            "EXTERNAL OSC: CC control layer % CC % = % from %".format(layerNum, ccNum, value, addr.ip).postln;
+            NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/cc', ccNum, value);
+            addr.sendMsg('/ack', '/external/cc', layerNum, ccNum, value);
+        }, '/external/cc')
+    );
+
+    // Store external responders
+    ~oscLayers.responders[\external] = externalResponders;
+
+    "External OSC control enabled on port %".format(port).postln;
+    "Send OSC to this computer's IP on port % for external control".format(port).postln;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -514,10 +640,35 @@
     // Create system responders
     ~createSystemOSCResponders.();
 
+    // Setup external control automatically
+    ~setupExternalOSCControl.();
+
+    // Setup compatibility layer
+    ~setupOSCCompatibility.();
+
     "OSC Layers System initialized successfully".postln;
     "  - 3 layers with OSC control".postln;
     "  - System-wide OSC commands".postln;
+    "  - External control ready on port 7000".postln;
+    "  - Compatibility layer established".postln;
     "  - All existing functionality preserved".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                        MELODY SYSTEM                                       │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Get melody data for a layer - similar to layers system
+~getLayerMelodyDynamic = {|layerKey|
+    var config = ~oscLayers.configs[layerKey];
+    var melodyKey;
+
+    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
+        melodyKey = config.melodyList[0];
+        ~melodyDict[melodyKey];
+    } {
+        nil;
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -527,8 +678,12 @@
 // Main control functions that work via OSC
 ~startLayersOSC = {|duration|
     duration = duration ?? { 2.0 };
+    // Ensure duration is never 0 or negative
+    if (duration <= 0) { duration = 2.0 };
+
+
     if (~oscLayers.coordinator.notNil) {
-        ~oscLayers.coordinator.startAll(duration);
+        ~oscLayers.coordinator[\startAll].value(duration);
     } {
         "OSC coordinator not initialized".error;
     };
@@ -542,9 +697,17 @@
     };
 };
 
-// Preserve existing function interfaces for compatibility
-~startLayers = ~startLayersOSC;
-~stopLayers = ~stopLayersOSC;
+// Set up compatibility references
+~setupOSCCompatibility = {
+    // Make ~layers point to ~oscLayers for compatibility
+    ~layers = ~oscLayers;
+
+    // Preserve existing function interfaces for compatibility
+    ~startLayers = ~startLayersOSC;
+    ~stopLayers = ~stopLayersOSC;
+
+    "OSC compatibility layer established".postln;
+};
 
 "OSC Layers Core loaded".postln;
 "  - Pure OSC-based layer control".postln;
