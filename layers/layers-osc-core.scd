@@ -431,7 +431,7 @@
     // Send melody via OSC messages with timing
     pattern.do {|note, i|
         var when = i * noteInterval;
-        var noteDuration = noteInterval * 0.8; // Note duration is 80% of interval
+        var noteDuration = (noteInterval * 0.8) * config.noteDurationScalar; // Apply scalar from Row X Knob 2
 
         SystemClock.sched(when, {
             NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
@@ -488,6 +488,9 @@
                         ~updateAllLayerExpressionParams.();
                     };
 
+                    // Update note duration scalars from MIDI (Row 1-3 Knob 2)
+                    ~updateAllLayerNoteDurationScalars.();
+
                     // Start layers using simplified offset calculation
                     layerOffsets = ~getLayerOffsets.();
                     maxOffset = 0;
@@ -522,7 +525,7 @@
                         };
                     } {
                         "No active layers, stopping".warn;
-                        ~oscLayers.state.loopingMode = false;
+                        // DON'T reset loopingMode - user may want it to stay enabled for next start
                     };
                 };
 
@@ -535,8 +538,9 @@
         };
 
     coordinator.stopAll = {
+        // Reset runtime state only, preserve user preferences
         ~oscLayers.state.isRunning = false;
-        ~oscLayers.state.loopingMode = false;
+        // DON'T reset loopingMode - it's a user preference that should persist
 
         if (coordinator.currentTask.notNil) {
             coordinator.currentTask.stop;
@@ -556,6 +560,29 @@
     };
 
     coordinator;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                     MIDI NOTE DURATION SCALAR CONTROL                      │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update note duration scalars from MIDI knobs (Row 1-3 Knob 2)
+~updateAllLayerNoteDurationScalars = {
+    [\layer1, \layer2, \layer3].do { |layerKey, index|
+        var rowNum = index + 1; // layer1=row1, layer2=row2, layer3=row3
+        var config = ~oscLayers.configs[layerKey];
+
+        if (~midiController.notNil && config.notNil) {
+            var knobValue = ~midiController.getKnobRow(rowNum, 2);
+            config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.5);
+            // Optional debug output
+            // "Layer % note duration scalar: %% (Row % Knob 2)".format(
+            //     layerKey,
+            //     (config.noteDurationScalar * 100).round(1),
+            //     rowNum
+            // ).postln;
+        };
+    };
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
