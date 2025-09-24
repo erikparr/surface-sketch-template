@@ -17,7 +17,8 @@
     var startButton, stopButton, statusText;
     var bendModeCheckbox, simpleRampCheckbox;
     var updateStatus, vstGroupMenus = [];
-    var refreshButton;
+    var refreshButton, melodyMenus = [];
+    var globalMelodyStatus, globalLoadButton;
 
     // Check if window already exists
     if (~layersGUIWindow.notNil) {
@@ -161,11 +162,73 @@
     layout.add(simpleRampCheckbox);
 
     // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                    GLOBAL MELODY MANAGEMENT                                │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    layout.add(StaticText()
+        .string_("GLOBAL MELODY MANAGEMENT")
+        .font_(Font.default.size_(14).bold_(true))
+        .align_(\center)
+    );
+
+    // Global melody file status
+    globalMelodyStatus = StaticText()
+        .string_("No melody file loaded")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.gray);
+
+    layout.add(globalMelodyStatus);
+
+    // Global melody file loading button
+    globalLoadButton = Button()
+        .states_([["Load Melody File (All Layers)", Color.black, Color.yellow.alpha_(0.5)]])
+        .action_({
+            FileDialog({ |path|
+                if (path.notNil) {
+                    "Loading global melody file: %".format(path).postln;
+
+                    // Use enhanced global loading function
+                    ~loadGlobalMelodyFile.(path, { |success, melodyCount, filename|
+                        AppClock.sched(0, {
+                            if (success) {
+                                globalMelodyStatus.string_(
+                                    "% (% melodies)".format(filename, melodyCount)
+                                ).stringColor_(Color.green);
+
+                                // Update all layer melody menus
+                                melodyMenus.do { |melodyMenu|
+                                    if (melodyMenu.notNil) {
+                                        var items = ["None"] ++ if (~melodyDict.notNil) {
+                                            ~melodyDict.keys.asArray.sort.collect(_.asString)
+                                        } { [] };
+                                        melodyMenu.items = items;
+                                    };
+                                };
+
+                                "Global melody file loaded successfully".postln;
+                            } {
+                                globalMelodyStatus.string_(
+                                    "Failed to load melody file"
+                                ).stringColor_(Color.red);
+                                "Failed to load global melody file".warn;
+                            };
+                        });
+                    });
+                };
+            }, fileMode: 1, acceptMode: 0, stripResult: true);
+        });
+
+    layout.add(globalLoadButton);
+
+    layout.add(StaticText().string_("═══════════════════════════════"));
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
     // │                         LAYER SECTIONS                                     │
     // └─────────────────────────────────────────────────────────────────────────────┘
 
     [\layer1, \layer2, \layer3].do { |layerName, index|
-        var layerSection, enableCheck, melodyMenu, loadFileButton, vstGroupMenu;
+        var layerSection, enableCheck, melodyMenu, vstGroupMenu;
         var layerNum = index + 1;
         var config = ~oscLayers.configs[layerName];
 
@@ -205,33 +268,13 @@
                 };
             });
 
+        // Store melody menu for global updates
+        melodyMenus = melodyMenus.add(melodyMenu);
+
         layout.add(HLayout(
             StaticText().string_("Melody:"),
             melodyMenu
         ));
-
-        // File loading button
-        loadFileButton = Button()
-            .states_([["Load Melody File", Color.black, Color.yellow.alpha_(0.3)]])
-            .action_({
-                FileDialog({ |path|
-                    if (path.notNil) {
-                        "GUI → Loading melody file for layer %: %".format(layerNum, path).postln;
-                        // Use existing melody loading function
-                        ~loadMelodyFileForLayer.(layerName, path);
-
-                        // Update menu after loading
-                        AppClock.sched(0.1, {
-                            var items = ["None"] ++ if (~melodyDict.notNil) {
-                                ~melodyDict.keys.asArray.sort.collect(_.asString)
-                            } { [] };
-                            melodyMenu.items = items;
-                        });
-                    };
-                }, fileMode: 1, acceptMode: 0, stripResult: true);
-            });
-
-        layout.add(loadFileButton);
 
         // VST Group selection
         vstGroupMenu = PopUpMenu()
@@ -403,6 +446,86 @@
     };
 };
 
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    ENHANCED GLOBAL MELODY LOADING                          │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~loadGlobalMelodyFile = { |filePath, callback|
+    var filename, melodyCount = 0, success = false;
+
+    filename = PathName(filePath).fileName;
+
+    if (File.exists(filePath)) {
+        var extension = PathName(filePath).extension.toLower;
+
+        if (extension == "json") {
+            // Handle JSON files using timing-aware import function
+            try {
+                "Loading global JSON melody file: %".format(filePath).postln;
+
+                // Use the existing timing-aware import function
+                if (~importLayerMelodyFromJSON.notNil) {
+                    var melodies = ~importLayerMelodyFromJSON.(filePath);
+
+                    if (melodies.notNil) {
+                        // Clear existing melody dictionary
+                        ~melodyDict = Dictionary.new();
+
+                        // Add imported melodies to global dictionary
+                        ~addImportedMelodiesToDict.(melodies, "");  // Empty prefix to use original layer names
+
+                        melodyCount = ~melodyDict.keys.size;
+                        success = true;
+
+                        "Global melody file loaded: % melodies from %".format(
+                            melodyCount, filename
+                        ).postln;
+                    } {
+                        "Failed to parse JSON melody file".warn;
+                    };
+                } {
+                    "~importLayerMelodyFromJSON function not available".warn;
+                };
+            } { |error|
+                "Error loading JSON melody file: %".format(error).warn;
+            };
+        } {
+            if (extension == "scd") {
+                // Handle SuperCollider files (legacy support)
+                try {
+                    "Loading global SuperCollider melody file: %".format(filePath).postln;
+                    filePath.load;
+
+                    // Count melodies if ~melodyDict exists
+                    if (~melodyDict.notNil) {
+                        melodyCount = ~melodyDict.keys.size;
+                        success = true;
+                        "Global melody file loaded: % melodies from %".format(
+                            melodyCount, filename
+                        ).postln;
+                    } {
+                        "Melody dictionary not populated after loading file".warn;
+                    };
+                } { |error|
+                    "Error loading SuperCollider melody file: %".format(error).warn;
+                };
+            } {
+                "Unsupported file format. Use .json or .scd files.".warn;
+            };
+        };
+    } {
+        "File does not exist: %".format(filePath).warn;
+    };
+
+    // Execute callback with results
+    if (callback.notNil) {
+        callback.(success, melodyCount, filename);
+    };
+
+    success;
+};
+
 "OSC Layers GUI loaded".postln;
 "  - GUI controls via OSC messages".postln;
+"  - Global melody file loading".postln;
 "  - External control ready".postln;
