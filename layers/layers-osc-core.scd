@@ -232,22 +232,43 @@
                 var peakTime = ~getLayerBendPeakTime.();
                 var simpleRamp = ~getLayerBendSimpleRamp.();
 
-                if (simpleRamp) {
-                    Synth(\BendEnvelopeSimple, [
-                        \start, 0,
-                        \end, bendAmount,
-                        \duration, duration,
-                        \chanIndex, 0
-                    ]);
-                } {
-                    Synth(\BendEnvelope, [
-                        \start, 0,
-                        \peak, bendAmount,
-                        \return, 0,
-                        \attackTime, duration * peakTime,
-                        \releaseTime, duration * (1.0 - peakTime),
-                        \chanIndex, 0
-                    ]);
+                // Clean up existing bend synths for this layer
+                bendControl.activeBendSynths.do(_.free);
+                bendControl.activeBendSynths.clear;
+
+                // NEW: Create one bend synth per VST in this layer's group
+                if (~vstManager.notNil) {
+                    ~vstManager.getTargetInstances(config.vstGroup).keysValuesDo { |vstKey, vst, vstIndex|
+                        var layerReplyID = (layerNum * 100) + vstIndex;  // Layer-encoded ID
+                        var bendSynth;
+
+                        if (simpleRamp) {
+                            bendSynth = Synth(\BendEnvelopeSimple, [
+                                \start, 0,
+                                \end, bendAmount,
+                                \duration, duration,
+                                \chanIndex, vstIndex,
+                                \customReplyID, layerReplyID
+                            ]);
+                        } {
+                            bendSynth = Synth(\BendEnvelope, [
+                                \start, 0,
+                                \peak, bendAmount,
+                                \return, 0,
+                                \attackTime, duration * peakTime,
+                                \releaseTime, duration * (1.0 - peakTime),
+                                \chanIndex, vstIndex,
+                                \customReplyID, layerReplyID  // Layer-encoded replyID
+                            ]);
+                        };
+
+                        // Store synth for cleanup
+                        bendControl.activeBendSynths[vstKey] = bendSynth;
+                    };
+
+                    "Layer % bend: Created % synths for group %".format(
+                        layerKey, bendControl.activeBendSynths.size, config.vstGroup
+                    ).postln;
                 };
             };
         }, '/layer' ++ layerNum ++ '/bend')
@@ -547,16 +568,33 @@
             coordinator.currentTask = nil;
         };
 
-        // No state cleanup needed for simplified timing
+        // Clean up any active bend synths
+        [\layer1, \layer2, \layer3].do { |layerKey|
+            var config = ~oscLayers.configs[layerKey];
+            if (config.bendControl.activeBendSynths.notNil) {
+                config.bendControl.activeBendSynths.do(_.free);
+                config.bendControl.activeBendSynths.clear;
+            };
+        };
 
-        "OSC Coordinator: All layers stopped".postln;
+        "OSC Coordinator: All layers stopped (with bend cleanup)".postln;
     };
 
     coordinator.cleanup = {
         ~oscLayers.state.isRunning = false;
         ~oscLayers.state.startTime = nil;
         coordinator.currentTask = nil;
-        "OSC Coordinator: Cleanup complete".postln;
+
+        // Clean up any active bend synths
+        [\layer1, \layer2, \layer3].do { |layerKey|
+            var config = ~oscLayers.configs[layerKey];
+            if (config.bendControl.activeBendSynths.notNil) {
+                config.bendControl.activeBendSynths.do(_.free);
+                config.bendControl.activeBendSynths.clear;
+            };
+        };
+
+        "OSC Coordinator: Cleanup complete (with bend cleanup)".postln;
     };
 
     coordinator;

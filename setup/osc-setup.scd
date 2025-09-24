@@ -52,7 +52,37 @@
          ["[/bend OSC]: VST Index:", chanIndex, "BendVal:", bendValue].postln;
     };
 
-    // NEW: Map chanIndex to layer VST groups for layers system compatibility
+    // NEW: Layer-encoded replyID routing (replyID >= 100)
+    if(replyID >= 100 and: { ~layers.notNil } and: { ~layers.configs.notNil }) {
+        var layerNum = (replyID / 100).floor.asInteger;  // Ensure integer
+        var vstIndex = replyID % 100;
+        var layerKey = ('layer' ++ layerNum).asSymbol;
+        var config = ~layers.configs[layerKey];
+        var targetGroup = if(config.notNil) { config.vstGroup } { nil };
+
+        if(targetGroup.notNil) {
+            instances = ~vstManager.getTargetInstances(targetGroup);
+            if(instances.notNil and: { instances.size > 0 }) {
+                var vstKeys = instances.keys.asArray.sort;
+                if(vstIndex < vstKeys.size) {
+                    var vstKey = vstKeys[vstIndex];
+                    var targetVst = instances[vstKey];
+
+                    if(targetVst.notNil and: { bendValue.inclusivelyBetween(0, 16383) }) {
+                        targetVst.midi.bend(0, bendValue);
+
+                        // Reduced logging for layer-encoded messages
+                        if((~bendLogCounter % 100 == 1) || (bendValue != 8192)) {
+                            ["[/bend LAYER]: Layer% VST% (%): %".format(layerNum, vstIndex, vstKey, bendValue)].postln;
+                        };
+                    };
+                };
+                ^nil; // Exit early - we've handled the layer-encoded message
+            };
+        };
+    };
+
+    // EXISTING: Map chanIndex to layer VST groups for layers system compatibility
     if(~layers.notNil and: { ~layers.configs.notNil }) {
         // Layer system is active - use layer VST groups
         targetGroupName = switch(chanIndex,

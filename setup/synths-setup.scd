@@ -102,7 +102,11 @@
 SynthDef(\BendEnvelope, {
     arg start = 8192, peak = 8192, end = 8192,
         peakTime = 1, returnTime = 1,
-        chanIndex = 0, peakCurve = \lin, returnCurve = \lin;
+        chanIndex = 0, customReplyID = nil,  // NEW: Layer-encoded replyID support
+        peakCurve = \lin, returnCurve = \lin;
+
+    // Use customReplyID if provided, otherwise fall back to chanIndex (backward compatibility)
+    var replyID = customReplyID ?? chanIndex;
 
     var env = EnvGen.kr(
         Env(
@@ -121,7 +125,7 @@ SynthDef(\BendEnvelope, {
         Impulse.kr(100),
         '/bend',
         [chanIndex, env],
-        replyID: chanIndex
+        replyID: replyID  // Use variable replyID instead of hardcoded chanIndex
     );
 }).add;
 
