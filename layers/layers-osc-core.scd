@@ -231,6 +231,12 @@
                 var bendAmount = ~getLayerBendAmount.();
                 var peakTime = ~getLayerBendPeakTime.();
                 var simpleRamp = ~getLayerBendSimpleRamp.();
+                var bendCenter = 8192;  // MIDI pitch bend center
+                var bendRangeRaw, peakValue;
+
+                // FIXED: Convert octave range (-1 to +1) to MIDI offset and apply to center
+                bendRangeRaw = (bendAmount * 8191).round.asInteger;  // Max range ±8191
+                peakValue = (bendCenter + bendRangeRaw).clip(0, 16383);
 
                 // Clean up existing bend synths for this layer
                 bendControl.activeBendSynths.do(_.free);
@@ -244,19 +250,19 @@
 
                         if (simpleRamp) {
                             bendSynth = Synth(\BendEnvelopeSimple, [
-                                \start, 0,
-                                \end, bendAmount,
+                                \start, bendCenter,       // MIDI center (8192)
+                                \end, peakValue,          // MIDI converted value
                                 \duration, duration,
                                 \chanIndex, vstIndex,
                                 \customReplyID, layerReplyID
                             ]);
                         } {
                             bendSynth = Synth(\BendEnvelope, [
-                                \start, 0,
-                                \peak, bendAmount,
-                                \return, 0,
-                                \attackTime, duration * peakTime,
-                                \releaseTime, duration * (1.0 - peakTime),
+                                \start, bendCenter,       // MIDI center (8192)
+                                \peak, peakValue,         // MIDI converted value
+                                \end, bendCenter,         // MIDI center (8192)
+                                \peakTime, duration * peakTime,
+                                \returnTime, duration * (1.0 - peakTime),
                                 \chanIndex, vstIndex,
                                 \customReplyID, layerReplyID  // Layer-encoded replyID
                             ]);
@@ -266,8 +272,9 @@
                         bendControl.activeBendSynths[vstKey] = bendSynth;
                     };
 
-                    "Layer % bend: Created % synths for group %".format(
-                        layerKey, bendControl.activeBendSynths.size, config.vstGroup
+                    "Layer % bend: Created % synths for group % (amount: % octaves → MIDI: %)".format(
+                        layerKey, bendControl.activeBendSynths.size, config.vstGroup,
+                        bendAmount.round(0.01), peakValue
                     ).postln;
                 };
             };

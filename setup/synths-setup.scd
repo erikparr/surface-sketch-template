@@ -129,6 +129,31 @@ SynthDef(\BendEnvelope, {
     );
 }).add;
 
+// Simple two-point bend envelope (start -> end only)
+SynthDef(\BendEnvelopeSimple, {
+    arg start = 8192, end = 8192, duration = 1,
+        chanIndex = 0, customReplyID = nil;
+
+    // Use customReplyID if provided, otherwise fall back to chanIndex (backward compatibility)
+    var replyID = customReplyID ?? chanIndex;
+
+    var env = EnvGen.kr(
+        Env([start, end], [duration], \lin),  // Simple linear ramp from start to end
+        doneAction: 2
+    );
+
+    // Debug message at start
+    SendTrig.kr(Impulse.kr(0), chanIndex, start);
+
+    // Send values to OSC at high rate
+    SendReply.kr(
+        Impulse.kr(100),
+        '/bend',
+        [chanIndex, env],
+        replyID: replyID
+    );
+}).add;
+
 // Looping version of the bend envelope
 SynthDef(\BendEnvelopeLoop, {
     arg start = 8192, peak = 8192, end = 8192,

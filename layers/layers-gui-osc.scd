@@ -152,11 +152,15 @@
     // Simple ramp checkbox (for bend mode)
     simpleRampCheckbox = CheckBox()
         .string_("Simple Ramp (Bend)")
-        .value_(false)
+        .value_(~getLayerBendSimpleRamp.() ? false)  // Get current state from system
         .enabled_(~oscLayers.state.bendMode)
         .action_({ |cb|
-            // This could be implemented as OSC parameter in the future
-            "Simple ramp setting: %".format(cb.value).postln;
+            "GUI → System: Simple ramp mode %".format(cb.value).postln;
+            // FIXED: Connect GUI to system state
+            if (~setLayersBendSimpleRamp.notNil) {
+                ~setLayersBendSimpleRamp.(cb.value);
+            };
+            updateStatus.();
         });
 
     layout.add(simpleRampCheckbox);
@@ -402,7 +406,8 @@
         statusStr = statusStr ++ "Manual control: %\n".format(~oscLayers.state.manualControl);
         statusStr = statusStr ++ "Live melody: %\n".format(~oscLayers.state.liveMelodyMode);
         statusStr = statusStr ++ "Single note CC: %\n".format(~oscLayers.state.singleNoteCCMode);
-        statusStr = statusStr ++ "Bend mode: %".format(~oscLayers.state.bendMode);
+        statusStr = statusStr ++ "Bend mode: %\n".format(~oscLayers.state.bendMode);
+        statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
         statusText.string_(statusStr);
     };

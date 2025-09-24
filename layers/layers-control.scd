@@ -935,16 +935,16 @@
     var config = ~layers.configs[layerName];
     var bendAmount, peakTimeRatio, simpleRamp, bendSynth;
     var bendCenter = 8192;  // MIDI pitch bend center
-    var bendRange, peakValue, vstIndex;
+    var bendRangeRaw, peakValue, vstIndex;
 
     // Read current bend parameters
     bendAmount = ~getLayerBendAmount.();
     peakTimeRatio = ~getLayerBendPeakTime.();
     simpleRamp = ~getLayerBendSimpleRamp.();
 
-    // Calculate bend envelope parameters
-    bendRange = (bendAmount * 8192).round.asInteger;
-    peakValue = (bendCenter + bendRange).clip(0, 16383);
+    // FIXED: Convert octave range (-1 to +1) to MIDI offset and apply to center (8192)
+    bendRangeRaw = (bendAmount * 8191).round.asInteger;  // Max range ±8191 (not 8192)
+    peakValue = (bendCenter + bendRangeRaw).clip(0, 16383);
 
     // Get VST index for this layer
     vstIndex = ~getLayerVSTIndex.(layerName) ? 0;
@@ -954,31 +954,31 @@
         if (simpleRamp) {
             // Simple ramp mode: start → end only (two-point envelope)
             bendSynth = Synth(\BendEnvelope, [
-                \start, bendCenter,
-                \peak, peakValue,
-                \end, peakValue,        // End at peak value (no return)
+                \start, bendCenter,       // MIDI center (8192)
+                \peak, peakValue,         // MIDI converted value
+                \end, peakValue,          // End at peak value (no return)
                 \peakTime, noteDuration,  // Use full duration to reach peak
-                \returnTime, 0.01,      // Minimal return time (required by SynthDef)
+                \returnTime, 0.01,        // Minimal return time (required by SynthDef)
                 \chanIndex, vstIndex
             ]);
 
-            "Simple ramp bend envelope created for layer % note % (pitch: %, duration: %s, bend: % → %)".format(
+            "Simple ramp bend envelope created for layer % note % (pitch: %, duration: %s, MIDI bend: % → %)".format(
                 layerName, noteIndex, pitch, noteDuration.round(0.01),
                 bendCenter, peakValue
             ).postln;
         } {
             // Normal mode: start → peak → return (three-point envelope)
             bendSynth = Synth(\BendEnvelope, [
-                \start, bendCenter,
-                \peak, peakValue,
-                \end, bendCenter,
+                \start, bendCenter,       // MIDI center (8192)
+                \peak, peakValue,         // MIDI converted value
+                \end, bendCenter,         // MIDI center (8192)
                 \peakTime, peakTimeRatio * noteDuration,
                 \returnTime, (1.0 - peakTimeRatio) * noteDuration,
                 \chanIndex, vstIndex
             ]);
 
-            "Standard bend envelope created for layer % note % (pitch: %, duration: %s, amount: % octaves)".format(
-                layerName, noteIndex, pitch, noteDuration.round(0.01), bendAmount.round(0.01)
+            "Standard bend envelope created for layer % note % (pitch: %, duration: %s, amount: % octaves → MIDI: %)".format(
+                layerName, noteIndex, pitch, noteDuration.round(0.01), bendAmount.round(0.01), peakValue
             ).postln;
         };
     } {
