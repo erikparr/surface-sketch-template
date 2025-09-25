@@ -13,12 +13,13 @@ if (~setupAlreadyLoaded == true) {
         var filesInOrder = [
             "synths-setup.scd",          // 1. Load synthdefs first
             "vstplugin-setup.scd",       // 2. Then VST manager and plugins
-            "vst-management.scd",        // 3. Then VST management UI
-            "midi-setup.scd",            // 4. Then MIDI setup (depends on VST manager)
-            // "midi-control-mapping.scd",  // 5. Then MIDI control mapping (depends on MIDI controller)
-            "osc-setup.scd",             // 6. Then OSC setup (depends on VST manager)
-            "parameter-monitor-gui.scd", // 7. Then parameter monitor GUI (depends on MIDI controller)
-            // "melody-management.scd"      // 8. Finally melody management (depends on VST manager)
+            "configuration-manager.scd", // 3. Then configuration manager (depends on VST manager)
+            "vst-management.scd",        // 4. Then VST management UI
+            "midi-setup.scd",            // 5. Then MIDI setup (depends on VST manager)
+            // "midi-control-mapping.scd",  // 6. Then MIDI control mapping (depends on MIDI controller)
+            "osc-setup.scd",             // 7. Then OSC setup (depends on VST manager)
+            "parameter-monitor-gui.scd", // 8. Then parameter monitor GUI (depends on MIDI controller)
+            // "melody-management.scd"      // 9. Finally melody management (depends on VST manager)
         ];
         
         // Recursive function to load files in sequence

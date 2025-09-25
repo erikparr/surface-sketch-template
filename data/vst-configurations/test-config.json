@@ -1,0 +1,36 @@
+{
+  "configName": "Test Configuration",
+  "description": "Test setup with 3 SWAM instruments",
+  "isDefault": false,
+  "timestamp": "2025-01-22 12:00:00",
+  "vstInstances": [
+    {
+      "name": "Bass Tuba 01",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 2,
+      "group": "Layer1"
+    },
+    {
+      "name": "Bass Tuba 02",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3",
+      "outputBus": 4,
+      "group": "Layer2"
+    },
+    {
+      "name": "Bass Tuba 03",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3",
+      "outputBus": 6,
+      "group": "Layer3"
+    }
+  ],
+  "groups": {
+    "Layer1": ["Bass Tuba 01"],
+    "Layer2": ["Bass Tuba 02"],
+    "Layer3": ["Bass Tuba 03"]
+  },
+  "midiSettings": {
+    "expressionKnobEnabled": false,
+    "manualVelocityEnabled": false,
+    "activeKeyboardGroup": "Layer1"
+  }
+}

@@ -41,6 +41,10 @@
     var multiInstrumentToggle; // <-- For Multi-Instrument Mode toggle
     var groupMgmtLayout, addToGroupLayout, addToGroupButton, existingGroupMenu;
     var createGroupLayout, newGroupNameField, createNewGroupButton;
+    // Configuration management variables
+    var configLayout, configSelectorMenu, configMenuItems, loadConfigButton, saveConfigButton;
+    var saveConfigLayout, configNameField, configDescField, deleteConfigButton, setDefaultButton;
+    var updateConfigurationsList;
 
     // Check if VSTManager is available
     if (~vstManager.isNil) {
@@ -63,7 +67,7 @@
     };
 
     // Create the window and UI elements
-    win = Window("VST Manager", Rect(100, 100, 400, 500));
+    win = Window("VST Manager", Rect(100, 100, 400, 650)); // Increased height for configuration management
     layout = VLayout();
     instances = [];
 
@@ -416,6 +420,43 @@
     layout.add(midiControlOverridesLayout); // Add MIDI overrides layout to main VLayout
     // --- End MIDI Control Overrides UI ---
 
+    // --- Configuration Management Section ---
+    layout.add(StaticText().string_("Configuration Management:"));
+    configLayout = VLayout();
+
+    // Configuration selector and buttons
+    configSelectorMenu = PopUpMenu().items_(["Select Configuration..."]);
+    configLayout.add(configSelectorMenu);
+
+    // Configuration action buttons (Load, Delete, Set Default)
+    buttonLayout = HLayout();
+    loadConfigButton = Button().states_([["Load Config"]]);
+    deleteConfigButton = Button().states_([["Delete Config"]]);
+    setDefaultButton = CheckBox().string_("Set as Default");
+    buttonLayout.add(loadConfigButton);
+    buttonLayout.add(deleteConfigButton);
+    buttonLayout.add(setDefaultButton);
+    configLayout.add(buttonLayout);
+
+    // Save configuration section
+    saveConfigLayout = VLayout();
+    saveConfigLayout.add(StaticText().string_("Save Current Configuration:"));
+
+    saveConfigLayout.add(StaticText().string_("Configuration Name:"));
+    configNameField = TextField().string_("");
+    saveConfigLayout.add(configNameField);
+
+    saveConfigLayout.add(StaticText().string_("Description (optional):"));
+    configDescField = TextField().string_("");
+    saveConfigLayout.add(configDescField);
+
+    saveConfigButton = Button().states_([["Save Configuration"]]);
+    saveConfigLayout.add(saveConfigButton);
+
+    configLayout.add(saveConfigLayout);
+    layout.add(configLayout);
+    // --- End Configuration Management Section ---
+
     // --- Group Management Actions ---
     // Add to existing group action
     addToGroupButton.action = { |btn|
@@ -464,6 +505,177 @@
         };
     };
     // --- End Group Management Actions ---
+
+    // --- Configuration Management Functions ---
+    updateConfigurationsList = {
+        var configs, menuItems, selectedIndex, selectedConfig;
+
+        if(~listVSTConfigurations.notNil) {
+            configs = ~listVSTConfigurations.();
+            menuItems = ["Select Configuration..."] ++ configs.collect({ |config| config[\name] });
+
+            {
+                if(win.notNil and: { win.isClosed.not }) {
+                    selectedIndex = configSelectorMenu.value;
+                    configSelectorMenu.items = menuItems;
+
+                    // Try to restore selection
+                    if(selectedIndex.notNil and: { selectedIndex < menuItems.size }) {
+                        configSelectorMenu.value = selectedIndex;
+                    } {
+                        configSelectorMenu.value = 0; // Default to "Select Configuration..."
+                    };
+
+                    // Update default checkbox based on current selection
+                    if(selectedIndex.notNil and: { selectedIndex > 0 and: { selectedIndex <= configs.size } }) {
+                        selectedConfig = configs[selectedIndex - 1];
+                        setDefaultButton.value = selectedConfig[\isDefault].asInteger;
+                    } {
+                        setDefaultButton.value = 0;
+                    };
+                };
+            }.defer;
+        };
+    };
+
+    // Configuration button actions
+    saveConfigButton.action = { |btn|
+        var configName, configDesc, invalidChars;
+        configName = configNameField.string.stripWhiteSpace;
+        configDesc = configDescField.string.stripWhiteSpace;
+
+        // Validate configuration name
+        if(configName.isEmpty) {
+            statusText.string = "Please enter a configuration name";
+            ^nil;
+        };
+
+        // Check for invalid filename characters
+        invalidChars = configName.findRegexp("[/\\\\:*?\"<>|]");
+        if(invalidChars.notEmpty) {
+            statusText.string = "Invalid characters in name: " ++ invalidChars.collect(_[1]).join("");
+            ^nil;
+        };
+
+        // Check if VST instances exist to save
+        if(~vstManager.isNil or: { ~vstManager.vstInstances.isEmpty }) {
+            statusText.string = "No VST instances to save";
+            ^nil;
+        };
+
+        if(~saveVSTConfiguration.notNil) {
+            if(~saveVSTConfiguration.(configName, configDesc)) {
+                statusText.string = "Configuration saved: " ++ configName;
+                configNameField.string = "";
+                configDescField.string = "";
+                updateConfigurationsList.();
+            } {
+                statusText.string = "Failed to save configuration";
+            };
+        } {
+            statusText.string = "Configuration manager not available";
+        };
+    };
+
+    loadConfigButton.action = { |btn|
+        var selectedIndex, configName;
+        selectedIndex = configSelectorMenu.value;
+
+        if(selectedIndex.notNil and: { selectedIndex > 0 }) {
+            if(~listVSTConfigurations.notNil) {
+                var configs = ~listVSTConfigurations.();
+                if(selectedIndex <= configs.size) {
+                    configName = configs[selectedIndex - 1][\name];
+                    if(~loadVSTConfiguration.notNil) {
+                        statusText.string = "Loading configuration: " ++ configName;
+                        ~loadVSTConfiguration.(configName, { |success|
+                            {
+                                if(success) {
+                                    statusText.string = "Configuration loaded: " ++ configName;
+                                    ~updateVSTManagerUI.();
+                                } {
+                                    statusText.string = "Failed to load configuration: " ++ configName;
+                                };
+                            }.defer;
+                        });
+                    } {
+                        statusText.string = "Configuration manager not available";
+                    };
+                };
+            };
+        } {
+            statusText.string = "Please select a configuration to load";
+        };
+    };
+
+    deleteConfigButton.action = { |btn|
+        var selectedIndex, configName, configPath;
+        selectedIndex = configSelectorMenu.value;
+
+        if(selectedIndex.notNil and: { selectedIndex > 0 }) {
+            if(~listVSTConfigurations.notNil) {
+                var configs = ~listVSTConfigurations.();
+                if(selectedIndex <= configs.size) {
+                    configName = configs[selectedIndex - 1][\name];
+                    configPath = configs[selectedIndex - 1][\filePath];
+
+                    // Simple confirmation by checking if file exists
+                    if(File.exists(configPath)) {
+                        ("rm" + configPath.quote).unixCmd;
+                        statusText.string = "Deleted configuration: " ++ configName;
+                        updateConfigurationsList.();
+                    } {
+                        statusText.string = "Configuration file not found";
+                    };
+                };
+            };
+        } {
+            statusText.string = "Please select a configuration to delete";
+        };
+    };
+
+    setDefaultButton.action = { |checkbox|
+        var selectedIndex, configName;
+        selectedIndex = configSelectorMenu.value;
+
+        if(checkbox.value.asBoolean) {
+            // Set as default
+            if(selectedIndex.notNil and: { selectedIndex > 0 }) {
+                if(~listVSTConfigurations.notNil) {
+                    var configs = ~listVSTConfigurations.();
+                    if(selectedIndex <= configs.size) {
+                        configName = configs[selectedIndex - 1][\name];
+                        if(~setDefaultVSTConfiguration.notNil) {
+                            if(~setDefaultVSTConfiguration.(configName)) {
+                                statusText.string = "Set default: " ++ configName;
+                                updateConfigurationsList.(); // Refresh to update all default states
+                            } {
+                                statusText.string = "Failed to set default configuration";
+                                checkbox.value = 0; // Reset checkbox
+                            };
+                        };
+                    };
+                };
+            } {
+                statusText.string = "Please select a configuration first";
+                checkbox.value = 0; // Reset checkbox
+            };
+        } {
+            // Remove default
+            if(~setDefaultVSTConfiguration.notNil) {
+                if(~setDefaultVSTConfiguration.(nil)) {
+                    statusText.string = "Default configuration cleared";
+                    updateConfigurationsList.(); // Refresh to update all default states
+                } {
+                    statusText.string = "Failed to clear default configuration";
+                };
+            };
+        };
+    };
+
+    // Initial configuration list update
+    updateConfigurationsList.();
+    // --- End Configuration Management Functions ---
 
     // Status
     statusText = StaticText()
