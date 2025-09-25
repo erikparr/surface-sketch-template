@@ -258,18 +258,10 @@ ConfigurationManager {
 		var file, jsonString, config;
 
 		try {
-			("Attempting to open file: " ++ filePath).postln;
 			file = File.open(filePath, "r");
 			jsonString = file.readAllString;
 			file.close;
-			("JSON string length: " ++ jsonString.size ++ " characters").postln;
-			("First 100 characters: " ++ jsonString.keep(100)).postln;
 			config = jsonString.parseJSON;
-			("Parsed config type: " ++ config.class).postln;
-			if(config.notNil) {
-				("Config keys: " ++ config.keys).postln;
-				("configName value: " ++ config["configName"]).postln;
-			};
 			^config;
 		} { |error|
 			("Failed to read configuration file " ++ filePath ++ ": " ++ error.message).error;
@@ -321,11 +313,12 @@ ConfigurationManager {
 
 			"Loading VST instances...".postln;
 			instances.do { |instanceConfig|
-				var synth, instanceName, pluginPath, outputBus, finalOutputBus;
+				var synth, instanceName, pluginPath, outputBus, finalOutputBus, instanceGroup;
 
 				instanceName = instanceConfig["name"];
 				pluginPath = instanceConfig["pluginPath"];
 				outputBus = instanceConfig["outputBus"] ? 2;
+				instanceGroup = instanceConfig["group"];
 
 				// Check for bus conflicts and resolve them
 				finalOutputBus = outputBus;
@@ -349,9 +342,20 @@ ConfigurationManager {
 						synth,
 						pluginPath,
 						true, // Enable editor
-						nil,  // No initial group
+						instanceGroup,  // Assign to proper group
 						{ |controller|
 							("Loaded VST instance: " ++ instanceName ++ " on bus " ++ finalOutputBus).postln;
+
+							// Explicit editor opening fallback - same as manual loading
+							{
+								var inst = vstManager.vstInstances[instanceName];
+								if (inst.notNil && inst.controller.notNil && { inst.controller.isOpen }) {
+									("Opening VST editor: " ++ instanceName).postln;
+									inst.controller.editor;
+								} {
+									("VST failed to load properly: " ++ instanceName).postln;
+								};
+							}.defer(0.5);
 						}
 					);
 
@@ -366,9 +370,9 @@ ConfigurationManager {
 		// Wait for VSTs to initialize
 		2.wait;
 
-		// Recreate groups
+		// Create/ensure groups exist as defined in configuration
 		if(groups.notNil and: { success }) {
-			"Recreating groups...".postln;
+			"Creating groups from configuration...".postln;
 			groups.keysValuesDo { |groupName, members|
 				vstManager.createGroup(groupName, members);
 			};
