@@ -66,16 +66,29 @@
     // Create slider displays (circular visualization)
     sliderLayout = HLayout();
     9.do { |i|
-        var parameterId, parameterView, userView, paramLabel;
+        var parameterId, parameterView, userView, paramLabel, metadata, labelText;
         parameterId = "midi_slider_" ++ i;
         parameterView = VLayout();
-        
-        // Compact label
+
+        // Get metadata for display name, fallback to generic label
+        metadata = midiController.parameterRegistry.getParameterMetadata(parameterId);
+        labelText = if (metadata.notNil and: { metadata.shortName.notNil }) {
+            metadata.shortName
+        } {
+            "S" ++ (i+1)  // Fallback to original format
+        };
+
+        // Compact label with tooltip support
         paramLabel = StaticText()
-            .string_("S" ++ (i+1))
+            .string_(labelText)
             .font_(Font.default.size_(8))
             .align_(\center)
             .fixedHeight_(12);
+
+        // Add tooltip with full display name if available
+        if (metadata.notNil and: { metadata.displayName.notNil }) {
+            paramLabel.toolTip_(metadata.displayName);
+        };
         
         // Circular visualization
         userView = UserView()
@@ -160,18 +173,32 @@
     );
     
     3.do { |row|
-        var rowLayout, parameterId, parameterView, userView, paramLabel;
+        var rowLayout;
         rowLayout = HLayout();
         8.do { |pos|
+            var parameterId, parameterView, userView, paramLabel, metadata, labelText;
             parameterId = "midi_row" ++ (row+1) ++ "_pos" ++ (pos+1);
             parameterView = VLayout();
-            
-            // Compact label
+
+            // Get metadata for display name, fallback to generic label
+            metadata = midiController.parameterRegistry.getParameterMetadata(parameterId);
+            labelText = if (metadata.notNil and: { metadata.shortName.notNil }) {
+                metadata.shortName
+            } {
+                "R" ++ (row+1) ++ "P" ++ (pos+1)  // Fallback to original format
+            };
+
+            // Compact label with tooltip support
             paramLabel = StaticText()
-                .string_("R" ++ (row+1) ++ "P" ++ (pos+1))
+                .string_(labelText)
                 .font_(Font.default.size_(7))
                 .align_(\center)
                 .fixedHeight_(10);
+
+            // Add tooltip with full display name if available
+            if (metadata.notNil and: { metadata.displayName.notNil }) {
+                paramLabel.toolTip_(metadata.displayName);
+            };
             
             // Circular visualization
             userView = UserView()

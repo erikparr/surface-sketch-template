@@ -159,20 +159,102 @@ MIDIController {
         this.debug("[MIDIController] OSC components initialized");
     }
     
+    // Get parameter display names mapping
+    getParameterDisplayNames {
+        ^Dictionary.newFrom([
+            // Row 1 - Global Controls
+            "midi_row1_pos1", (displayName: "Manual Control", shortName: "ManCtl"),
+            "midi_row1_pos2", (displayName: "Note Duration", shortName: "NoteDur"),
+            "midi_row1_pos3", (displayName: "Global Velocity", shortName: "GlbVel"),
+            "midi_row1_pos4", (displayName: "Timing Offset", shortName: "TmOffs"),
+            "midi_row1_pos5", (displayName: "L1 Expression", shortName: "L1Exp"),
+            "midi_row1_pos6", (displayName: "L1 Exp Dur", shortName: "L1EDur"),
+            "midi_row1_pos7", (displayName: "L1 Exp Curve", shortName: "L1ECrv"),
+            "midi_row1_pos8", (displayName: "Loop Duration", shortName: "LoopDur"),
+
+            // Row 2 - Layer 2 Controls
+            "midi_row2_pos1", (displayName: "L2 Reserved", shortName: "L2Rsv"),
+            "midi_row2_pos2", (displayName: "L2 Note Dur", shortName: "L2NDur"),
+            "midi_row2_pos3", (displayName: "L2 Reserved", shortName: "L2Rsv"),
+            "midi_row2_pos4", (displayName: "L2 Reserved", shortName: "L2Rsv"),
+            "midi_row2_pos5", (displayName: "L2 Expression", shortName: "L2Exp"),
+            "midi_row2_pos6", (displayName: "L2 Exp Dur", shortName: "L2EDur"),
+            "midi_row2_pos7", (displayName: "L2 Exp Curve", shortName: "L2ECrv"),
+            "midi_row2_pos8", (displayName: "L2 Reserved", shortName: "L2Rsv"),
+
+            // Row 3 - Layer 3 Controls
+            "midi_row3_pos1", (displayName: "L3 Reserved", shortName: "L3Rsv"),
+            "midi_row3_pos2", (displayName: "L3 Note Dur", shortName: "L3NDur"),
+            "midi_row3_pos3", (displayName: "L3 Reserved", shortName: "L3Rsv"),
+            "midi_row3_pos4", (displayName: "L3 Reserved", shortName: "L3Rsv"),
+            "midi_row3_pos5", (displayName: "L3 Expression", shortName: "L3Exp"),
+            "midi_row3_pos6", (displayName: "L3 Exp Dur", shortName: "L3EDur"),
+            "midi_row3_pos7", (displayName: "L3 Exp Curve", shortName: "L3ECrv"),
+            "midi_row3_pos8", (displayName: "L3 Reserved", shortName: "L3Rsv"),
+
+            // Sliders - Functional assignments
+            "midi_slider_0", (displayName: "Layer Spread", shortName: "LyrSprd"),
+            "midi_slider_1", (displayName: "Slider 2", shortName: "Sld2"),
+            "midi_slider_2", (displayName: "Slider 3", shortName: "Sld3"),
+            "midi_slider_3", (displayName: "Slider 4", shortName: "Sld4"),
+            "midi_slider_4", (displayName: "Slider 5", shortName: "Sld5"),
+            "midi_slider_5", (displayName: "Slider 6", shortName: "Sld6"),
+            "midi_slider_6", (displayName: "Slider 7", shortName: "Sld7"),
+            "midi_slider_7", (displayName: "Slider 8", shortName: "Sld8"),
+            "midi_slider_8", (displayName: "Slider 9", shortName: "Sld9")
+        ]);
+    }
+
     initializeOSCParameters {
+        var displayNames, testKey, testValue;
+
+        displayNames = this.getParameterDisplayNames();
+
+        "=== INITIALIZING OSC PARAMETERS ===".postln;
+        ("ActivePreset: " ++ activePresetName).postln;
+        ("DisplayNames dictionary size: " ++ displayNames.size).postln;
+
+        // Debug: Check a specific key in displayNames
+        testKey = "midi_row1_pos1";
+        testValue = displayNames[testKey];
+        ("Test lookup [" ++ testKey ++ "] = " ++ testValue).postln;
+
+        // Debug: Show first 10 keys in the dictionary
+        "First 10 keys in displayNames:".postln;
+        displayNames.keys.asArray.sort[0..9].do { |key, i|
+            var value = displayNames[key];
+            ("  [" ++ i ++ "]: " ++ key ++ " -> " ++ value).postln;
+        };
+
+        // Debug: Check dictionary class and direct access
+        ("DisplayNames class: " ++ displayNames.class).postln;
+        ("Direct key test: " ++ (displayNames.keys.includes("midi_row1_pos1"))).postln;
+
         // Register all slider parameters
         9.do { |i|
-            var parameterId, spec, metadata;
+            var parameterId, spec, metadata, nameData;
             parameterId = "midi_slider_" ++ i;
             spec = ControlSpec(0, 127, \lin, 0, 0);
+            nameData = displayNames[parameterId];
+
             metadata = (
                 description: "MIDI Slider " ++ (i + 1),
                 type: \slider,
                 index: i,
-                ccNum: if(activePreset.notNil and: { activePreset.sliders.notNil }, 
+                displayName: if (nameData.notNil and: { nameData.displayName.notNil }) {
+                    nameData.displayName
+                } {
+                    "MIDI Slider " ++ (i + 1)
+                },
+                shortName: if (nameData.notNil and: { nameData.shortName.notNil }) {
+                    nameData.shortName
+                } {
+                    "S" ++ (i + 1)
+                },
+                ccNum: if(activePreset.notNil and: { activePreset.sliders.notNil },
                     { activePreset.sliders[i] }, { nil })
             );
-            
+
             parameterRegistry.registerParameter(parameterId, spec, metadata);
             this.debug("Registered slider parameter % with spec %".format(parameterId, spec));
             parameterMappings[("slider_" ++ i).asSymbol] = parameterId;
@@ -187,17 +269,45 @@ MIDIController {
         if (activePreset.notNil and: { activePreset.knobRows.notNil }) {
             activePreset.knobRows.do { |rowCCs, rowIndex|
                 rowCCs.do { |ccNum, posIndex|
-                    var parameterId, spec, metadata;
+                    var parameterId, spec, metadata, nameData;
                     parameterId = "midi_row" ++ (rowIndex + 1) ++ "_pos" ++ (posIndex + 1);
                     spec = ControlSpec(0, 127, \lin, 1, 64);  // MIDI range
+                    nameData = displayNames[parameterId];
+
+                    // Debug output for first parameter to check lookup
+                    if (rowIndex == 0 and: { posIndex == 0 }) {
+                        ("DEBUG: parameterId = " ++ parameterId).postln;
+                        ("DEBUG: parameterId class = " ++ parameterId.class).postln;
+                        ("DEBUG: looking up key = " ++ parameterId).postln;
+                        ("DEBUG: nameData = " ++ nameData).postln;
+                        if (nameData.notNil) {
+                            ("DEBUG: nameData.displayName = " ++ nameData.displayName).postln;
+                            ("DEBUG: nameData.shortName = " ++ nameData.shortName).postln;
+                        } {
+                            // Try direct dictionary access
+                            var testLookup = displayNames["midi_row1_pos1"];
+                            ("DEBUG: Direct lookup test = " ++ testLookup).postln;
+                        };
+                    };
+
                     metadata = (
                         description: "MIDI Row % Knob %".format(rowIndex + 1, posIndex + 1),
                         type: \knob,
                         row: rowIndex + 1,
                         pos: posIndex + 1,
+                        displayName: if (nameData.notNil and: { nameData.displayName.notNil }) {
+                            nameData.displayName
+                        } {
+                            "MIDI Row % Knob %".format(rowIndex + 1, posIndex + 1)
+                        },
+                        shortName: if (nameData.notNil and: { nameData.shortName.notNil }) {
+                            nameData.shortName
+                        } {
+                            "R" ++ (rowIndex + 1) ++ "P" ++ (posIndex + 1)
+                        },
                         ccNum: ccNum
                     );
-                    
+
                     parameterRegistry.registerParameter(parameterId, spec, metadata);
                     parameterRegistry.addAddress(parameterId, \midi_cc, ccNum);
                     parameterRegistry.addAddress(parameterId, \midi_row_pos, 
@@ -208,8 +318,43 @@ MIDIController {
                 };
             };
         };
-        
+
         this.debug("[MIDIController] Registered % OSC parameters".format(parameterRegistry.getParameterIDs.size));
+    }
+
+    // Update parameter display name (useful for dynamic assignment changes)
+    updateParameterDisplayName { |parameterId, displayName, shortName|
+        var metadata = parameterRegistry.getParameterMetadata(parameterId);
+        if (metadata.notNil) {
+            if (displayName.notNil) { metadata.displayName = displayName; };
+            if (shortName.notNil) { metadata.shortName = shortName; };
+            this.debug("Updated display names for %: % (%%)".format(
+                parameterId, displayName, shortName));
+            ^true;
+        } {
+            this.debug("Warning: Cannot update display name for unregistered parameter: %".format(parameterId));
+            ^false;
+        };
+    }
+
+    // Get current parameter display names for debugging/inspection
+    getParameterDisplayName { |parameterId|
+        var metadata = parameterRegistry.getParameterMetadata(parameterId);
+        if (metadata.notNil) {
+            ^(displayName: metadata.displayName, shortName: metadata.shortName);
+        } {
+            ^nil;
+        };
+    }
+
+    // Refresh parameter monitor GUI with new names (if GUI is open)
+    refreshParameterMonitorGUI {
+        if (~parameterMonitorWindow.notNil and: { ~parameterMonitorWindow.isClosed.not }) {
+            "Refreshing Parameter Monitor GUI with updated names...".postln;
+            ~refreshParameterMonitorGUI.(this);
+        } {
+            "Parameter Monitor GUI not open - names will be updated when opened".postln;
+        };
     }
 
     // Class method to get the snapshot data path

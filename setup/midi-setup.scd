@@ -43,6 +43,13 @@
     if (~midiController.setControllerPreset(\midiMix)) {
         "Successfully set MIDI controller to MIDIMix preset".postln;
         ~midiController.listControllerPresets;  // Show available presets
+
+        // IMPORTANT: Re-initialize OSC parameters now that preset is loaded
+        // This ensures knob parameters get registered with proper display names
+        if (~midiController.oscEnabled) {
+            "Re-initializing OSC parameters with preset data...".postln;
+            ~midiController.initializeOSCParameters();
+        };
     } {
         "Failed to set MIDI controller to MIDIMix preset".warn;
     };
