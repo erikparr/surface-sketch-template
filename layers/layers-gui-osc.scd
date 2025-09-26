@@ -451,6 +451,24 @@
     };
 };
 
+// Function to refresh layer GUI after VST configuration changes
+~refreshLayerVSTGroups = {
+    if (~layersGUIWindow.notNil) {
+        AppClock.sched(0, {
+            var window = ~layersGUIWindow;
+            if (window.notNil and: { window.isClosed.not }) {
+                "Refreshing layer GUI with new VST groups...".postln;
+                // Close and recreate the GUI with updated state
+                window.close;
+                // FIXED: Use AppClock.sched instead of .wait
+                AppClock.sched(0.1, {
+                    ~createLayersGUI.();
+                });
+            };
+        });
+    };
+};
+
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                    ENHANCED GLOBAL MELODY LOADING                          │
 // └─────────────────────────────────────────────────────────────────────────────┘

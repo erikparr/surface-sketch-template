@@ -1,64 +1,9 @@
+ERROR: syntax error, unexpected VAR, expecting '}'
+  in file '/Users/erikparr/Library/Application Support/SuperCollider/Extensions/ConfigurationManager/ConfigurationManager.sc'
+  line 401 char 6:
 
-[[/bend OSC]: VST Index:, 0, BendVal:, 0]
-ERROR: Message 'vstGroup' not understood.
-RECEIVER:
-   nil
-ARGS:
-KEYWORD ARGUMENTS:
-CALL STACK:
-	DoesNotUnderstandError:reportError
-		arg this = <instance of DoesNotUnderstandError>
-	Nil:handleError
-		arg this = nil
-		arg error = <instance of DoesNotUnderstandError>
-	Thread:handleError
-		arg this = <instance of Thread>
-		arg error = <instance of DoesNotUnderstandError>
-	Object:throw
-		arg this = <instance of DoesNotUnderstandError>
-	Object:doesNotUnderstand
-		arg this = nil
-		arg selector = 'vstGroup'
-		arg args = [*0]
-		arg kwargs = [*0]
-	< FunctionDef in closed FunctionDef >
-		var layerNum = 1.0
-		var vstIndex = 0
-		var layerKey = 'layer1.0'
-		var targetGroup = nil
-	True:if
-		arg this = true
-		arg trueFunc = <instance of Function>
-		arg falseFunc = nil
-	< FunctionDef in closed FunctionDef >
-		arg msg = [*5]
-		var replyID = 100
-		var chanIndex = 0
-		var bendValue = 0
-		var vst = nil
-		var targetGroupName = nil
-		var instances = nil
-	OSCFuncAddrMessageMatcher:value
-		arg this = <instance of OSCFuncAddrMessageMatcher>
-		arg msg = [*5]
-		arg time = 727.639696583
-		arg testAddr = <instance of NetAddr>
-		arg recvPort = 57120
-	OSCMessageDispatcher:value
-		arg this = <instance of OSCMessageDispatcher>
-		arg msg = [*5]
-		arg time = 727.639696583
-		arg addr = <instance of NetAddr>
-		arg recvPort = 57120
-	Main:recvOSCmessage
-		arg this = <instance of Main>
-		arg time = 727.639696583
-		arg replyAddr = <instance of NetAddr>
-		arg recvPort = 57120
-		arg msg = [*5]
-^^ ERROR: Message 'vstGroup' not understood.
-RECEIVER: nil
-
-
-[[/bend OSC]: VST Index:, 0, BendVal:, 0]
-ERROR: Message 'vstGroup' not understood.
+  			var loadedVSTNames = vstManager.vstInstances.keys.asArray.sort;
+     ^^^
+  			var layerGroups = ["Layer1", "Layer2", "Layer3"];
+-----------------------------------
+ERROR: file '/Users/erikparr/Library/Application Support/SuperCollider/Extensions/ConfigurationManager/ConfigurationManager.sc' parse failed

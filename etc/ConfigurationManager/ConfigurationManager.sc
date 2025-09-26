@@ -78,11 +78,36 @@ ConfigurationManager {
 			instanceData = instanceData.add(instanceConfig);
 		};
 
-		// Serialize groups
+		// Serialize groups - if groups are empty, auto-assign VSTs to Layer1, Layer2, Layer3
 		groupData = ();
 		if(vstManager.groups.notNil) {
+			var hasPopulatedGroups = false;
 			vstManager.groups.keysValuesDo { |groupName, members|
 				groupData.put(groupName, members.copy);
+				if(members.size > 0) {
+					hasPopulatedGroups = true;
+				};
+			};
+
+			// If all groups are empty, auto-assign VSTs to Layer groups
+			if(hasPopulatedGroups.not and: { instanceData.size > 0 }) {
+				var layerNames = [\Layer1, \Layer2, \Layer3];
+				("Auto-assigning VSTs to layer groups...").postln;
+
+				// Clear and recreate groups
+				groupData = ();
+				layerNames.do { |layerName|
+					groupData.put(layerName.asString, []);
+				};
+
+				// Assign each VST instance to a layer group
+				instanceData.do { |instanceConfig, i|
+					var layerIndex = i % 3;
+					var layerName = layerNames[layerIndex].asString;
+					instanceConfig.put(\group, layerName);
+					groupData[layerName] = groupData[layerName].add(instanceConfig[\name]);
+					("Assigning % to %").format(instanceConfig[\name], layerName).postln;
+				};
 			};
 		};
 
@@ -282,6 +307,7 @@ ConfigurationManager {
 
 	applyConfiguration { |config, callback|
 		var instances, groups, success, validatedInstances, missingPlugins;
+		var loadedVSTNames, layerGroups;
 
 		instances = config["vstInstances"];
 		groups = config["groups"];
@@ -370,20 +396,115 @@ ConfigurationManager {
 		// Wait for VSTs to initialize
 		2.wait;
 
-		// Create/ensure groups exist as defined in configuration
-		if(groups.notNil and: { success }) {
-			"Creating groups from configuration...".postln;
-			groups.keysValuesDo { |groupName, members|
+		// FIXED: Assign loaded VSTs to layer groups in order
+		if(success) {
+			"Assigning loaded VSTs to layer groups...".postln;
+			loadedVSTNames = vstManager.vstInstances.keys.asArray.sort;
+			layerGroups = ["Layer1", "Layer2", "Layer3"];
+
+			// Create layer groups and assign VSTs to them
+			layerGroups.do { |groupName, index|
+				var members = [];
+
+				// Assign VSTs to this group (distribute evenly)
+				loadedVSTNames.do { |vstName, vstIndex|
+					if((vstIndex % 3) == index) {
+						members = members.add(vstName);
+					};
+				};
+
+				// Create group with members
 				vstManager.createGroup(groupName, members);
+				("Group '%' created with % members: %").format(
+					groupName, members.size, members
+				).postln;
 			};
 		};
 
 		// Apply MIDI settings (will be expanded when GUI integration is added)
+
+		// FIXED: Sync OSC layers system with loaded VST configuration
+		if(success and: { ~oscLayers.notNil }) {
+			"Synchronizing OSC layers with VST configuration...".postln;
+			this.syncOSCLayersWithVSTs();
+		};
 
 		if(callback.notNil) {
 			callback.value(success);
 		};
 
 		^success;
+	}
+
+	// Sync OSC layers system with loaded VST configuration
+	syncOSCLayersWithVSTs {
+		var groupNames, defaultMelody;
+
+		if(vstManager.isNil) {
+			"VSTManager not available for OSC sync".warn;
+			^false;
+		};
+
+		if(~oscLayers.isNil) {
+			"OSC Layers system not available for sync".warn;
+			^false;
+		};
+
+		// Get VST group names
+		groupNames = vstManager.getGroupNames();
+		if(groupNames.size == 0) {
+			"No VST groups found for OSC sync".warn;
+			^false;
+		};
+
+		"Syncing % OSC layers with % VST groups".format(3, groupNames.size).postln;
+
+		// Create default melody if needed
+		if(~melodyDict.isNil or: { ~melodyDict.size == 0 }) {
+			"Creating default melody for OSC layers...".postln;
+			if(~melodyDict.isNil) { ~melodyDict = Dictionary.new };
+			~melodyDict[\defaultMelody] = (
+				patterns: [[60, 62, 64, 65]],
+				velocities: [100, 100, 100, 100],
+				noteDurations: [0.5, 0.5, 0.5, 0.5],
+				metadata: (
+					totalDuration: 2,
+					scale: 'major',
+					key: 'C',
+					durationType: 'fixed'
+				)
+			);
+		};
+
+		// Get first available melody
+		defaultMelody = ~melodyDict.keys.asArray.first;
+
+		// Sync layer configs with VST groups
+		[\layer1, \layer2, \layer3].do { |layerKey, index|
+			var config = ~oscLayers.configs[layerKey];
+			var targetGroup;
+
+			if(index < groupNames.size) {
+				targetGroup = groupNames[index];
+			} {
+				targetGroup = groupNames.wrapAt(index);
+			};
+
+			// Update layer configuration
+			config.vstGroup = targetGroup;
+			config.melodyList = [defaultMelody];
+			config.enabled = true;
+
+			"  Layer % → Group '%', Melody: %".format(layerKey, targetGroup, defaultMelody).postln;
+		};
+
+		"OSC Layers synchronized with VST configuration".postln;
+
+		// Refresh GUI if available
+		if(~refreshLayerVSTGroups.notNil) {
+			~refreshLayerVSTGroups.();
+		};
+
+		^true;
 	}
 }
