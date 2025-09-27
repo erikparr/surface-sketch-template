@@ -429,6 +429,12 @@ ConfigurationManager {
 			this.syncOSCLayersWithVSTs();
 		};
 
+		// FIXED: Sync MIDI controller with loaded VST configuration
+		if(success and: { ~updateMIDIController.notNil }) {
+			"Synchronizing MIDI controller with VST configuration...".postln;
+			~updateMIDIController.value();
+		};
+
 		if(callback.notNil) {
 			callback.value(success);
 		};
