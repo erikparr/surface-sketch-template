@@ -1,0 +1,590 @@
+{
+  "metadata": {
+    "exportDate": "2025-09-28",
+    "exportTime": "11:11:35",
+    "source": "MIDI Editor - Composition Converter",
+    "format": "multi-melody-composition",
+    "totalMelodies": 9
+  },
+  "melodies": {
+    "bridge2a": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 2.25,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 73,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 63,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2222222222222222,
+            0.2222222222222222,
+            0.2222222222222222,
+            0.2222222222222222,
+            0.1111111111111111
+          ]
+        }
+      }
+    },
+    "part2a": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 8.25,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 77,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 75,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 77,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 89,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 75,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 77,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 90,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 77,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 94,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 82,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 73,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 77,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 89,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 78,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.06060606060606061,
+            0.030303030303030304
+          ]
+        }
+      }
+    },
+    "part3f": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 82,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3e": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 84,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3d": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3c": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 73,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 89,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 73,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3b": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3a": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 1.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 84,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.2857142857142857,
+            0.14285714285714285
+          ]
+        }
+      }
+    },
+    "part3x": {
+      "metadata": {
+        "exportDate": "2025-09-28",
+        "exportTime": "11:11:35",
+        "source": "MIDI Editor",
+        "format": "decoupled-timing"
+      },
+      "layers": {
+        "layer1": {
+          "metadata": {
+            "durationType": "fractional",
+            "totalDuration": 7.75,
+            "key": "C",
+            "scale": "major"
+          },
+          "notes": [
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 73,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 89,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 75,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 87,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 75,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 84,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 72,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 82,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 70,
+              "vel": 0.7,
+              "dur": 0.5
+            },
+            {
+              "midi": 85,
+              "vel": 0.7,
+              "dur": 1
+            }
+          ],
+          "timing": [
+            0,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.06451612903225806,
+            0.03225806451612903
+          ]
+        }
+      }
+    }
+  }
+}

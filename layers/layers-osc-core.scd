@@ -25,6 +25,9 @@
         isRunning: false,
         noteDurationScalar: 1.0,
         pendingUpdates: Dictionary.new,
+        // Global melody navigation
+        currentMelodyIndex: 0,
+        melodyList: [],  // Array of melody keys from loaded file
         // Simplified - no timing state needed
     ),
 
@@ -32,6 +35,7 @@
     configs: (
         layer1: (
             melodyList: [],
+            assignedLayerId: \layer1,  // Which layer data to use from current melody
             vstGroup: 'Layer1',
             enabled: true,
             duration: 0,
@@ -63,6 +67,7 @@
         ),
         layer2: (
             melodyList: [],
+            assignedLayerId: \layer2,  // Which layer data to use from current melody
             vstGroup: 'Layer2',
             enabled: true,
             duration: 0,
@@ -94,6 +99,7 @@
         ),
         layer3: (
             melodyList: [],
+            assignedLayerId: \layer3,  // Which layer data to use from current melody
             vstGroup: 'Layer3',
             enabled: true,
             duration: 0,
@@ -847,12 +853,86 @@
 // Get melody data for a layer - similar to layers system
 ~getLayerMelodyDynamic = {|layerKey|
     var config = ~oscLayers.configs[layerKey];
-    var melodyKey;
+    var currentMelodyKey, assignedLayerId, melodyDataKey;
 
-    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
-        melodyKey = config.melodyList[0];
-        ~melodyDict[melodyKey];
+    // Check if we have melodies loaded in global navigation
+    if (~oscLayers.state.melodyList.size > 0) {
+        // Get current melody from global navigation
+        currentMelodyKey = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        assignedLayerId = config.assignedLayerId;
+
+        // Build key for specific layer data: "melodyName_layerN"
+        melodyDataKey = (currentMelodyKey.asString ++ "_" ++ assignedLayerId.asString).asSymbol;
+
+        "DEBUG ~getLayerMelodyDynamic: layer=%, melody=%, assigned=%, key=%".format(
+            layerKey, currentMelodyKey, assignedLayerId, melodyDataKey
+        ).postln;
+
+        ~melodyDict[melodyDataKey];
     } {
+        // Fallback to old system if no global melodies loaded
+        if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
+            var melodyKey = config.melodyList[0];
+            ~melodyDict[melodyKey];
+        } {
+            nil;
+        };
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       GLOBAL MELODY NAVIGATION                             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Navigate to next melody (wraps around)
+~nextMelody = {
+    if (~oscLayers.state.melodyList.size > 0) {
+        ~oscLayers.state.currentMelodyIndex = (~oscLayers.state.currentMelodyIndex + 1) % ~oscLayers.state.melodyList.size;
+        var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        "Next melody: % (% of %)".format(
+            currentMelody,
+            ~oscLayers.state.currentMelodyIndex + 1,
+            ~oscLayers.state.melodyList.size
+        ).postln;
+        currentMelody;
+    } {
+        "No melodies loaded for navigation".warn;
+        nil;
+    };
+};
+
+// Navigate to previous melody (wraps around)
+~prevMelody = {
+    if (~oscLayers.state.melodyList.size > 0) {
+        ~oscLayers.state.currentMelodyIndex = (~oscLayers.state.currentMelodyIndex - 1) % ~oscLayers.state.melodyList.size;
+        if (~oscLayers.state.currentMelodyIndex < 0) {
+            ~oscLayers.state.currentMelodyIndex = ~oscLayers.state.melodyList.size - 1;
+        };
+        var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        "Previous melody: % (% of %)".format(
+            currentMelody,
+            ~oscLayers.state.currentMelodyIndex + 1,
+            ~oscLayers.state.melodyList.size
+        ).postln;
+        currentMelody;
+    } {
+        "No melodies loaded for navigation".warn;
+        nil;
+    };
+};
+
+// Get current melody info
+~getCurrentMelody = {
+    if (~oscLayers.state.melodyList.size > 0) {
+        var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        "Current melody: % (% of %)".format(
+            currentMelody,
+            ~oscLayers.state.currentMelodyIndex + 1,
+            ~oscLayers.state.melodyList.size
+        ).postln;
+        currentMelody;
+    } {
+        "No melodies loaded".postln;
         nil;
     };
 };

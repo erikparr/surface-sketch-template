@@ -497,12 +497,17 @@
                         // Add imported melodies to global dictionary
                         ~addImportedMelodiesToDict.(melodies, "");  // Empty prefix to use original layer names
 
+                        // Populate global melody navigation list
+                        ~oscLayers.state.melodyList = ~melodyDict.keys.asArray.sort;
+                        ~oscLayers.state.currentMelodyIndex = 0;
+
                         melodyCount = ~melodyDict.keys.size;
                         success = true;
 
                         "Global melody file loaded: % melodies from %".format(
                             melodyCount, filename
                         ).postln;
+                        "Melody navigation: % melodies available".format(~oscLayers.state.melodyList.size).postln;
                     } {
                         "Failed to parse JSON melody file".warn;
                     };
@@ -521,11 +526,16 @@
 
                     // Count melodies if ~melodyDict exists
                     if (~melodyDict.notNil) {
+                        // Populate global melody navigation list
+                        ~oscLayers.state.melodyList = ~melodyDict.keys.asArray.sort;
+                        ~oscLayers.state.currentMelodyIndex = 0;
+
                         melodyCount = ~melodyDict.keys.size;
                         success = true;
                         "Global melody file loaded: % melodies from %".format(
                             melodyCount, filename
                         ).postln;
+                        "Melody navigation: % melodies available".format(~oscLayers.state.melodyList.size).postln;
                     } {
                         "Melody dictionary not populated after loading file".warn;
                     };
