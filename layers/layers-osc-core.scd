@@ -631,6 +631,90 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    MIDI TEMPLATE PROCESSING & EXPRESSION CONTROL           │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update expression parameters for all layers from MIDI knobs
+~updateAllLayerExpressionParams = {
+    [\layer1, \layer2, \layer3].do { |layerKey, index|
+        var rowNum = index + 1; // layer1=row1, layer2=row2, layer3=row3
+        var config = ~oscLayers.configs[layerKey];
+        var foundInTemplate = false;
+
+        if (config.notNil && config.ccControl.notNil) {
+
+            // PHASE 1: Try to get values from template system
+            if (~processTemplateKnobValues.notNil and: { ~rowMappings.notNil }) {
+                // First, update all template parameter storage
+                ~processTemplateKnobValues.();
+
+                // Check if current row has template mappings for expression parameters
+                ~rowMappings.keysValuesDo { |templateRowNum, mapping|
+                    if (mapping.enabled and: { templateRowNum == rowNum and: { foundInTemplate.not } }) {
+                        var template = ~controlTemplates[mapping.template];
+                        var paramStorage = ~getGroupParams.(mapping.vstGroup);
+
+                        if (template.notNil and: { paramStorage.notNil }) {
+                            var hasExpressionMin = false;
+                            var hasExpressionMax = false;
+                            var hasExpressionDur = false;
+
+                            // Check what expression parameters this template handles
+                            template.knobMappings.do { |knobMap|
+                                switch(knobMap.param,
+                                    \expressionMin, {
+                                        hasExpressionMin = true;
+                                        config.ccControl.expressionMin = paramStorage[\expressionMin] ? 10;
+                                    },
+                                    \expressionMax, {
+                                        hasExpressionMax = true;
+                                        config.ccControl.expressionMax = paramStorage[\expressionMax] ? 120;
+                                    },
+                                    \expressionDurationScalar, {
+                                        hasExpressionDur = true;
+                                        config.ccControl.expressionDurationScalar = paramStorage[\expressionDurationScalar] ? 0.5;
+                                    }
+                                );
+                            };
+
+                            if (hasExpressionMin or: { hasExpressionMax }) {
+                                foundInTemplate = true;
+                                "OSC: Layer % expression from template (Row % %): Min=%, Max=%, DurScalar=%".format(
+                                    layerKey, rowNum, mapping.template,
+                                    config.ccControl.expressionMin,
+                                    config.ccControl.expressionMax,
+                                    config.ccControl.expressionDurationScalar.round(0.01)
+                                ).postln;
+                            };
+                        };
+                    };
+                };
+            };
+
+            // PHASE 2: Fallback to direct knob reads (backward compatibility)
+            if (foundInTemplate.not and: { ~midiController.notNil }) {
+                // Read expression parameters from appropriate row (legacy behavior)
+                config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5);
+                config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
+                config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0.0, 1.0, 0.001, 1.0);
+
+                "OSC: Layer % expression from direct knobs (Row %): Min=%, Max=%, DurScalar=%".format(
+                    layerKey, rowNum,
+                    config.ccControl.expressionMin,
+                    config.ccControl.expressionMax,
+                    config.ccControl.expressionDurationScalar.round(0.01)
+                ).postln;
+            };
+
+            // PHASE 3: Ensure valid ranges regardless of source
+            if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
+                config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
+            };
+        };
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       EXTERNAL CONTROL SETUP                               │
 // └─────────────────────────────────────────────────────────────────────────────┘
 

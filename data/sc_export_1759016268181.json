@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "exportDate": "2025-09-27",
+    "exportTime": "16:37:48",
+    "source": "MIDI Editor",
+    "format": "decoupled-timing"
+  },
+  "layers": {
+    "layer0": {
+      "metadata": {
+        "durationType": "fractional",
+        "totalDuration": 4.25,
+        "key": "F",
+        "scale": "phrygian"
+      },
+      "notes": [
+        {
+          "midi": 78,
+          "vel": 0.7,
+          "dur": 0.25
+        },
+        {
+          "midi": 73,
+          "vel": 0.7,
+          "dur": 0.25
+        },
+        {
+          "midi": 70,
+          "vel": 0.7,
+          "dur": 0.25
+        },
+        {
+          "midi": 63,
+          "vel": 0.7,
+          "dur": 0.25
+        },
+        {
+          "midi": 78,
+          "vel": 0.7,
+          "dur": 1.0
+        }
+      ],
+      "timing": [
+        0.0,
+        0.23529411764705882,
+        0.23529411764705882,
+        0.23529411764705882,
+        0.23529411764705882,
+        0.058823529411764705
+      ]
+    }
+  }
+}

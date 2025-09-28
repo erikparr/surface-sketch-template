@@ -24,16 +24,18 @@
             (pos: 3, param: \noteRestTime, range: [0.0001, 0.4]),
             (pos: 4, param: \velocity, range: [1, 127]),
             (pos: 5, param: \expressionMin, range: [0, 127]),
-            (pos: 6, param: \expressionMax, range: [0, 127]), 
-            (pos: 7, param: \expressionDurationScalar, range: [0.1, 1.0])
+            (pos: 6, param: \expressionMax, range: [0, 127]),
+            (pos: 7, param: \expressionDurationScalar, range: [0.1, 1.0]),
+            (pos: 8, param: \loopDuration, range: [0.1, 10.0])
         ]
     ),
     timingControl: (
-        name: "Timing Control", 
+        name: "Timing Control",
         knobMappings: [
             (pos: 2, param: \noteDuration, range: [0.005, 0.5]),
             (pos: 3, param: \noteRestTime, range: [0.0001, 0.4]),
-            (pos: 4, param: \velocity, range: [1, 127])
+            (pos: 4, param: \velocity, range: [1, 127]),
+            (pos: 8, param: \loopDuration, range: [0.1, 10.0])
         ]
     )
 );
@@ -53,6 +55,11 @@
 ~groupControlParams = Dictionary.new;
 
 "Group control params dictionary created".postln;
+
+// Global loop duration parameter (affects all layers)
+~globalLoopDuration = 4.0; // Default 4 seconds
+
+"Global loop duration initialized: % seconds".format(~globalLoopDuration).postln;
 
 // Data file path
 ~mappingDataPath = {
@@ -110,7 +117,20 @@
 // Get parameter storage for a group (nil = default ~ccControl)
 ~getGroupParams = { |vstGroup|
     if (vstGroup.isNil) {
-        ~ccControl; // Use existing global for default/current behavior
+        // Create default/global parameter storage if it doesn't exist
+        if (~ccControl.isNil) {
+            ~ccControl = (
+                expressionMin: 10,
+                expressionMax: 120,
+                expressionDurationScalar: 0.5,
+                noteDuration: 0.2,
+                noteRestTime: 0.2,
+                velocity: 100,
+                loopDuration: ~globalLoopDuration
+            );
+            "Created default ~ccControl global parameter storage".postln;
+        };
+        ~ccControl; // Use global for default/current behavior
     } {
         if (~groupControlParams[vstGroup].isNil) {
             // Initialize with default values including timing parameters
@@ -119,10 +139,12 @@
                 expressionMin: 10,
                 expressionMax: 120,
                 expressionDurationScalar: 0.5,
-                // Timing parameters  
+                // Timing parameters
                 noteDuration: 0.2,
                 noteRestTime: 0.2,
-                velocity: 100
+                velocity: 100,
+                // Loop duration parameter
+                loopDuration: ~globalLoopDuration
             );
             "Initialized parameters for group: %".format(vstGroup).postln;
         };
@@ -131,6 +153,88 @@
 };
 
 "~getGroupParams function defined".postln;
+
+// Function to update global loop duration from any row/group
+~updateGlobalLoopDuration = { |value|
+    ~globalLoopDuration = value.clip(0.1, 10.0);
+    "Global loop duration updated: % seconds".format(~globalLoopDuration.round(0.01)).postln;
+
+    // Update all group parameter storages that don't have their own loopDuration set
+    ~groupControlParams.keysValuesDo { |group, params|
+        if (params[\loopDuration] == ~globalLoopDuration or: { params[\loopDuration].isNil }) {
+            params[\loopDuration] = ~globalLoopDuration;
+        };
+    };
+};
+
+"~updateGlobalLoopDuration function defined".postln;
+
+// Function to process template knob values and update parameter storage
+~processTemplateKnobValues = {
+    if (~midiController.isNil or: { ~rowMappings.isNil or: { ~controlTemplates.isNil } }) {
+        ^nil; // Exit if required components aren't available
+    };
+
+    // Ensure all critical components are available
+    if (~getGroupParams.isNil) {
+        "Warning: ~getGroupParams function not available, skipping template processing".warn;
+        ^nil;
+    };
+
+    ~rowMappings.keysValuesDo { |rowNum, mapping|
+        if (mapping.enabled and: { mapping.template.notNil }) {
+            var template = ~controlTemplates[mapping.template];
+            var paramStorage = ~getGroupParams.(mapping.vstGroup);
+
+            if (template.notNil and: { paramStorage.notNil }) {
+                template.knobMappings.do { |knobMap|
+                    var rawValue, normalizedValue, mappedValue;
+
+                    // Get raw value from the knob position
+                    rawValue = ~midiController.getKnobRow(rowNum, knobMap.pos);
+
+                    // Normalize value (handle both 0-1 and 0-127 ranges)
+                    if (rawValue > 1) {
+                        normalizedValue = rawValue / 127.0;
+                    } {
+                        normalizedValue = rawValue;
+                    };
+                    normalizedValue = normalizedValue.clip(0.0, 1.0);
+
+                    // Map to parameter range
+                    mappedValue = normalizedValue.linlin(0.0, 1.0, knobMap.range[0], knobMap.range[1]);
+
+                    // Update the parameter storage
+                    paramStorage[knobMap.param] = mappedValue;
+
+                    // Special handling for specific parameters
+                    switch(knobMap.param,
+                        \loopDuration, {
+                            // Update global if this is the controlling row
+                            if (rowNum == 1 or: { ~globalLoopDuration == mappedValue }) {
+                                ~updateGlobalLoopDuration.(mappedValue);
+                            };
+                        },
+                        \expressionMax, {
+                            // Ensure max > min
+                            if (paramStorage[\expressionMin].notNil and: { mappedValue <= paramStorage[\expressionMin] }) {
+                                paramStorage[\expressionMax] = paramStorage[\expressionMin] + 1;
+                            };
+                        },
+                        \expressionMin, {
+                            // Ensure max > min
+                            if (paramStorage[\expressionMax].notNil and: { paramStorage[\expressionMax] <= mappedValue }) {
+                                paramStorage[\expressionMax] = mappedValue + 1;
+                            };
+                        }
+                    );
+                };
+            };
+        };
+    };
+};
+
+"~processTemplateKnobValues function defined".postln;
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                      ACTIVE ROW DISCONNECTION                              │
@@ -284,6 +388,8 @@
         file.write(~rowMappings.asCompileString);
         file.write(";\n~savedGroupControlParams = ");
         file.write(~groupControlParams.asCompileString);
+        file.write(";\n~savedGlobalLoopDuration = ");
+        file.write(~globalLoopDuration.asCompileString);
         file.write(";");
         file.close;
         "MIDI Control mappings saved to %".format(~mappingDataPath).postln;
@@ -319,6 +425,10 @@
                 if (~savedGroupControlParams.notNil) {
                     ~groupControlParams = ~savedGroupControlParams.copy;
                     "Group control parameters loaded".postln;
+                };
+                if (~savedGlobalLoopDuration.notNil) {
+                    ~globalLoopDuration = ~savedGlobalLoopDuration;
+                    "Global loop duration loaded: % seconds".format(~globalLoopDuration).postln;
                 };
                 "MIDI Control mappings loaded from %".format(~mappingDataPath).postln;
                 loadSuccess = true;

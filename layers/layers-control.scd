@@ -243,35 +243,82 @@
 
 // Get duration from MIDI knob (row 1, position 8)
 ~getLayersDurationFromKnob = {
-    var duration = 4.0; // Default duration
-    var rawValue, normalizedValue, mappedDuration;
-    
-    if (~layers.state.manualControl and: { ~midiController.notNil }) {
-        // Get the raw value from the knob
-        rawValue = ~midiController.getKnobRow1(8);
-        
-        // Check if we need to normalize (if value > 1, it's likely raw MIDI 0-127)
-        if (rawValue > 1) {
-            normalizedValue = rawValue / 127.0;
-        } {
-            normalizedValue = rawValue;
+    var duration = ~globalLoopDuration ? 4.0; // Use global parameter as default
+    var foundInTemplate = false;
+    var rawValue, normalizedValue;
+
+    if (~midiController.notNil) {
+        // PHASE 1: Check if any enabled row has loopDuration control via template system
+        if (~rowMappings.notNil) {
+            ~rowMappings.keysValuesDo { |rowNum, mapping|
+                if (mapping.enabled and: { foundInTemplate.not }) {
+                    var template = ~controlTemplates[mapping.template];
+                    var paramStorage = ~getGroupParams.(mapping.vstGroup);
+
+                    if (template.notNil and: { paramStorage.notNil }) {
+                        // Check if this template has loopDuration mapping
+                        template.knobMappings.do { |knobMap|
+                            if (knobMap.param == \loopDuration and: { foundInTemplate.not }) {
+                                // Get raw value from the knob position
+                                rawValue = ~midiController.getKnobRow(rowNum, knobMap.pos);
+
+                                // Normalize value
+                                if (rawValue > 1) {
+                                    normalizedValue = rawValue / 127.0;
+                                } {
+                                    normalizedValue = rawValue;
+                                };
+                                normalizedValue = normalizedValue.clip(0.0, 1.0);
+
+                                // Map to duration range using linear interpolation
+                                duration = normalizedValue.linlin(0.0, 1.0, knobMap.range[0], knobMap.range[1]);
+
+                                // Update the parameter storage
+                                paramStorage[\loopDuration] = duration;
+
+                                // Update global if this is the controlling row
+                                if (rowNum == 1 or: { ~globalLoopDuration == paramStorage[\loopDuration] }) {
+                                    ~updateGlobalLoopDuration.(duration);
+                                };
+
+                                foundInTemplate = true;
+
+                                "Loop duration from Row % Knob % (template): %s".format(
+                                    rowNum, knobMap.pos, duration.round(0.01)
+                                ).postln;
+                            };
+                        };
+                    };
+                };
+            };
         };
-        
-        // Clamp normalized value to prevent issues at extremes
-        normalizedValue = normalizedValue.clip(0.0, 1.0);
-        
-        // Map to duration range with smaller minimum (0.01 seconds = 10ms)
-        // Use exponential mapping for better control at low values
-        if (normalizedValue < 0.01) {
-            // If knob is very close to 0, clamp to minimum
-            duration = 0.01;
-        } {
-            // Exponential mapping: gives more resolution at lower values
-            // Maps 0.01-1.0 to 0.01-10.0 seconds exponentially
-            duration = normalizedValue.linexp(0.01, 1.0, 0.01, 10.0);
+
+        // PHASE 2: Fallback to direct Row 1 Knob 8 access (backward compatibility)
+        if (foundInTemplate.not and: { ~layers.state.manualControl }) {
+            rawValue = ~midiController.getKnobRow1(8);
+
+            // Check if we need to normalize (if value > 1, it's likely raw MIDI 0-127)
+            if (rawValue > 1) {
+                normalizedValue = rawValue / 127.0;
+            } {
+                normalizedValue = rawValue;
+            };
+
+            // Clamp normalized value to prevent issues at extremes
+            normalizedValue = normalizedValue.clip(0.0, 1.0);
+
+            // Map to duration range with exponential mapping (original behavior)
+            if (normalizedValue < 0.01) {
+                duration = 0.1; // Adjusted minimum for better usability
+            } {
+                // Maps 0.01-1.0 to 0.1-10.0 seconds exponentially
+                duration = normalizedValue.linexp(0.01, 1.0, 0.1, 10.0);
+            };
+
+            "Loop duration from Row 1 Knob 8 (direct): %s".format(duration.round(0.01)).postln;
         };
     };
-    
+
     duration
 };
 
