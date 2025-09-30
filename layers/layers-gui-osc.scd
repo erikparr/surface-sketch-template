@@ -19,6 +19,8 @@
     var updateStatus, vstGroupMenus = [];
     var refreshButton, melodyMenus = [];
     var globalMelodyStatus, globalLoadButton;
+    var currentMelodyDisplay, navigationSection;
+    var prevButton, nextButton;
 
     // Check if window already exists
     if (~layersGUIWindow.notNil) {
@@ -210,6 +212,16 @@
                                     };
                                 };
 
+                                // Update current melody display
+                                if (~oscLayers.notNil and: { ~oscLayers.state.melodyList.size > 0 }) {
+                                    var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+                                    currentMelodyDisplay.string_("% (% of %)".format(
+                                        currentMelody,
+                                        ~oscLayers.state.currentMelodyIndex + 1,
+                                        ~oscLayers.state.melodyList.size
+                                    ));
+                                };
+
                                 "Global melody file loaded successfully".postln;
                             } {
                                 globalMelodyStatus.string_(
@@ -224,6 +236,78 @@
         });
 
     layout.add(globalLoadButton);
+
+    // ┌─────────────────────────────────────────────────────────────────────────────┐
+    // │                    GLOBAL MELODY NAVIGATION                                │
+    // └─────────────────────────────────────────────────────────────────────────────┘
+
+    // Current melody display
+    layout.add(StaticText()
+        .string_("MELODY NAVIGATION")
+        .font_(Font.default.size_(12).bold_(true))
+        .align_(\center)
+    );
+
+    // Current melody status
+    currentMelodyDisplay = StaticText()
+        .string_("No melodies loaded")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.blue);
+
+    layout.add(currentMelodyDisplay);
+
+    // Navigation buttons
+    navigationSection = HLayout();
+
+    prevButton = Button()
+        .states_([["◀ Previous", Color.black, Color.yellow.alpha_(0.3)]])
+        .action_({
+            if (~prevMelody.notNil) {
+                var melody = ~prevMelody.();
+                if (melody.notNil) {
+                    currentMelodyDisplay.string_("% (% of %)".format(
+                        melody,
+                        (~oscLayers.state.currentMelodyIndex ? 0) + 1,
+                        (~oscLayers.state.melodyList ? []).size
+                    ));
+                    updateStatus.();
+                };
+            };
+        });
+
+    nextButton = Button()
+        .states_([["Next ▶", Color.black, Color.yellow.alpha_(0.3)]])
+        .action_({
+            if (~nextMelody.notNil) {
+                var melody = ~nextMelody.();
+                if (melody.notNil) {
+                    currentMelodyDisplay.string_("% (% of %)".format(
+                        melody,
+                        (~oscLayers.state.currentMelodyIndex ? 0) + 1,
+                        (~oscLayers.state.melodyList ? []).size
+                    ));
+                    updateStatus.();
+                };
+            };
+        });
+
+    navigationSection.add(prevButton);
+    navigationSection.add(nextButton);
+    layout.add(navigationSection);
+
+    // Apply current melody button
+    layout.add(
+        Button()
+            .states_([["Apply Current Melody to All Layers", Color.black, Color.green.alpha_(0.2)]])
+            .action_({
+                if (~applyCurrentMelodyToAllLayers.notNil) {
+                    var applied = ~applyCurrentMelodyToAllLayers.();
+                    updateStatus.();
+                    "Applied current melody to % layers".format(applied).postln;
+                };
+            })
+    );
 
     layout.add(StaticText().string_("═══════════════════════════════"));
 
@@ -410,6 +494,18 @@
         statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
         statusText.string_(statusStr);
+
+        // Update current melody display
+        if (~oscLayers.notNil and: { ~oscLayers.state.melodyList.size > 0 }) {
+            var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+            currentMelodyDisplay.string_("% (% of %)".format(
+                currentMelody,
+                ~oscLayers.state.currentMelodyIndex + 1,
+                ~oscLayers.state.melodyList.size
+            ));
+        } {
+            currentMelodyDisplay.string_("No melodies loaded");
+        };
     };
 
     // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -497,10 +593,7 @@
                         // Add imported melodies to global dictionary
                         ~addImportedMelodiesToDict.(melodies, "");  // Empty prefix to use original layer names
 
-                        // Populate global melody navigation list
-                        ~oscLayers.state.melodyList = ~melodyDict.keys.asArray.sort;
-                        ~oscLayers.state.currentMelodyIndex = 0;
-
+                        // Note: melodyList is populated by ~addImportedMelodiesToDict with base melody names
                         melodyCount = ~melodyDict.keys.size;
                         success = true;
 
@@ -526,10 +619,7 @@
 
                     // Count melodies if ~melodyDict exists
                     if (~melodyDict.notNil) {
-                        // Populate global melody navigation list
-                        ~oscLayers.state.melodyList = ~melodyDict.keys.asArray.sort;
-                        ~oscLayers.state.currentMelodyIndex = 0;
-
+                        // Note: melodyList should be populated by file loading mechanism with base melody names
                         melodyCount = ~melodyDict.keys.size;
                         success = true;
                         "Global melody file loaded: % melodies from %".format(

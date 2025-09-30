@@ -157,7 +157,7 @@
             var velocity = msg[2] ? 127;
             var duration = msg[3] ? 0.5;
 
-            "OSC: Layer % note % vel % dur %".format(layerNum, note, velocity, duration).postln;
+            // "OSC: Layer % note % vel % dur %".format(layerNum, note, velocity, duration).postln;
 
             // Send to VST
             if (~vstManager.notNil) {
@@ -886,14 +886,20 @@
 
 // Navigate to next melody (wraps around)
 ~nextMelody = {
+    var currentMelody;
+
     if (~oscLayers.state.melodyList.size > 0) {
         ~oscLayers.state.currentMelodyIndex = (~oscLayers.state.currentMelodyIndex + 1) % ~oscLayers.state.melodyList.size;
-        var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
         "Next melody: % (% of %)".format(
             currentMelody,
             ~oscLayers.state.currentMelodyIndex + 1,
             ~oscLayers.state.melodyList.size
         ).postln;
+
+        // Apply the melody to all enabled layers
+        ~applyCurrentMelodyToAllLayers.();
+
         currentMelody;
     } {
         "No melodies loaded for navigation".warn;
@@ -903,17 +909,23 @@
 
 // Navigate to previous melody (wraps around)
 ~prevMelody = {
+    var currentMelody;
+
     if (~oscLayers.state.melodyList.size > 0) {
         ~oscLayers.state.currentMelodyIndex = (~oscLayers.state.currentMelodyIndex - 1) % ~oscLayers.state.melodyList.size;
         if (~oscLayers.state.currentMelodyIndex < 0) {
             ~oscLayers.state.currentMelodyIndex = ~oscLayers.state.melodyList.size - 1;
         };
-        var currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+        currentMelody = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
         "Previous melody: % (% of %)".format(
             currentMelody,
             ~oscLayers.state.currentMelodyIndex + 1,
             ~oscLayers.state.melodyList.size
         ).postln;
+
+        // Apply the melody to all enabled layers
+        ~applyCurrentMelodyToAllLayers.();
+
         currentMelody;
     } {
         "No melodies loaded for navigation".warn;
@@ -934,6 +946,55 @@
     } {
         "No melodies loaded".postln;
         nil;
+    };
+};
+
+// Apply current global melody to all enabled layers
+~applyCurrentMelodyToAllLayers = {
+    var currentMelodyName, layersUpdated = 0;
+
+    if (~oscLayers.state.melodyList.size > 0) {
+        currentMelodyName = ~oscLayers.state.melodyList[~oscLayers.state.currentMelodyIndex];
+
+        "Applying melody '%' to all enabled layers...".format(currentMelodyName).postln;
+
+        // Apply to each enabled layer using their assigned layer ID
+        [\layer1, \layer2, \layer3].do { |layerKey, i|
+            var config = ~oscLayers.configs[layerKey];
+            var layerNum = i + 1;
+            var assignedLayerId = config.assignedLayerId;
+            var melodyDataKey;
+
+            if (config.enabled) {
+                // Build key for layer-specific data: "melodyName_layerN"
+                melodyDataKey = (currentMelodyName.asString ++ "_" ++ assignedLayerId.asString).asSymbol;
+
+                // "DEBUG APPLY: Layer % (%): Building key '%'".format(layerNum, assignedLayerId, melodyDataKey).postln;
+
+                // Check if this melody-layer combination exists
+                if (~melodyDict.notNil and: { ~melodyDict[melodyDataKey].notNil }) {
+                    // Send OSC message to update layer melody
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/melody', melodyDataKey);
+                    layersUpdated = layersUpdated + 1;
+
+                    "  → Layer % (%): Applied melody data '%'".format(
+                        layerNum, assignedLayerId, melodyDataKey
+                    ).postln;
+                } {
+                    "  → Layer % (%): No data found for melody '%' (key: %) - layer will remain silent".format(
+                        layerNum, assignedLayerId, currentMelodyName, melodyDataKey
+                    ).postln;
+                };
+            } {
+                "  → Layer % disabled, skipping".format(layerNum).postln;
+            };
+        };
+
+        "Melody application complete: % layers updated".format(layersUpdated).postln;
+        ^layersUpdated;
+    } {
+        "No current melody to apply".warn;
+        ^0;
     };
 };
 

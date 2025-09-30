@@ -236,7 +236,7 @@ Returns:
 */
 ~importLayerMelodyFromJSON = { |jsonPath|
     var jsonData, melodies;
-    
+
     // Check if file exists
     if (File.exists(jsonPath).not) {
         "JSON file not found: %".format(jsonPath).error;
@@ -245,42 +245,97 @@ Returns:
         try {
             // Parse JSON using JSONlib
             jsonData = JSONlib.parseFile(jsonPath, useEvent: true);
-            
+
             // Convert to melody dictionary format
             melodies = Dictionary.new;
-            
-            // JSONlib with useEvent: true converts string keys to symbols
-            jsonData[\layers].keysValuesDo { |layerName, layerData|
-                var notes, timing, metadata;
-                var patterns, velocities, durations;
-                
-                notes = layerData[\notes];
-                timing = layerData[\timing];
-                metadata = layerData[\metadata];
-                
-                // Extract MIDI notes and velocities (they're also symbols now)
-                patterns = notes.collect { |note| note[\midi] };
-                velocities = notes.collect { |note| note[\vel] };
-                durations = notes.collect { |note| note[\dur] };
-                
-                // Create melody entry
-                melodies[layerName.asSymbol] = (
-                    name: "Imported % (%)".format(layerName, metadata[\key] ? ""),
-                    patterns: [patterns],  // Wrap in array for compatibility
-                    velocities: velocities,
-                    timing: timing,
-                    noteDurations: durations,
-                    durationType: metadata[\durationType] ? "absolute",
-                    totalDuration: metadata[\totalDuration],
-                    metadata: metadata
-                );
-                
-                "Imported % with % notes, timing: %".format(
-                    layerName, patterns.size, timing.notNil
-                ).postln;
+
+            // Handle new structure: check for 'melodies' (new format) or 'layers' (old format)
+            if (jsonData[\melodies].notNil) {
+                // NEW FORMAT: { "melodies": { "melodyName": { "layers": { "layer1": {...} } } } }
+                "Importing new multi-melody format...".postln;
+
+                jsonData[\melodies].keysValuesDo { |melodyName, melodyData|
+                    var layersData = melodyData[\layers];
+
+                    if (layersData.notNil) {
+                        layersData.keysValuesDo { |layerName, layerData|
+                            var notes, timing, metadata;
+                            var patterns, velocities, durations;
+                            var melodyKey;
+
+                            notes = layerData[\notes];
+                            timing = layerData[\timing];
+                            metadata = layerData[\metadata];
+
+                            // Extract MIDI notes and velocities
+                            patterns = notes.collect { |note| note[\midi] };
+                            velocities = notes.collect { |note| note[\vel] };
+                            durations = notes.collect { |note| note[\dur] };
+
+                            // Create combined key: "melodyName_layerName"
+                            melodyKey = (melodyName.asString ++ "_" ++ layerName.asString).asSymbol;
+
+                            // Create melody entry
+                            melodies[melodyKey] = (
+                                name: "% {} (%)".format(melodyName, layerName, metadata[\key] ? ""),
+                                patterns: [patterns],  // Wrap in array for compatibility
+                                velocities: velocities,
+                                timing: timing,
+                                noteDurations: durations,
+                                durationType: metadata[\durationType] ? "absolute",
+                                totalDuration: metadata[\totalDuration],
+                                metadata: metadata,
+                                // Store original melody and layer info for navigation
+                                originalMelodyName: melodyName.asSymbol,
+                                originalLayerName: layerName.asSymbol
+                            );
+
+                            // "DEBUG IMPORT: Created melody key '%' with originalMelodyName '%'".format(melodyKey, melodyName).postln;
+                        };
+                    };
+                };
+
+            } {
+                // OLD FORMAT: { "layers": { "layer1": {...} } }
+                "Importing legacy single-melody format...".postln;
+
+                if (jsonData[\layers].notNil) {
+                    jsonData[\layers].keysValuesDo { |layerName, layerData|
+                        var notes, timing, metadata;
+                        var patterns, velocities, durations;
+
+                        notes = layerData[\notes];
+                        timing = layerData[\timing];
+                        metadata = layerData[\metadata];
+
+                        // Extract MIDI notes and velocities
+                        patterns = notes.collect { |note| note[\midi] };
+                        velocities = notes.collect { |note| note[\vel] };
+                        durations = notes.collect { |note| note[\dur] };
+
+                        // Create melody entry
+                        melodies[layerName.asSymbol] = (
+                            name: "Imported % (%)".format(layerName, metadata[\key] ? ""),
+                            patterns: [patterns],  // Wrap in array for compatibility
+                            velocities: velocities,
+                            timing: timing,
+                            noteDurations: durations,
+                            durationType: metadata[\durationType] ? "absolute",
+                            totalDuration: metadata[\totalDuration],
+                            metadata: metadata
+                        );
+
+                        "Imported % with % notes, timing: %".format(
+                            layerName, patterns.size, timing.notNil
+                        ).postln;
+                    };
+                } {
+                    "Invalid JSON format: expected 'melodies' or 'layers' at top level".error;
+                    ^nil;
+                };
             };
-            
-            "Successfully imported % layers from JSON".format(melodies.size).postln;
+
+            "Successfully imported % melody entries from JSON".format(melodies.size).postln;
             melodies
             
         } { |error|
@@ -297,19 +352,64 @@ Args:
   importedMelodies - Dictionary returned by ~importLayerMelodyFromJSON
   prefix - Optional prefix for melody keys (default: "imported_")
 */
-~addImportedMelodiesToDict = { |importedMelodies, prefix="imported_"|
+~addImportedMelodiesToDict = { |importedMelodies, prefix=""|
+    var uniqueMelodyNames;
+
     if (importedMelodies.notNil) {
         // Ensure ~melodyDict exists
         if (~melodyDict.isNil) {
             ~melodyDict = Dictionary.new;
         };
-        
+
+        // Extract unique melody names for global navigation
+        uniqueMelodyNames = Set.new;
+
         importedMelodies.keysValuesDo { |key, melody|
-            var melodyKey = (prefix ++ key).asSymbol;
+            var melodyKey;
+
+            // Handle new format with prefix (empty prefix means use original keys)
+            if (prefix.isEmpty) {
+                melodyKey = key.asSymbol;
+            } {
+                melodyKey = (prefix ++ key).asSymbol;
+            };
+
             ~melodyDict[melodyKey] = melody;
             "Added melody '%' to ~melodyDict".format(melodyKey).postln;
+
+            // Extract original melody name for navigation (new format only)
+            if (melody.originalMelodyName.notNil) {
+                uniqueMelodyNames.add(melody.originalMelodyName);
+                // "DEBUG NAVIGATION: Added '%' to uniqueMelodyNames from key '%'".format(melody.originalMelodyName, key).postln;
+            } {
+                // "DEBUG NAVIGATION: No originalMelodyName found for key '%'".format(key).postln;
+            };
         };
+
+        // Update global navigation system if OSC layers exist
+        if (~oscLayers.notNil and: { uniqueMelodyNames.size > 0 }) {
+            ~oscLayers.state.melodyList = uniqueMelodyNames.asArray.sort;
+            ~oscLayers.state.currentMelodyIndex = 0;
+            "Updated global navigation: % melodies available".format(uniqueMelodyNames.size).postln;
+            "Melody list: %".format(~oscLayers.state.melodyList).postln;
+        };
+
         "Added % melodies to ~melodyDict".format(importedMelodies.size).postln;
+
+        // Show available melody-layer combinations
+        if(importedMelodies.size > 0) {
+            "Available melody-layer combinations:".postln;
+            uniqueMelodyNames.asArray.sort.do { |melodyName|
+                var availableLayers = [];
+                [\layer1, \layer2, \layer3].do { |layerName|
+                    var testKey = (melodyName.asString ++ "_" ++ layerName.asString).asSymbol;
+                    if(~melodyDict[testKey].notNil) {
+                        availableLayers = availableLayers.add(layerName);
+                    };
+                };
+                "  %: %".format(melodyName, availableLayers).postln;
+            };
+        };
     };
 };
 
