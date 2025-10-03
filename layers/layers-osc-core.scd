@@ -24,6 +24,7 @@
         bendMode: false,
         isRunning: false,
         noteDurationScalar: 1.0,
+        melodyRestTime: 0.0,  // Rest duration between loops (0-1 seconds)
         pendingUpdates: Dictionary.new,
         // Global melody navigation
         currentMelodyIndex: 0,
@@ -403,6 +404,15 @@
         }, '/system/timing_status')
     );
 
+    // Melody rest control: /system/melody_rest
+    responders = responders.add(
+        OSCFunc({|msg|
+            var restTime = msg[1].clip(0.0, 1.0);  // Clamp to 0-1 seconds
+            ~oscLayers.state.melodyRestTime = restTime;
+            "OSC: Melody rest time: %s".format(restTime.round(0.01)).postln;
+        }, '/system/melody_rest')
+    );
+
     ~oscLayers.responders[\system] = responders;
 
     "Created % system OSC responders".format(responders.size).postln;
@@ -552,8 +562,17 @@
                         totalWaitTime.wait;
 
                         if (~oscLayers.state.loopingMode) {
-                            "Loop % complete, next starts immediately".format(loopCount).postln;
-                            // No gap - seamless looping
+                            // Get current melody rest time
+                            var melodyRest = ~oscLayers.state.melodyRestTime;
+
+                            if (melodyRest > 0) {
+                                "Loop % complete, resting for %s before next iteration".format(
+                                    loopCount, melodyRest.round(0.01)
+                                ).postln;
+                                melodyRest.wait;  // Inject rest here
+                            } {
+                                "Loop % complete, next starts immediately".format(loopCount).postln;
+                            };
                         } {
                             "Single iteration complete".postln;
                         };

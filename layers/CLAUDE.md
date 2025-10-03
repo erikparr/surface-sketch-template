@@ -148,6 +148,25 @@ NetAddr.localAddr.sendMsg('/system/stop');
 // When disabled: Uses velocity and durations from melody data
 ```
 
+### Melody Rest Parameter
+```supercollider
+// MIDI Slider 2: Melody rest time (0-1 seconds)
+// - Adds controllable pause after each melody loop iteration
+// - Only applies in looping mode
+// - Linear mapping: slider position = rest duration
+// - Direct MIDI CC handler (CC 23) updates state in real-time
+// Note: Slider 1 is used for layer spread timing
+
+// Manual control via OSC:
+NetAddr.localAddr.sendMsg('/system/melody_rest', 0.5);  // 0.5 second rest
+
+// MIDI control automatically active via ~setupMelodyRestMIDI.()
+// GUI display shows current rest time in seconds
+
+// Cleanup (if needed):
+~cleanupMelodyRestMIDI.();
+```
+
 ### Live Melody Updates
 ```supercollider
 // Enable live melody mode for real-time OSC updates
@@ -172,6 +191,7 @@ n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\"
 6. **Note Duration Control**: Manual mode enables additional scaling via Knob 2 (1-150%)
 7. **Timing Offset**: Knob 4 shifts all notes forward by 0-90% of duration (fractional type only)
 8. **Exponential Duration**: Knob 8 uses exponential mapping for fine control at short durations
+9. **Melody Rest**: Slider 2 adds 0-1 second pause after each loop iteration (looping mode only)
 
 ## Integration Points
 
@@ -240,6 +260,7 @@ When manual control is enabled, Row 1 knobs control global playback parameters:
 - **Knob 3**: Note velocity (1-127) - overrides melody velocity data
 - **Knob 4**: Timing offset (0-90%) - shifts all note start times (fractional duration only)
 - **Knob 8**: Loop duration (0.01-10s) - exponential scaling for fine control
+- **Slider 2**: Melody rest (0-1s) - pause after each loop iteration (looping mode only)
 
 #### Expression Control (Per Layer)
 Each layer's expression parameters are controlled by MIDI knobs on the corresponding row:

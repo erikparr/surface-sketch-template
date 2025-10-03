@@ -921,6 +921,46 @@
 ~setupMelodySwitchingMIDI.();
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         MELODY REST CONTROL                                │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Set up MIDI CC handler for melody rest control (Slider 2)
+~setupMelodyRestMIDI = {
+    // Clean up existing handler if it exists
+    if (~melodyRestMIDIFunc.notNil) {
+        ~melodyRestMIDIFunc.free;
+    };
+
+    // CC 23: Slider 2 - Melody rest time (0-1 seconds)
+    ~melodyRestMIDIFunc = MIDIFunc.cc({ |val, num, chan, src|
+        var restTime;
+
+        // Map 0-127 to 0-1 seconds (linear mapping)
+        restTime = val.linlin(0, 127, 0.0, 1.0);
+
+        // Update state via OSC message for consistency
+        NetAddr.localAddr.sendMsg('/system/melody_rest', restTime);
+
+        // Optional debug output
+        // "Melody Rest: %s (CC 23, val: %)".format(restTime.round(0.01), val).postln;
+    }, 23);  // CC 23 = Slider 2 on MIDIMix
+
+    "Melody rest MIDI control active (Slider 2 / CC 23)".postln;
+};
+
+// Clean up melody rest MIDI handler
+~cleanupMelodyRestMIDI = {
+    if (~melodyRestMIDIFunc.notNil) {
+        ~melodyRestMIDIFunc.free;
+        ~melodyRestMIDIFunc = nil;
+        "Melody rest MIDI handler cleaned up".postln;
+    };
+};
+
+// Initialize melody rest MIDI handler
+~setupMelodyRestMIDI.();
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         BEND CONTROL FUNCTIONS                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
 

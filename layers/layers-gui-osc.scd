@@ -21,6 +21,7 @@
     var globalMelodyStatus, globalLoadButton;
     var currentMelodyDisplay, navigationSection;
     var prevButton, nextButton;
+    var restTimeDisplay;
 
     // Check if window already exists
     if (~layersGUIWindow.notNil) {
@@ -113,6 +114,15 @@
                 updateStatus.();
             })
     );
+
+    // Melody rest time display
+    restTimeDisplay = StaticText()
+        .string_("Melody Rest: 0.00s (Slider 2)")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.gray);
+
+    layout.add(restTimeDisplay);
 
     // Live melody mode checkbox
     layout.add(
@@ -494,6 +504,14 @@
         statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
         statusText.string_(statusStr);
+
+        // Update melody rest display
+        if (restTimeDisplay.notNil) {
+            var melodyRest = ~oscLayers.state.melodyRestTime;
+            restTimeDisplay.string_("Melody Rest: %s (Slider 2)".format(
+                melodyRest.round(0.01)
+            ));
+        };
 
         // Update current melody display
         if (~oscLayers.notNil and: { ~oscLayers.state.melodyList.size > 0 }) {
