@@ -252,15 +252,19 @@ Each layer now has independent expression control via CC envelopes that send MID
 - **Layer 2**: CC 12 via `ccEnvelope2` SynthDef → `/expression2` OSC path  
 - **Layer 3**: CC 13 via `ccEnvelope3` SynthDef → `/expression3` OSC path
 
-### MIDI Knob Control
+### MIDI Control Mapping
 
 #### Manual Control Mode (Row 1)
 When manual control is enabled, Row 1 knobs control global playback parameters:
-- **Knob 2**: Note duration scalar (1-150%) - applies to all layers
-- **Knob 3**: Note velocity (1-127) - overrides melody velocity data
-- **Knob 4**: Timing offset (0-90%) - shifts all note start times (fractional duration only)
-- **Knob 8**: Loop duration (0.01-10s) - exponential scaling for fine control
-- **Slider 2**: Melody rest (0-1s) - pause after each loop iteration (looping mode only)
+- **Row 1, Knob 2** (CC 20): Note duration scalar (1-150%) - applies to all layers
+- **Row 1, Knob 3** (CC 24): Note velocity (1-127) - overrides melody velocity data
+- **Row 1, Knob 4** (CC 28): Timing offset (0-90%) - shifts all note start times (fractional duration only)
+- **Row 1, Knob 8** (CC 58): Loop duration (0.01-10s) - exponential scaling for fine control
+
+#### Slider Controls
+- **Slider 1** (CC 19): Layer spread timing
+- **Slider 2** (CC 23): Melody rest (0-1s) - pause after each loop iteration (looping mode only)
+- **Sliders 3-9** (CC 27, 31, 49, 53, 57, 61, 62): Available for future use
 
 #### Expression Control (Per Layer)
 Each layer's expression parameters are controlled by MIDI knobs on the corresponding row:
@@ -270,9 +274,14 @@ Each layer's expression parameters are controlled by MIDI knobs on the correspon
 - **Row 3** (Layer 3): Knobs 5-7 control Layer 3 expression
 
 ##### Expression Knob Functions
-- **Position 5**: Expression duration scalar (0.1-1.0) - scales envelope duration relative to layer duration
-- **Position 6**: Expression minimum value (0-127) - CC value at start/end of envelope
-- **Position 7**: Expression maximum value (0-127) - CC value at peak of envelope
+- **Position 5** (CC 46/47/48): Expression minimum value (0-127) - CC value at start/end of envelope
+- **Position 6** (CC 50/51/52): Expression duration scalar (0.1-1.0) - scales envelope duration relative to layer duration
+- **Position 7** (CC 54/55/56): Expression maximum value (0-127) - CC value at peak of envelope
+
+##### Other Row Controls
+- **Row 2, Knob 1** (CC 17): Bend knob control
+- **Row 2, Knob 2** (CC 21): Bend peak time ratio
+- **Available knobs**: Row 2 Pos 3-4, Row 3 Pos 1-4 and 8 (various CCs)
 
 ### Configuration Structure
 Each layer's `ccControl` configuration:

@@ -876,49 +876,8 @@
     prevMelody
 };
 
-// Set up MIDI CC handlers for melody switching
-~setupMelodySwitchingMIDI = {
-    var nextMelodyFunc, prevMelodyFunc;
-    
-    // Clean up existing handlers if they exist
-    if (~melodySwitchingMIDIFuncs.notNil) {
-        ~melodySwitchingMIDIFuncs.do { |func| func.free };
-    };
-    
-    ~melodySwitchingMIDIFuncs = [];
-    
-    // CC 27: Next melody (for layer1 by default, can be extended)
-    nextMelodyFunc = MIDIFunc.cc({ |val, num, chan, src|
-        if (val > 0) { // Only trigger on noteOn (val > 0)
-            "MIDI CC 27 (Next Melody) received - switching layer1 to next melody".postln;
-            ~switchToNextMelody.(\layer1);
-        };
-    }, 27);
-    
-    // CC 22: Previous melody (for layer1 by default, can be extended)
-    prevMelodyFunc = MIDIFunc.cc({ |val, num, chan, src|
-        if (val > 0) { // Only trigger on noteOn (val > 0)
-            "MIDI CC 22 (Previous Melody) received - switching layer1 to previous melody".postln;
-            ~switchToPreviousMelody.(\layer1);
-        };
-    }, 22);
-    
-    ~melodySwitchingMIDIFuncs = [nextMelodyFunc, prevMelodyFunc];
-    
-    "Melody switching MIDI handlers set up: CC 27 (next), CC 22 (previous)".postln;
-};
-
-// Clean up melody switching MIDI handlers
-~cleanupMelodySwitchingMIDI = {
-    if (~melodySwitchingMIDIFuncs.notNil) {
-        ~melodySwitchingMIDIFuncs.do { |func| func.free };
-        ~melodySwitchingMIDIFuncs = nil;
-        "Melody switching MIDI handlers cleaned up".postln;
-    };
-};
-
-// Initialize melody switching MIDI handlers
-~setupMelodySwitchingMIDI.();
+// Melody switching is now GUI-only (Prev/Next buttons in layers-gui-osc.scd)
+// No MIDI CC/slider/knob handlers needed - keeps all CCs available for other controls
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         MELODY REST CONTROL                                │
