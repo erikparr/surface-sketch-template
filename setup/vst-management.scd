@@ -157,12 +157,13 @@
                             statusText.string = "Loaded: %".format(path.basename);
                             updateVSTInstancesList.(instancesList);
 
-                            // // Update MIDI controller with current VST instances
-                            // if (~updateMIDIController.notNil) {
-                            //     ~updateMIDIController.();
-                            // } {
-                            //     "WARNING: MIDI controller update function not found".postln;
-                            // };
+                            // Update MIDI controller with current VST instances
+                            if (~midiController.notNil) {
+                                ~midiController.updateVSTList(~vstManager.getInstances());
+                                "MIDIController VST list updated after loading %".format(path.basename).postln;
+                            } {
+                                "WARNING: MIDIController not available for VST list update".postln;
+                            };
 
                             // Verify the plugin is open before showing editor
                             if (controller.isOpen) {
@@ -314,7 +315,7 @@
     // --- MIDI Control Overrides UI ---
     midiControlOverridesLayout = HLayout();
     expressionKnobToggle = CheckBox()
-        .string_("Expression Knob (CC16)") // Set the label for the CheckBox
+        .string_("Expression Knob (CC11)") // Set the label for the CheckBox
         .value_(0) // Default to unchecked
         .action_({ |checkbox|
             var isChecked, statusMsg, selectedGroupIndex, currentTargetGroupName, vstsToControl;
@@ -347,18 +348,18 @@
                         vstsToTarget.do { |vst|
                             // Minimal check: if vst object is not nil, attempt to send MIDI.
                             if(vst.notNil) {
-                                vst.midi.control(chan, 16, val); // Send CC 16
+                                vst.midi.control(chan, 11, val); // Send CC 11 (Expression)
                             }
                             // Further error handling or warnings removed for simplicity as per user request.
                         };
                     };
-                    if(~midiController.debug) { ("Expression Knob (CC16 via dedicated MIDIFunc): val % to VSTs in group '%' (Chan: %, Src: %)").format(val, activeGroupName ? "All", chan, src).postln; };
-                }, 16); // Specifically listen for CC 16
+                    if(~midiController.debug) { ("Expression Knob (CC11 via dedicated MIDIFunc): val % to VSTs in group '%' (Chan: %, Src: %)").format(val, activeGroupName ? "All", chan, src).postln; };
+                }, 11); // Specifically listen for CC 11
 
-                statusMsg = "Expression Knob (CC16) ACTIVE for group: %".format(currentTargetGroupName ? "All");
+                statusMsg = "Expression Knob (CC11) ACTIVE for group: %".format(currentTargetGroupName ? "All");
                 (statusMsg + " (Dedicated MIDIFunc created)").postln;
             } {
-                statusMsg = "Expression Knob (CC16) INACTIVE";
+                statusMsg = "Expression Knob (CC11) INACTIVE";
                 (statusMsg + " (Dedicated MIDIFunc freed)").postln;
             };
             statusText.string = statusMsg;
@@ -593,6 +594,12 @@
                                 if(success) {
                                     statusText.string = "Configuration loaded: " ++ configName;
                                     ~updateVSTManagerUI.();
+
+                                    // Update MIDI controller with loaded VST instances
+                                    if (~midiController.notNil) {
+                                        ~midiController.updateVSTList(~vstManager.getInstances());
+                                        "MIDIController VST list updated after loading configuration: %".format(configName).postln;
+                                    };
                                 } {
                                     statusText.string = "Failed to load configuration: " ++ configName;
                                 };
