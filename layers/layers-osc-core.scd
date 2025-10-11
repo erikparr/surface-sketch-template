@@ -11,6 +11,14 @@
 // │                       GLOBAL OSC LAYERS STATE                              │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
+// Independent playback state (simple global variables - truly mutable)
+~layer1_isPlaying = false;
+~layer1_currentTask = nil;
+~layer2_isPlaying = false;
+~layer2_currentTask = nil;
+~layer3_isPlaying = false;
+~layer3_currentTask = nil;
+
 // Main container for OSC-based layer system
 ~oscLayers = (
     // System state
@@ -19,13 +27,12 @@
         startTime: nil,
         loopingMode: false,
         manualControl: false,
-        liveMelodyMode: false,
         singleNoteCCMode: false,
         bendMode: false,
         isRunning: false,
         noteDurationScalar: 1.0,
         melodyRestTime: 0.0,  // Rest duration between loops (0-1 seconds)
-        pendingUpdates: Dictionary.new,
+        pendingUpdates: Dictionary.new,  // Live melody updates (always active)
         // Global melody navigation
         currentMelodyIndex: 0,
         melodyList: [],  // Array of melody keys from loaded file
@@ -41,6 +48,10 @@
             enabled: true,
             duration: 0,
             noteDurationScalar: 1.0,
+            // Independent playback state
+            isPlaying: false,
+            currentTask: nil,
+            defaultDuration: 4.0,
             ccControl: (
                 enabled: true,
                 expressionCC: 11,
@@ -73,6 +84,10 @@
             enabled: true,
             duration: 0,
             noteDurationScalar: 1.0,
+            // Independent playback state
+            isPlaying: false,
+            currentTask: nil,
+            defaultDuration: 4.0,
             ccControl: (
                 enabled: true,
                 expressionCC: 12,
@@ -105,6 +120,10 @@
             enabled: true,
             duration: 0,
             noteDurationScalar: 1.0,
+            // Independent playback state
+            isPlaying: false,
+            currentTask: nil,
+            defaultDuration: 4.0,
             ccControl: (
                 enabled: true,
                 expressionCC: 13,
@@ -381,15 +400,6 @@
         }, '/system/bend_mode')
     );
 
-    // Live melody mode: /system/live_melody
-    responders = responders.add(
-        OSCFunc({|msg|
-            var enabled = msg[1].asBoolean;
-            ~oscLayers.state.liveMelodyMode = enabled;
-            "OSC: Live melody mode: %".format(enabled).postln;
-        }, '/system/live_melody')
-    );
-
     // Timing status query: /system/timing_status
     responders = responders.add(
         OSCFunc({|msg, time, addr|
@@ -489,6 +499,191 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    INDEPENDENT LAYER PLAYBACK                              │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Start a single layer with independent looping (or one-shot)
+~startLayerIndependent = {|layerKey, duration = nil, loop = true|
+    var config = ~oscLayers.configs[layerKey];
+    var melodyData, playDuration, loopTask;
+    var isPlayingVar, taskVar;
+
+    // Get the correct global variables based on layer
+    case
+        { layerKey == \layer1 } {
+            isPlayingVar = \layer1_isPlaying;
+            taskVar = \layer1_currentTask;
+        }
+        { layerKey == \layer2 } {
+            isPlayingVar = \layer2_isPlaying;
+            taskVar = \layer2_currentTask;
+        }
+        { layerKey == \layer3 } {
+            isPlayingVar = \layer3_isPlaying;
+            taskVar = \layer3_currentTask;
+        };
+
+    // Stop existing playback for this layer if running
+    if (currentEnvironment[taskVar].notNil) {
+        currentEnvironment[taskVar].stop;
+        currentEnvironment[taskVar] = nil;
+    };
+
+    // Determine duration
+    playDuration = case
+        { duration.notNil } { duration }                    // Explicit parameter (highest priority)
+        { ~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil } } {
+            var bpm = ~getBPMFromKnob.();
+            var noteCount = ~getMelodyNoteCount.(layerKey);
+            ~calculateDurationFromBPM.(bpm, noteCount)      // BPM-based calculation
+        }
+        { config.defaultDuration };                         // Default
+
+    "Starting % independently with duration: %s (loop: %)".format(layerKey, playDuration, loop).postln;
+
+    // Set playing state
+    currentEnvironment[isPlayingVar] = true;
+
+    // Create independent playback task (looping or one-shot)
+    loopTask = Task({
+        var loopCount = 0;
+        var currentDuration;
+
+        while { currentEnvironment[isPlayingVar] } {
+            loopCount = loopCount + 1;
+
+            // Update duration from MIDI if in manual control mode
+            currentDuration = if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
+                var bpm = ~getBPMFromKnob.();
+                var noteCount = ~getMelodyNoteCount.(layerKey);
+                ~calculateDurationFromBPM.(bpm, noteCount)
+            } { playDuration };
+
+            // Update expression parameters from MIDI for this layer
+            if (~updateLayerExpressionParams.notNil) {
+                ~updateLayerExpressionParams.(layerKey);
+            };
+
+            // Update note duration scalar from MIDI
+            if (~updateLayerNoteDurationScalar.notNil) {
+                ~updateLayerNoteDurationScalar.(layerKey);
+            };
+
+            // Play the layer
+            if (loop) {
+                "% loop %: duration %s".format(layerKey, loopCount, currentDuration).postln;
+            } {
+                "% playing once: duration %s".format(layerKey, currentDuration).postln;
+            };
+            ~startOSCLayer.(layerKey, currentDuration);
+
+            // Wait for completion
+            currentDuration.wait;
+
+            // If one-shot mode, stop after first play
+            if (loop.not) {
+                var layerNumber = layerKey.asString.last.asString.asInteger;
+
+                currentEnvironment[isPlayingVar] = false;
+
+                // Send OSC completion message to external app
+                NetAddr("127.0.0.1", 7001).sendMsg('/liveMelody/complete', layerNumber);
+                "Sent completion message for % to port 7001".format(layerKey).postln;
+            } {
+                // Add melody rest if configured (loop mode only)
+                if (~oscLayers.state.melodyRestTime > 0) {
+                    ~oscLayers.state.melodyRestTime.wait;
+                };
+            };
+        };
+
+        "% playback stopped".format(layerKey).postln;
+    });
+
+    // Store and start task
+    currentEnvironment[taskVar] = loopTask;
+    loopTask.play;
+
+    layerKey;  // Return layer key
+};
+
+// Stop a single layer's independent playback
+~stopLayerIndependent = {|layerKey|
+    var isPlayingVar, taskVar;
+
+    // Get the correct global variables based on layer
+    case
+        { layerKey == \layer1 } {
+            isPlayingVar = \layer1_isPlaying;
+            taskVar = \layer1_currentTask;
+        }
+        { layerKey == \layer2 } {
+            isPlayingVar = \layer2_isPlaying;
+            taskVar = \layer2_currentTask;
+        }
+        { layerKey == \layer3 } {
+            isPlayingVar = \layer3_isPlaying;
+            taskVar = \layer3_currentTask;
+        };
+
+    if (currentEnvironment[taskVar].notNil) {
+        currentEnvironment[isPlayingVar] = false;
+        currentEnvironment[taskVar].stop;
+        currentEnvironment[taskVar] = nil;
+        "Stopped % independently".format(layerKey).postln;
+    } {
+        "% is not playing".format(layerKey).postln;
+    };
+
+    layerKey;
+};
+
+// Check if any layer is playing independently
+~anyLayerPlaying = {
+    ~layer1_isPlaying or: { ~layer2_isPlaying } or: { ~layer3_isPlaying }
+};
+
+// Get status of all layers
+~getLayersPlaybackStatus = {
+    var status = ();
+    var config;
+
+    config = ~oscLayers.configs[\layer1];
+    status[\layer1] = (
+        isPlaying: ~layer1_isPlaying,
+        hasMelody: config.melodyList.size > 0,
+        enabled: config.enabled,
+        defaultDuration: config.defaultDuration
+    );
+
+    config = ~oscLayers.configs[\layer2];
+    status[\layer2] = (
+        isPlaying: ~layer2_isPlaying,
+        hasMelody: config.melodyList.size > 0,
+        enabled: config.enabled,
+        defaultDuration: config.defaultDuration
+    );
+
+    config = ~oscLayers.configs[\layer3];
+    status[\layer3] = (
+        isPlaying: ~layer3_isPlaying,
+        hasMelody: config.melodyList.size > 0,
+        enabled: config.enabled,
+        defaultDuration: config.defaultDuration
+    );
+
+    status
+};
+
+// Stop all independent layers
+~stopAllLayersIndependent = {
+    [\layer1, \layer2, \layer3].do {|layerKey|
+        ~stopLayerIndependent.(layerKey);
+    };
+    "Stopped all independent layer playback".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       OSC LAYER COORDINATOR                                │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -519,9 +714,27 @@
                     loopCount = loopCount + 1;
 
                     // Determine duration for this iteration
-                    if (~oscLayers.state.manualControl and: { ~getLayersDurationFromKnob.notNil }) {
-                        currentDuration = ~getLayersDurationFromKnob.();
-                        "Loop %: MIDI knob duration: %s".format(loopCount, currentDuration).postln;
+                    if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
+                        var bpm = ~getBPMFromKnob.();
+                        // Use average note count across enabled layers for coordinator
+                        var avgNoteCount = 0;
+                        var enabledCount = 0;
+                        [\layer1, \layer2, \layer3].do { |lKey|
+                            var config = ~oscLayers.configs[lKey];
+                            if (config.enabled) {
+                                avgNoteCount = avgNoteCount + ~getMelodyNoteCount.(lKey);
+                                enabledCount = enabledCount + 1;
+                            };
+                        };
+                        if (enabledCount > 0) {
+                            avgNoteCount = avgNoteCount / enabledCount;
+                        } {
+                            avgNoteCount = 4; // Default
+                        };
+                        currentDuration = ~calculateDurationFromBPM.(bpm, avgNoteCount);
+                        "Loop %: BPM-based duration: %s (BPM: %, avg notes: %)".format(
+                            loopCount, currentDuration, bpm.round(1), avgNoteCount.round(1)
+                        ).postln;
                     } {
                         currentDuration = duration;
                         "Loop %: Fixed duration: %s".format(loopCount, currentDuration).postln;
@@ -1047,10 +1260,14 @@
 };
 
 ~stopLayersOSC = {
+    // Stop all independent layers (new system)
+    if (~stopAllLayersIndependent.notNil) {
+        ~stopAllLayersIndependent.();
+    };
+
+    // Also stop coordinator if it exists (legacy compatibility)
     if (~oscLayers.coordinator.notNil) {
         ~oscLayers.coordinator.stopAll();
-    } {
-        "OSC coordinator not initialized".error;
     };
 };
 

@@ -140,12 +140,19 @@ NetAddr.localAddr.sendMsg('/system/stop');
 ~setLayersManualControl.(true);
 
 // Manual control mappings (Row 1):
-// - Knob 8: Loop duration (0.01-10 seconds) - exponential scaling for fine control at low values
+// - Knob 8: BPM (60-200) - tempo control with automatic duration calculation based on note count
 // - Knob 3: Note velocity (1-127) - live control during playback
 // - Knob 2: Note duration scalar (1-150%) - scales all note durations (works with fractional & absolute)
 // - Knob 4: Timing offset (0-90%) - shifts note start times forward (fractional duration type only)
-// Duration changes take effect on next loop iteration
+// BPM changes take effect on next loop iteration
 // When disabled: Uses velocity and durations from melody data
+
+// BPM SYSTEM:
+// - Each note is treated as one beat
+// - Formula: duration = noteCount / (BPM / 60)
+// - Example: 17 notes @ 120 BPM = 17 / 2 = 8.5 seconds
+// - Example: 5 notes @ 120 BPM = 5 / 2 = 2.5 seconds
+// - Ensures consistent tempo regardless of melody length
 ```
 
 ### Melody Rest Parameter
@@ -167,30 +174,93 @@ NetAddr.localAddr.sendMsg('/system/melody_rest', 0.5);  // 0.5 second rest
 ~cleanupMelodyRestMIDI.();
 ```
 
-### Live Melody Updates
+### Live Melody Updates (Always Active)
 ```supercollider
-// Enable live melody mode for real-time OSC updates
-~enableLiveMelodyMode.();
+// Live melody mode is ALWAYS ACTIVE - no need to enable
+// OSC receivers listen on /liveMelody/update/layer[1-3] from system startup
 
-// Send OSC update during playback (applies immediately to live layers)
+// Send melody to layer1 → auto-starts independently
 n = NetAddr("127.0.0.1", 57120);
-n.sendMsg("/liveMelody", "layer1", "{\"patterns\":[[60,62,64,65]],\"velocities\":[100,110,120,127]}");
+n.sendMsg("/liveMelody/update/layer1", "{
+  \"notes\": [
+    {\"midi\": 60, \"vel\": 0.8, \"dur\": 0.5},
+    {\"midi\": 62, \"vel\": 0.7, \"dur\": 0.5}
+  ],
+  \"metadata\": {\"totalDuration\": 4.0}
+}");
 
-// Updates apply live without stopping/restarting layers
-// Disable live melody mode
-~disableLiveMelodyMode.();
+// Send to layer2 → starts independently (layer1 keeps playing)
+n.sendMsg("/liveMelody/update/layer2", jsonString);
+
+// If layer already playing, update applies at next loop boundary
+// Each layer has independent playback control
 ```
+
+## Independent Layer Playback
+
+Each layer now supports independent playback triggered by OSC messages or manual control:
+
+### Auto-Start via Live Melody
+```supercollider
+// Send melody → layer auto-starts independently with metadata duration
+n = NetAddr("127.0.0.1", 57120);
+n.sendMsg("/liveMelody/update/layer1", jsonString);
+// Layer1 starts playing with duration from JSON metadata
+
+// Send to layer2 → starts independently (layer1 continues)
+n.sendMsg("/liveMelody/update/layer2", jsonString);
+```
+
+### Manual Independent Control
+```supercollider
+// Start layer1 with specific duration
+~startLayerIndependent.(\layer1, 4.0);
+
+// Start layer2 with default duration (4.0s)
+~startLayerIndependent.(\layer2);
+
+// Start layer3 with MIDI knob duration (if manual control enabled)
+~startLayerIndependent.(\layer3);
+
+// Stop specific layer
+~stopLayerIndependent.(\layer1);
+
+// Stop all independent layers
+~stopAllLayersIndependent.();
+
+// Check playback status
+~getLayersPlaybackStatus.();
+// Returns: (layer1: (isPlaying: true, hasMelody: true, ...), ...)
+
+// Check if any layer playing
+~anyLayerPlaying.();  // Returns true/false
+```
+
+### Duration Priority (Independent Playback)
+1. **Explicit parameter**: `~startLayerIndependent.(\layer1, 5.0)` → 5.0s
+2. **JSON metadata**: `{"metadata": {"totalDuration": 4.0}}` → 4.0s
+3. **MIDI knob**: Row 1 Knob 8 (if manual control enabled)
+4. **Layer default**: `config.defaultDuration` → 4.0s
+
+### Per-Layer State
+Each layer maintains:
+- `isPlaying`: Boolean playback state
+- `currentTask`: Independent loop task
+- `defaultDuration`: Fallback duration (4.0s)
 
 ## Timing Synchronization
 
-1. **Duration**: All layers share the same duration
+1. **Duration**: All layers share the same duration (or play independently with their own durations)
 2. **Note Intervals**: Each layer divides duration by its note count (or uses custom timing)
-3. **Loop Synchronization**: All layers start new iterations together
+3. **Loop Synchronization**: All layers start new iterations together (coordinator mode)
 4. **Dynamic Updates**: Duration can change between loops in manual mode
 5. **Proportional Scaling**: When loop duration changes, note durations scale proportionally
 6. **Note Duration Control**: Manual mode enables additional scaling via Knob 2 (1-150%)
 7. **Timing Offset**: Knob 4 shifts all notes forward by 0-90% of duration (fractional type only)
-8. **Exponential Duration**: Knob 8 uses exponential mapping for fine control at short durations
+8. **BPM-Based Duration**: Knob 8 controls BPM (60-200), duration auto-calculated from note count
+   - Formula: `duration = noteCount / (BPM / 60)`
+   - Ensures consistent tempo across melodies with different note counts
+   - Each note treated as one beat
 9. **Melody Rest**: Slider 2 adds 0-1 second pause after each loop iteration (looping mode only)
 
 ## Integration Points
@@ -259,7 +329,7 @@ When manual control is enabled, Row 1 knobs control global playback parameters:
 - **Row 1, Knob 2** (CC 20): Note duration scalar (1-150%) - applies to all layers
 - **Row 1, Knob 3** (CC 24): Note velocity (1-127) - overrides melody velocity data
 - **Row 1, Knob 4** (CC 28): Timing offset (0-90%) - shifts all note start times (fractional duration only)
-- **Row 1, Knob 8** (CC 58): Loop duration (0.01-10s) - exponential scaling for fine control
+- **Row 1, Knob 8** (CC 58): BPM (60-200) - tempo control, auto-calculates duration based on note count
 
 #### Slider Controls
 - **Slider 1** (CC 19): Layer spread timing

@@ -21,7 +21,7 @@
     var globalMelodyStatus, globalLoadButton;
     var currentMelodyDisplay, navigationSection;
     var prevButton, nextButton;
-    var restTimeDisplay;
+    var bpmDisplay, restTimeDisplay;
 
     // Check if window already exists
     if (~layersGUIWindow.notNil) {
@@ -106,7 +106,7 @@
     // Manual control mode checkbox
     layout.add(
         CheckBox()
-            .string_("Manual Control (MIDI Knobs: Duration + Velocity)")
+            .string_("Manual Control (MIDI Knobs: BPM + Velocity)")
             .value_(~oscLayers.state.manualControl)
             .action_({ |cb|
                 "GUI → OSC: Manual control %".format(cb.value).postln;
@@ -114,6 +114,15 @@
                 updateStatus.();
             })
     );
+
+    // BPM display
+    bpmDisplay = StaticText()
+        .string_("BPM: 120 (Row 1 Knob 8)")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.gray);
+
+    layout.add(bpmDisplay);
 
     // Melody rest time display
     restTimeDisplay = StaticText()
@@ -124,16 +133,12 @@
 
     layout.add(restTimeDisplay);
 
-    // Live melody mode checkbox
-    layout.add(
-        CheckBox()
-            .string_("Live Melody Mode (OSC Updates)")
-            .value_(~oscLayers.state.liveMelodyMode)
-            .action_({ |cb|
-                "GUI → OSC: Live melody mode %".format(cb.value).postln;
-                NetAddr.localAddr.sendMsg('/system/live_melody', cb.value);
-                updateStatus.();
-            })
+    // Live melody OSC status (always active)
+    layout.add(StaticText()
+        .string_("Live Melody OSC: Active on /liveMelody/update/layer[1-3]")
+        .font_(Font.default.size_(10))
+        .align_(\center)
+        .stringColor_(Color.green)
     );
 
     // Single note CC mode checkbox
@@ -496,14 +501,25 @@
 
         statusStr = "Active layers: %\n".format(activeCount);
         statusStr = statusStr ++ "Running: %\n".format(~oscLayers.state.isRunning);
+
+        // Per-layer playback status
+        statusStr = statusStr ++ "layer1 playing: %\n".format(~layer1_isPlaying);
+        statusStr = statusStr ++ "layer2 playing: %\n".format(~layer2_isPlaying);
+        statusStr = statusStr ++ "layer3 playing: %\n".format(~layer3_isPlaying);
+
         statusStr = statusStr ++ "Loop mode: %\n".format(~oscLayers.state.loopingMode);
         statusStr = statusStr ++ "Manual control: %\n".format(~oscLayers.state.manualControl);
-        statusStr = statusStr ++ "Live melody: %\n".format(~oscLayers.state.liveMelodyMode);
         statusStr = statusStr ++ "Single note CC: %\n".format(~oscLayers.state.singleNoteCCMode);
         statusStr = statusStr ++ "Bend mode: %\n".format(~oscLayers.state.bendMode);
         statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
         statusText.string_(statusStr);
+
+        // Update BPM display
+        if (bpmDisplay.notNil and: { ~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil } }) {
+            var bpm = ~getBPMFromKnob.();
+            bpmDisplay.string_("BPM: % (Row 1 Knob 8)".format(bpm.round(1)));
+        };
 
         // Update melody rest display
         if (restTimeDisplay.notNil) {

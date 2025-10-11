@@ -241,9 +241,9 @@
 // │                         MANUAL CONTROL FUNCTIONS                           │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Get duration from MIDI knob (row 1, position 8)
-~getLayersDurationFromKnob = {
-    var duration = ~globalLoopDuration ? 4.0; // Use global parameter as default
+// Get BPM from MIDI knob (row 1, position 8)
+~getBPMFromKnob = {
+    var bpm = 120; // Default BPM
     var foundInTemplate = false;
     var rawValue, normalizedValue;
 
@@ -270,21 +270,16 @@
                                 };
                                 normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-                                // Map to duration range using linear interpolation
-                                duration = normalizedValue.linlin(0.0, 1.0, knobMap.range[0], knobMap.range[1]);
+                                // Map to BPM range (60-200) using linear interpolation
+                                bpm = normalizedValue.linlin(0.0, 1.0, 60, 200);
 
-                                // Update the parameter storage
-                                paramStorage[\loopDuration] = duration;
-
-                                // Update global if this is the controlling row
-                                if (rowNum == 1 or: { ~globalLoopDuration == paramStorage[\loopDuration] }) {
-                                    ~updateGlobalLoopDuration.(duration);
-                                };
+                                // Update the parameter storage with BPM
+                                paramStorage[\loopBPM] = bpm;
 
                                 foundInTemplate = true;
 
-                                "Loop duration from Row % Knob % (template): %s".format(
-                                    rowNum, knobMap.pos, duration.round(0.01)
+                                "BPM from Row % Knob % (template): %".format(
+                                    rowNum, knobMap.pos, bpm.round(1)
                                 ).postln;
                             };
                         };
@@ -307,19 +302,60 @@
             // Clamp normalized value to prevent issues at extremes
             normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-            // Map to duration range with exponential mapping (original behavior)
-            if (normalizedValue < 0.01) {
-                duration = 0.1; // Adjusted minimum for better usability
-            } {
-                // Maps 0.01-1.0 to 0.1-10.0 seconds exponentially
-                duration = normalizedValue.linexp(0.01, 1.0, 0.1, 10.0);
-            };
+            // Map to BPM range (60-200) using linear mapping
+            bpm = normalizedValue.linlin(0.0, 1.0, 60, 200);
 
-            "Loop duration from Row 1 Knob 8 (direct): %s".format(duration.round(0.01)).postln;
+            "BPM from Row 1 Knob 8 (direct): %".format(bpm.round(1)).postln;
         };
     };
 
+    bpm
+};
+
+// Legacy alias for backward compatibility
+~getLayersDurationFromKnob = {
+    var bpm = ~getBPMFromKnob.();
+    var duration = 4.0; // Default fallback
+
+    // Calculate duration for 4 notes at this BPM (approximate legacy behavior)
+    duration = 4 / (bpm / 60);
+
     duration
+};
+
+// Calculate duration from BPM and note count
+~calculateDurationFromBPM = { |bpm, noteCount|
+    var duration;
+
+    if (noteCount.isNil or: { noteCount <= 0 }) {
+        duration = 4.0; // Default fallback
+    } {
+        // duration = notes / (beats_per_minute / 60)
+        // Each note is considered one beat
+        duration = noteCount / (bpm / 60);
+    };
+
+    duration
+};
+
+// Get note count from melody for a given layer
+~getMelodyNoteCount = { |layerKey|
+    var config = ~oscLayers.configs[layerKey];
+    var melodyKey, melodyData, noteCount = 0;
+
+    if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
+        melodyKey = config.melodyList[0];
+        melodyData = ~melodyDict[melodyKey];
+
+        if (melodyData.notNil) {
+            // Try patterns first (standard melody format)
+            if (melodyData.patterns.notNil and: { melodyData.patterns.size > 0 }) {
+                noteCount = melodyData.patterns[0].size;
+            };
+        };
+    };
+
+    noteCount
 };
 
 // Get melody duration scalar for windowing mode (row 1, position 8)

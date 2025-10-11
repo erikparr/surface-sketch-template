@@ -49,6 +49,58 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         AUTO-PLAYBACK FUNCTION                             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Auto-start layer playback when melody received
+~autoPlayLayerIfNeeded = { |layerName, melodyData|
+    var config = ~oscLayers.configs[layerName];
+    var duration = nil, loop = true;
+
+    // Extract duration and loop flag from melody metadata if present
+    if (melodyData.notNil and: { melodyData.metadata.notNil }) {
+        var loopValue;
+
+        // Priority 1: Explicit totalDuration (backward compatibility)
+        duration = melodyData.metadata.totalDuration;
+
+        // Priority 2: Calculate from BPM if in manual control mode and no explicit duration
+        if (duration.isNil and: { ~oscLayers.state.manualControl }) {
+            if (~getBPMFromKnob.notNil and: { melodyData.notes.notNil }) {
+                var bpm = ~getBPMFromKnob.();
+                var noteCount = melodyData.notes.size;  // Direct access from melody data
+                duration = ~calculateDurationFromBPM.(bpm, noteCount);
+                "Auto-calculated duration from BPM % and % notes: %s".format(
+                    bpm.round(1), noteCount, duration.round(0.01)
+                ).postln;
+            };
+        };
+
+        // Safely extract loop flag using bracket notation to get actual value
+        loopValue = melodyData.metadata[\loop];
+        if (loopValue == false) {
+            loop = false;  // Explicitly set to false only if value is false
+        } {
+            loop = true;   // Default to true for any other case (true, nil, missing)
+        };
+    };
+
+    // If layer already playing, update will apply at next loop
+    if (config.isPlaying) {
+        "% already playing - update queued for next loop".format(layerName).postln;
+    } {
+        // Start this layer independently
+        "Auto-starting % due to live melody update (loop: %)".format(layerName, loop).postln;
+
+        if (~startLayerIndependent.notNil) {
+            ~startLayerIndependent.(layerName, duration, loop);
+        } {
+            "ERROR: ~startLayerIndependent function not available".error;
+        };
+    };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                          UPDATE QUEUE MANAGEMENT                            │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -79,16 +131,19 @@
     if (validatedData.notNil) {
         // Store in pending updates
         ~layers.state.pendingUpdates[layerName] = validatedData;
-        
+
         "Queued melody update for %: % notes".format(
-            layerName, 
+            layerName,
             validatedData.notes.size
         ).postln;
-        
+
         // Log timing info if present
         if (validatedData.timing.notNil) {
             "  Timing: %".format(validatedData.timing.collect(_.round(0.001))).postln;
         };
+
+        // Auto-start playback for this layer
+        ~autoPlayLayerIfNeeded.(layerName, ~convertLiveMelodyData.(validatedData));
     } {
         "Invalid melody data for %".format(layerName).error;
     };
@@ -254,32 +309,28 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 ~getLayerMelodyDynamic = { |layerName|
-    var config = ~layers.configs[layerName];
+    var config = ~oscLayers.configs[layerName];
     var melodyKey, melodyData;
-    
-    // Check for pending live updates first
-    if (~layers.state.liveMelodyMode and: { 
-        ~layers.state.pendingUpdates[layerName].notNil 
-    }) {
+
+    // Check for pending live updates first (always active)
+    if (~oscLayers.state.pendingUpdates[layerName].notNil) {
         // Apply pending update immediately
         ~applyPendingUpdateForLayer.(layerName);
     };
-    
+
     // Return current melody data
     if (config.melodyList.notNil and: { config.melodyList.size > 0 }) {
         melodyKey = config.melodyList[0];
         melodyData = ~melodyDict[melodyKey];
-        
-        // "DEBUG ~getLayerMelodyDynamic: layer=%, melodyKey=%".format(layerName, melodyKey).postln;
     };
-    
+
     melodyData
 };
 
 ~applyPendingUpdateForLayer = { |layerName|
-    var melodyData = ~layers.state.pendingUpdates[layerName];
+    var melodyData = ~oscLayers.state.pendingUpdates[layerName];
     var tempKey = ("live_" ++ layerName).asSymbol;
-    var config = ~layers.configs[layerName];
+    var config = ~oscLayers.configs[layerName];
     
     if (melodyData.notNil) {
         // Convert and store
@@ -314,36 +365,15 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 ~enableLiveMelodyMode = {
-    if (~layers.state.liveMelodyMode) {
-        "Live melody mode already enabled".postln;
-        ^nil;
-    };
-    
-    ~layers.state.liveMelodyMode = true;
-    ~layers.state.pendingUpdates = Dictionary.new;  // Ensure dictionary exists
-    ~initLiveMelodyOSC.();
-    
-    "Live melody mode enabled - listening for OSC updates".postln;
-    "Send updates to: /liveMelody/update/layer1, layer2, or layer3".postln;
+    "Live melody mode is always enabled".postln;
+    "OSC receivers listening on /liveMelody/update/layer[1-3]".postln;
+    "Send melody → layer auto-starts independently".postln;
 };
 
 ~disableLiveMelodyMode = {
-    if (~layers.state.liveMelodyMode.not) {
-        "Live melody mode already disabled".postln;
-        ^nil;
-    };
-    
-    ~layers.state.liveMelodyMode = false;
-    
-    // Free OSC receivers
-    [\layer1, \layer2, \layer3].do { |layer|
-        OSCdef(("liveMelody_" ++ layer).asSymbol).free;
-    };
-    
-    // Clear pending updates
-    ~layers.state.pendingUpdates.clear;
-    
-    "Live melody mode disabled".postln;
+    "Live melody mode is always active and cannot be disabled".postln;
+    "To stop a layer: ~stopLayerIndependent.(\\layer1)".postln;
+    "To stop all: ~stopAllLayersIndependent.()".postln;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
