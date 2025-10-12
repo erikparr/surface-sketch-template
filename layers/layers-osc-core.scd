@@ -230,13 +230,14 @@
             if (~vstManager.notNil) {
                 var instances = ~vstManager.getTargetInstances(config.vstGroup);
                 var instanceArray = instances.values.asArray;
+                var instanceKeys = instances.keys.asArray;
 
                 notes.do { |note, idx|
                     var vstIndex = idx % instanceArray.size;
                     var vst = instanceArray[vstIndex];
                     if (vst.notNil) {
                         vst.midi.noteOn(idx, note, velocity);  // Use idx as channel
-                        "Chord note %: pitch % chan % vel % to VST %".format(idx, note, idx, velocity, instanceArray.keys.asArray[vstIndex]).postln;
+                        "Chord note %: pitch % chan % vel % to VST %".format(idx, note, idx, velocity, instanceKeys[vstIndex]).postln;
                         if (duration > 0) {
                             SystemClock.sched(duration, {
                                 vst.midi.noteOff(idx, note, 0);
