@@ -180,33 +180,66 @@
 
             // "OSC: Layer % note % vel % dur %".format(layerNum, note, velocity, duration).postln;
 
-            // Send to VST
+            // Send to VST - single note to all VSTs on channel 0
+            if (~vstManager.notNil) {
+                var instances = ~vstManager.getTargetInstances(config.vstGroup);
+                instances.do { |vst|
+                    vst.midi.noteOn(0, note, velocity);
+                    if (duration > 0) {
+                        SystemClock.sched(duration, {
+                            vst.midi.noteOff(0, note, 0);
+                        });
+                    };
+                };
+            };
+
+            // Trigger CC envelope if single note mode
+            if (~oscLayers.state.singleNoteCCMode and: { config.ccControl.enabled }) {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
+            };
+
+            // Trigger bend envelope if bend mode
+            if (~oscLayers.state.bendMode and: { config.bendControl.enabled }) {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/bend', duration);
+            };
+
+        }, '/layer' ++ layerNum ++ '/note')
+    );
+
+    // Chord control: /layer1/chord, /layer2/chord, /layer3/chord
+    responders = responders.add(
+        OSCFunc({|msg|
+            var notes = [];
+            var velocity, duration, argIndex;
+
+            // Parse variable number of note arguments (1-3 notes)
+            // msg format: [path, note1, note2?, note3?, velocity, duration]
+            argIndex = 1;
+            while { argIndex < (msg.size - 2) and: { msg[argIndex].isNumber and: { msg[argIndex] >= 0 and: { msg[argIndex] <= 127 } } } } {
+                notes = notes.add(msg[argIndex].asInteger);
+                argIndex = argIndex + 1;
+            };
+
+            // Last two arguments are velocity and duration
+            velocity = msg[msg.size - 2].asInteger ? 127;
+            duration = msg[msg.size - 1].asFloat ? 0.5;
+
+            "OSC: Layer % chord % notes: % vel: % dur: %".format(layerNum, notes.size, notes, velocity, duration).postln;
+
+            // Send to VST with multi-instrument routing
             if (~vstManager.notNil) {
                 var instances = ~vstManager.getTargetInstances(config.vstGroup);
                 var instanceArray = instances.values.asArray;
 
-                if (~oscLayers.state.chordMode and: { note.isArray }) {
-                    // Chord mode: Play notes simultaneously with multi-instrument routing
-                    var chordNotes = note[..2];  // Limit to max 3 notes
-                    chordNotes.do { |chordNote, idx|
-                        var vstIndex = idx % instanceArray.size;
-                        var vst = instanceArray[vstIndex];
-                        if (vst.notNil) {
-                            vst.midi.noteOn(idx, chordNote, velocity);  // Use idx as channel
-                            if (duration > 0) {
-                                SystemClock.sched(duration, {
-                                    vst.midi.noteOff(idx, chordNote, 0);
-                                });
-                            };
-                        };
-                    };
-                } {
-                    // Normal melody mode: Single note to all VSTs on channel 0
-                    instances.do { |vst|
-                        vst.midi.noteOn(0, note, velocity);
+                notes.do { |note, idx|
+                    var vstIndex = idx % instanceArray.size;
+                    var vst = instanceArray[vstIndex];
+                    if (vst.notNil) {
+                        vst.midi.noteOn(idx, note, velocity);  // Use idx as channel
+                        "Chord note %: pitch % chan % vel % to VST %".format(idx, note, idx, velocity, instanceArray.keys.asArray[vstIndex]).postln;
                         if (duration > 0) {
                             SystemClock.sched(duration, {
-                                vst.midi.noteOff(0, note, 0);
+                                vst.midi.noteOff(idx, note, 0);
                             });
                         };
                     };
@@ -223,7 +256,7 @@
                 NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/bend', duration);
             };
 
-        }, '/layer' ++ layerNum ++ '/note')
+        }, '/layer' ++ layerNum ++ '/chord')
     );
 
     // CC control: /layer1/cc, /layer2/cc, /layer3/cc
@@ -521,10 +554,19 @@
         var chord = pattern[..2];  // Take first 3 notes (or fewer if pattern is shorter)
         var noteDuration = (duration * 0.8) * config.noteDurationScalar;
 
-        "Chord mode: Playing % notes as chord".format(chord.size).postln;
+        "Chord mode: Playing % notes as chord: %".format(chord.size, chord).postln;
 
-        // Send chord immediately (all notes at once)
-        NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', chord, velocity, noteDuration);
+        // Send chord via dedicated /chord path with notes as separate arguments
+        case
+            { chord.size == 1 } {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], velocity, noteDuration);
+            }
+            { chord.size == 2 } {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], velocity, noteDuration);
+            }
+            { chord.size >= 3 } {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], chord[2], velocity, noteDuration);
+            };
     } {
         // Normal melody mode: Sequential playback
         pattern.do {|note, i|
