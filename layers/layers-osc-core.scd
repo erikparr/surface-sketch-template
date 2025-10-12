@@ -226,18 +226,20 @@
 
             "OSC: Layer % chord % notes: % vel: % dur: %".format(layerNum, notes.size, notes, velocity, duration).postln;
 
-            // Send to VST with multi-instrument routing
+            // Send to VST with multi-instrument routing (across layer groups)
             if (~vstManager.notNil) {
-                var instances = ~vstManager.getTargetInstances(config.vstGroup);
-                var instanceArray = instances.values.asArray;
-                var instanceKeys = instances.keys.asArray;
+                var layerGroups = ['Layer1', 'Layer2', 'Layer3'];
 
                 notes.do { |note, idx|
-                    var vstIndex = idx % instanceArray.size;
-                    var vst = instanceArray[vstIndex];
+                    var targetGroup = layerGroups[idx % layerGroups.size];
+                    var instances = ~vstManager.getTargetInstances(targetGroup);
+                    var vst = instances.values.asArray.first;  // Get first (and likely only) VST in group
+
                     if (vst.notNil) {
                         vst.midi.noteOn(idx, note, velocity);  // Use idx as channel
-                        "Chord note %: pitch % chan % vel % to VST %".format(idx, note, idx, velocity, instanceKeys[vstIndex]).postln;
+                        "Chord note %: pitch % chan % vel % to group % VST %".format(
+                            idx, note, idx, velocity, targetGroup, instances.keys.asArray.first
+                        ).postln;
                         if (duration > 0) {
                             SystemClock.sched(duration, {
                                 vst.midi.noteOff(idx, note, 0);
