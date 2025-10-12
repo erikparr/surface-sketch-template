@@ -270,8 +270,12 @@
                                 };
                                 normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-                                // Map to BPM range (60-200) using linear interpolation
-                                bpm = normalizedValue.linlin(0.0, 1.0, 60, 200);
+                                // Map to BPM range based on chord mode
+                                if (~oscLayers.state.chordMode) {
+                                    bpm = normalizedValue.linlin(0.0, 1.0, 6, 100);  // Chord mode: 6-100 BPM
+                                } {
+                                    bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);  // Normal mode: 60-400 BPM
+                                };
 
                                 // Update the parameter storage with BPM
                                 paramStorage[\loopBPM] = bpm;
@@ -302,8 +306,12 @@
             // Clamp normalized value to prevent issues at extremes
             normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-            // Map to BPM range (60-200) using linear mapping
-            bpm = normalizedValue.linlin(0.0, 1.0, 60, 200);
+            // Map to BPM range based on chord mode
+            if (~oscLayers.state.chordMode) {
+                bpm = normalizedValue.linlin(0.0, 1.0, 6, 100);  // Chord mode: 6-100 BPM
+            } {
+                bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);  // Normal mode: 60-400 BPM
+            };
 
             "BPM from Row 1 Knob 8 (direct): %".format(bpm.round(1)).postln;
         };

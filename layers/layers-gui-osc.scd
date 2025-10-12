@@ -153,6 +153,29 @@
             })
     );
 
+    // Chord mode checkbox
+    layout.add(
+        CheckBox()
+            .string_("Chord Mode (Max 3 notes, Multi-Instrument)")
+            .value_(~oscLayers.state.chordMode)
+            .action_({ |cb|
+                "GUI → OSC: Chord mode %".format(cb.value).postln;
+                NetAddr.localAddr.sendMsg('/system/chord_mode', cb.value);
+                updateStatus.();
+                // Update BPM display to show new range
+                if (bpmDisplay.notNil) {
+                    if (cb.value) {
+                        bpmDisplay.string_("BPM: 6-100 (Chord Mode, Row 1 Knob 8)");
+                    } {
+                        if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
+                            var bpm = ~getBPMFromKnob.();
+                            bpmDisplay.string_("BPM: % (60-400 range, Row 1 Knob 8)".format(bpm.round(1)));
+                        };
+                    };
+                };
+            })
+    );
+
     // Bend mode checkbox
     bendModeCheckbox = CheckBox()
         .string_("Bend Mode")
@@ -510,6 +533,7 @@
         statusStr = statusStr ++ "Loop mode: %\n".format(~oscLayers.state.loopingMode);
         statusStr = statusStr ++ "Manual control: %\n".format(~oscLayers.state.manualControl);
         statusStr = statusStr ++ "Single note CC: %\n".format(~oscLayers.state.singleNoteCCMode);
+        statusStr = statusStr ++ "Chord mode: %\n".format(~oscLayers.state.chordMode);
         statusStr = statusStr ++ "Bend mode: %\n".format(~oscLayers.state.bendMode);
         statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
@@ -518,7 +542,8 @@
         // Update BPM display
         if (bpmDisplay.notNil and: { ~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil } }) {
             var bpm = ~getBPMFromKnob.();
-            bpmDisplay.string_("BPM: % (Row 1 Knob 8)".format(bpm.round(1)));
+            var range = if (~oscLayers.state.chordMode) { "6-100" } { "60-400" };
+            bpmDisplay.string_("BPM: % (% range, Row 1 Knob 8)".format(bpm.round(1), range));
         };
 
         // Update melody rest display

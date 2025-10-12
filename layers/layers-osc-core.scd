@@ -32,6 +32,7 @@
         isRunning: false,
         noteDurationScalar: 1.0,
         melodyRestTime: 0.0,  // Rest duration between loops (0-1 seconds)
+        chordMode: false,  // Enable chord mode (play melody notes as simultaneous chords)
         pendingUpdates: Dictionary.new,  // Live melody updates (always active)
         // Global melody navigation
         currentMelodyIndex: 0,
@@ -182,12 +183,32 @@
             // Send to VST
             if (~vstManager.notNil) {
                 var instances = ~vstManager.getTargetInstances(config.vstGroup);
-                instances.do { |vst|
-                    vst.midi.noteOn(0, note, velocity);
-                    if (duration > 0) {
-                        SystemClock.sched(duration, {
-                            vst.midi.noteOff(0, note, 0);
-                        });
+                var instanceArray = instances.values.asArray;
+
+                if (~oscLayers.state.chordMode and: { note.isArray }) {
+                    // Chord mode: Play notes simultaneously with multi-instrument routing
+                    var chordNotes = note[..2];  // Limit to max 3 notes
+                    chordNotes.do { |chordNote, idx|
+                        var vstIndex = idx % instanceArray.size;
+                        var vst = instanceArray[vstIndex];
+                        if (vst.notNil) {
+                            vst.midi.noteOn(idx, chordNote, velocity);  // Use idx as channel
+                            if (duration > 0) {
+                                SystemClock.sched(duration, {
+                                    vst.midi.noteOff(idx, chordNote, 0);
+                                });
+                            };
+                        };
+                    };
+                } {
+                    // Normal melody mode: Single note to all VSTs on channel 0
+                    instances.do { |vst|
+                        vst.midi.noteOn(0, note, velocity);
+                        if (duration > 0) {
+                            SystemClock.sched(duration, {
+                                vst.midi.noteOff(0, note, 0);
+                            });
+                        };
                     };
                 };
             };
@@ -423,6 +444,18 @@
         }, '/system/melody_rest')
     );
 
+    // Chord mode control: /system/chord_mode
+    responders = responders.add(
+        OSCFunc({|msg|
+            var enabled = msg[1].asBoolean;
+            ~oscLayers.state.chordMode = enabled;
+            "OSC: Chord mode: % (BPM range: %)".format(
+                enabled,
+                if (enabled) { "6-100" } { "60-400" }
+            ).postln;
+        }, '/system/chord_mode')
+    );
+
     ~oscLayers.responders[\system] = responders;
 
     "Created % system OSC responders".format(responders.size).postln;
@@ -483,13 +516,25 @@
     };
 
     // Send melody via OSC messages with timing
-    pattern.do {|note, i|
-        var when = i * noteInterval;
-        var noteDuration = (noteInterval * 0.8) * config.noteDurationScalar; // Apply scalar from Row X Knob 2
+    if (~oscLayers.state.chordMode) {
+        // Chord mode: Play first 3 notes simultaneously
+        var chord = pattern[..2];  // Take first 3 notes (or fewer if pattern is shorter)
+        var noteDuration = (duration * 0.8) * config.noteDurationScalar;
 
-        SystemClock.sched(when, {
-            NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
-        });
+        "Chord mode: Playing % notes as chord".format(chord.size).postln;
+
+        // Send chord immediately (all notes at once)
+        NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', chord, velocity, noteDuration);
+    } {
+        // Normal melody mode: Sequential playback
+        pattern.do {|note, i|
+            var when = i * noteInterval;
+            var noteDuration = (noteInterval * 0.8) * config.noteDurationScalar; // Apply scalar from Row X Knob 2
+
+            SystemClock.sched(when, {
+                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
+            });
+        };
     };
 
     // Trigger layer expression envelope if not in single note mode
@@ -857,13 +902,40 @@
 
         if (~midiController.notNil && config.notNil) {
             var knobValue = ~midiController.getKnobRow(rowNum, 2);
-            config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.5);
+            config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.0);
             // Optional debug output
             // "Layer % note duration scalar: %% (Row % Knob 2)".format(
             //     layerKey,
             //     (config.noteDurationScalar * 100).round(1),
             //     rowNum
             // ).postln;
+        };
+    };
+};
+
+// Update note duration scalar for a specific layer
+~updateLayerNoteDurationScalar = { |layerKey|
+    var rowNum, config;
+
+    // Map layer to row number
+    case
+        { layerKey == \layer1 } { rowNum = 1 }
+        { layerKey == \layer2 } { rowNum = 2 }
+        { layerKey == \layer3 } { rowNum = 3 };
+
+    config = ~oscLayers.configs[layerKey];
+
+    if (~midiController.notNil && config.notNil && rowNum.notNil) {
+        var knobValue = ~midiController.getKnobRow(rowNum, 2);
+        config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.0);
+
+        // Debug output when manual control is enabled
+        if (~oscLayers.state.manualControl) {
+            "% note duration scalar: %% (Row % Knob 2)".format(
+                layerKey,
+                (config.noteDurationScalar * 100).round(1),
+                rowNum
+            ).postln;
         };
     };
 };
