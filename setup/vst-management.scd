@@ -315,7 +315,7 @@
     // --- MIDI Control Overrides UI ---
     midiControlOverridesLayout = HLayout();
     expressionKnobToggle = CheckBox()
-        .string_("Expression Knob (CC11)") // Set the label for the CheckBox
+        .string_("Expression Knob (CC16)") // Set the label for the CheckBox
         .value_(0) // Default to unchecked
         .action_({ |checkbox|
             var isChecked, statusMsg, selectedGroupIndex, currentTargetGroupName, vstsToControl;
@@ -353,13 +353,13 @@
                             // Further error handling or warnings removed for simplicity as per user request.
                         };
                     };
-                    if(~midiController.debug) { ("Expression Knob (CC11 via dedicated MIDIFunc): val % to VSTs in group '%' (Chan: %, Src: %)").format(val, activeGroupName ? "All", chan, src).postln; };
-                }, 11); // Specifically listen for CC 11
+                    if(~midiController.debug) { ("Expression Knob (CC16 via dedicated MIDIFunc): val % to VSTs in group '%' (Chan: %, Src: %)").format(val, activeGroupName ? "All", chan, src).postln; };
+                }, 16); // Listen for CC 16 from controller
 
-                statusMsg = "Expression Knob (CC11) ACTIVE for group: %".format(currentTargetGroupName ? "All");
+                statusMsg = "Expression Knob (CC16) ACTIVE for group: %".format(currentTargetGroupName ? "All");
                 (statusMsg + " (Dedicated MIDIFunc created)").postln;
             } {
-                statusMsg = "Expression Knob (CC11) INACTIVE";
+                statusMsg = "Expression Knob (CC16) INACTIVE";
                 (statusMsg + " (Dedicated MIDIFunc freed)").postln;
             };
             statusText.string = statusMsg;
