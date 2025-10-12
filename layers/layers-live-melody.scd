@@ -59,20 +59,32 @@
 
     // Extract duration and loop flag from melody metadata if present
     if (melodyData.notNil and: { melodyData.metadata.notNil }) {
-        var loopValue;
+        var loopValue, durationType;
 
-        // Priority 1: Explicit totalDuration (backward compatibility)
-        duration = melodyData.metadata.totalDuration;
+        // Get durationType (default to "absolute" for backward compatibility)
+        durationType = melodyData.metadata.durationType ? "absolute";
 
-        // Priority 2: Calculate from BPM if in manual control mode and no explicit duration
-        if (duration.isNil and: { ~oscLayers.state.manualControl }) {
-            if (~getBPMFromKnob.notNil and: { melodyData.notes.notNil }) {
+        if (durationType == "absolute") {
+            // Absolute timing: use totalDuration (composer's exact intent)
+            duration = melodyData.metadata.totalDuration;
+            if (duration.notNil) {
+                "Using absolute totalDuration: %s".format(duration.round(0.01)).postln;
+            };
+        } {
+            // Fractional timing: BPM control takes priority when manual control enabled
+            if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil and: { melodyData.notes.notNil } }) {
                 var bpm = ~getBPMFromKnob.();
-                var noteCount = melodyData.notes.size;  // Direct access from melody data
+                var noteCount = melodyData.notes.size;
                 duration = ~calculateDurationFromBPM.(bpm, noteCount);
-                "Auto-calculated duration from BPM % and % notes: %s".format(
-                    bpm.round(1), noteCount, duration.round(0.01)
+                "Using BPM % for fractional timing: %s (% notes)".format(
+                    bpm.round(1), duration.round(0.01), noteCount
                 ).postln;
+            } {
+                // Fallback to totalDuration when manual control disabled
+                duration = melodyData.metadata.totalDuration;
+                if (duration.notNil) {
+                    "Using fallback totalDuration: %s (manual control off)".format(duration.round(0.01)).postln;
+                };
             };
         };
 
