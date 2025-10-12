@@ -249,14 +249,31 @@
                 };
             };
 
-            // Trigger CC envelope if single note mode
-            if (~oscLayers.state.singleNoteCCMode and: { config.ccControl.enabled }) {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
+            // Trigger CC envelope
+            if (~oscLayers.state.singleNoteCCMode) {
+                // Single note mode: only trigger for this layer
+                if (config.ccControl.enabled) {
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
+                };
+            } {
+                // Layer-wide mode: in chord mode, trigger for all layers receiving notes
+                [1, 2, 3].do { |layerIdx|
+                    var layerConfig = ~oscLayers.configs[('layer' ++ layerIdx).asSymbol];
+                    if (layerConfig.ccControl.enabled) {
+                        NetAddr.localAddr.sendMsg('/layer' ++ layerIdx ++ '/expression', duration);
+                    };
+                };
             };
 
             // Trigger bend envelope if bend mode
-            if (~oscLayers.state.bendMode and: { config.bendControl.enabled }) {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/bend', duration);
+            if (~oscLayers.state.bendMode) {
+                // In chord mode, trigger bend for all layers receiving notes
+                [1, 2, 3].do { |layerIdx|
+                    var layerConfig = ~oscLayers.configs[('layer' ++ layerIdx).asSymbol];
+                    if (layerConfig.bendControl.enabled) {
+                        NetAddr.localAddr.sendMsg('/layer' ++ layerIdx ++ '/bend', duration);
+                    };
+                };
             };
 
         }, '/layer' ++ layerNum ++ '/chord')
