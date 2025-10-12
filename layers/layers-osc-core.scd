@@ -666,9 +666,17 @@
                 ~calculateDurationFromBPM.(bpm, noteCount)
             } { playDuration };
 
-            // Update expression parameters from MIDI for this layer
+            // Update expression parameters from MIDI
             if (~updateLayerExpressionParams.notNil) {
-                ~updateLayerExpressionParams.(layerKey);
+                if (~oscLayers.state.chordMode) {
+                    // Chord mode: update all layers (they all receive expression)
+                    [\layer1, \layer2, \layer3].do { |lKey|
+                        ~updateLayerExpressionParams.(lKey);
+                    };
+                } {
+                    // Normal mode: only this layer
+                    ~updateLayerExpressionParams.(layerKey);
+                };
             };
 
             // Update note duration scalar from MIDI

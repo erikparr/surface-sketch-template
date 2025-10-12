@@ -1189,4 +1189,50 @@
     };
 };
 
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                  MIDI KNOB → EXPRESSION PARAMETER UPDATE                    │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update expression parameters from MIDI knobs
+~updateLayerExpressionParams = { |layerKey|
+    var config, rowNum, min, max, durationScalar;
+
+    config = ~oscLayers.configs[layerKey];
+
+    // Determine which row to read from based on layer
+    rowNum = case
+        { layerKey == \layer1 } { 1 }
+        { layerKey == \layer2 } { 2 }
+        { layerKey == \layer3 } { 3 }
+        { 1 };  // Default to row 1
+
+    if (~midiController.notNil and: { config.notNil and: { config.ccControl.notNil } }) {
+        // Row X Knob 5: Expression Min (0-127)
+        min = ~midiController.getKnobRow(rowNum, 5).linlin(0, 127, 0, 127).asInteger;
+
+        // Row X Knob 6: Expression Max (0-127)
+        max = ~midiController.getKnobRow(rowNum, 6).linlin(0, 127, 0, 127).asInteger;
+
+        // Row X Knob 7: Expression Duration Scalar (0.1-2.0)
+        durationScalar = ~midiController.getKnobRow(rowNum, 7).linlin(0, 127, 0.1, 2.0);
+
+        // Update config
+        config.ccControl.expressionMin = min.clip(0, 127);
+        config.ccControl.expressionMax = max.clip(0, 127);
+        config.ccControl.expressionDurationScalar = durationScalar.clip(0.1, 2.0);
+
+        // Ensure max > min
+        if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
+            config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
+        };
+
+        "% expression updated: Min=% Max=% DurScalar=%".format(
+            layerKey,
+            config.ccControl.expressionMin,
+            config.ccControl.expressionMax,
+            config.ccControl.expressionDurationScalar.round(0.01)
+        ).postln;
+    };
+};
+
 "Dependent layers control system loaded with melody switching and bend control".postln;
