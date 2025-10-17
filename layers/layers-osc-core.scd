@@ -33,6 +33,9 @@
         noteDurationScalar: 1.0,
         melodyRestTime: 0.0,  // Rest duration between loops (0-1 seconds)
         chordMode: false,  // Enable chord mode (play melody notes as simultaneous chords)
+        arpeggioMode: false,  // Enable arpeggio mode (requires chord mode)
+        arpeggioMinDelay: 0.0,  // Min delay as percentage of duration (0.0-0.9)
+        arpeggioMaxDelay: 0.2,  // Max delay as percentage of duration (0.0-0.9)
         pendingUpdates: Dictionary.new,  // Live melody updates (always active)
         // Global melody navigation
         currentMelodyIndex: 0,
@@ -509,6 +512,41 @@
         }, '/system/chord_mode')
     );
 
+    // Arpeggio mode control: /system/arpeggio_mode
+    responders = responders.add(
+        OSCFunc({|msg|
+            var enabled = msg[1].asBoolean;
+            ~oscLayers.state.arpeggioMode = enabled;
+            "OSC: Arpeggio mode: % (requires chord mode)".format(enabled).postln;
+        }, '/system/arpeggio_mode')
+    );
+
+    // Arpeggio min delay: /system/arpeggio_min
+    responders = responders.add(
+        OSCFunc({|msg|
+            var minDelay = msg[1].clip(0.0, 0.9);
+            ~oscLayers.state.arpeggioMinDelay = minDelay;
+            // Ensure min <= max
+            if (minDelay > ~oscLayers.state.arpeggioMaxDelay) {
+                ~oscLayers.state.arpeggioMaxDelay = minDelay;
+            };
+            "OSC: Arpeggio min delay: %%".format((minDelay * 100).round(1)).postln;
+        }, '/system/arpeggio_min')
+    );
+
+    // Arpeggio max delay: /system/arpeggio_max
+    responders = responders.add(
+        OSCFunc({|msg|
+            var maxDelay = msg[1].clip(0.0, 0.9);
+            ~oscLayers.state.arpeggioMaxDelay = maxDelay;
+            // Ensure min <= max
+            if (maxDelay < ~oscLayers.state.arpeggioMinDelay) {
+                ~oscLayers.state.arpeggioMinDelay = maxDelay;
+            };
+            "OSC: Arpeggio max delay: %%".format((maxDelay * 100).round(1)).postln;
+        }, '/system/arpeggio_max')
+    );
+
     ~oscLayers.responders[\system] = responders;
 
     "Created % system OSC responders".format(responders.size).postln;
@@ -570,23 +608,80 @@
 
     // Send melody via OSC messages with timing
     if (~oscLayers.state.chordMode) {
-        // Chord mode: Play first 3 notes simultaneously
-        var chord = pattern[..2];  // Take first 3 notes (or fewer if pattern is shorter)
-        var noteDuration = (duration * 0.8) * config.noteDurationScalar;
+        var chord, noteDuration, delays;
 
-        "Chord mode: Playing % notes as chord: %".format(chord.size, chord).postln;
+        // Chord mode: Play first 3 notes
+        chord = pattern[..2];  // Take first 3 notes (or fewer if pattern is shorter)
+        noteDuration = (duration * 0.8) * config.noteDurationScalar;
 
-        // Send chord via dedicated /chord path with notes as separate arguments
-        case
-            { chord.size == 1 } {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], velocity, noteDuration);
-            }
-            { chord.size == 2 } {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], velocity, noteDuration);
-            }
-            { chord.size >= 3 } {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], chord[2], velocity, noteDuration);
+        if (~oscLayers.state.arpeggioMode and: {
+            ~oscLayers.state.arpeggioMaxDelay > 0
+        }) {
+            // ARPEGGIO MODE: Random delays per note (as percentage of duration)
+            delays = chord.collect {
+                rrand(
+                    ~oscLayers.state.arpeggioMinDelay,
+                    ~oscLayers.state.arpeggioMaxDelay
+                ) * duration;  // Convert percentage to actual time
             };
+
+            "Arpeggio chord: % notes with delays % (min:%%  max:%%)".format(
+                chord.size,
+                delays.collect(_.round(0.001)),
+                (~oscLayers.state.arpeggioMinDelay * 100).round(1),
+                (~oscLayers.state.arpeggioMaxDelay * 100).round(1)
+            ).postln;
+
+            // Schedule each note with random delay to appropriate layer group
+            chord.do { |note, idx|
+                var targetLayerNum = (idx % 3) + 1;  // 1, 2, or 3
+                var targetLayerKey = ('layer' ++ targetLayerNum).asSymbol;
+                var targetLayerConfig = ~oscLayers.configs[targetLayerKey];
+
+                SystemClock.sched(delays[idx], {
+                    // Send note
+                    NetAddr.localAddr.sendMsg(
+                        '/layer' ++ targetLayerNum ++ '/note',
+                        note, velocity, noteDuration
+                    );
+
+                    // Trigger expression envelope with note's duration (not in single note mode)
+                    if (~oscLayers.state.singleNoteCCMode.not and: {
+                        targetLayerConfig.ccControl.enabled
+                    }) {
+                        NetAddr.localAddr.sendMsg(
+                            '/layer' ++ targetLayerNum ++ '/expression',
+                            noteDuration
+                        );
+                    };
+
+                    // Trigger bend envelope with note's duration
+                    if (~oscLayers.state.bendMode and: {
+                        targetLayerConfig.bendControl.enabled
+                    }) {
+                        NetAddr.localAddr.sendMsg(
+                            '/layer' ++ targetLayerNum ++ '/bend',
+                            noteDuration
+                        );
+                    };
+                });
+            };
+        } {
+            // NORMAL CHORD MODE: Simultaneous (existing code)
+            "Chord mode: Playing % notes as chord: %".format(chord.size, chord).postln;
+
+            // Send chord via dedicated /chord path with notes as separate arguments
+            case
+                { chord.size == 1 } {
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], velocity, noteDuration);
+                }
+                { chord.size == 2 } {
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], velocity, noteDuration);
+                }
+                { chord.size >= 3 } {
+                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], chord[2], velocity, noteDuration);
+                };
+        };
     } {
         // Normal melody mode: Sequential playback
         pattern.do {|note, i|

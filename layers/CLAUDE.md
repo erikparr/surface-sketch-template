@@ -140,9 +140,9 @@ NetAddr.localAddr.sendMsg('/system/stop');
 ~setLayersManualControl.(true);
 
 // Manual control mappings (Row 1):
-// - Knob 8: BPM (60-200) - tempo control with automatic duration calculation based on note count
+// - Knob 8: BPM (60-400) - tempo control with automatic duration calculation based on note count
 // - Knob 3: Note velocity (1-127) - live control during playback
-// - Knob 2: Note duration scalar (1-150%) - scales all note durations (works with fractional & absolute)
+// - Knob 2: Note duration scalar (1-100%) - scales all note durations (100% = full duration before next note)
 // - Knob 4: Timing offset (0-90%) - shifts note start times forward (fractional duration type only)
 // BPM changes take effect on next loop iteration
 // When disabled: Uses velocity and durations from melody data
@@ -326,15 +326,17 @@ Each layer now has independent expression control via CC envelopes that send MID
 
 #### Manual Control Mode (Row 1)
 When manual control is enabled, Row 1 knobs control global playback parameters:
-- **Row 1, Knob 2** (CC 20): Note duration scalar (1-150%) - applies to all layers
+- **Row 1, Knob 2** (CC 20): Note duration scalar (1-100%) - scales note durations (100% = full duration)
 - **Row 1, Knob 3** (CC 24): Note velocity (1-127) - overrides melody velocity data
 - **Row 1, Knob 4** (CC 28): Timing offset (0-90%) - shifts all note start times (fractional duration only)
-- **Row 1, Knob 8** (CC 58): BPM (60-200) - tempo control, auto-calculates duration based on note count
+- **Row 1, Knob 8** (CC 58): BPM (60-400) - tempo control, auto-calculates duration based on note count
 
 #### Slider Controls
 - **Slider 1** (CC 19): Layer spread timing
 - **Slider 2** (CC 23): Melody rest (0-1s) - pause after each loop iteration (looping mode only)
-- **Sliders 3-9** (CC 27, 31, 49, 53, 57, 61, 62): Available for future use
+- **Slider 3** (CC 27): Arpeggio min delay (0-90% of duration) - requires chord + arpeggio mode
+- **Slider 4** (CC 31): Arpeggio max delay (0-90% of duration) - requires chord + arpeggio mode
+- **Sliders 5-9** (CC 49, 53, 57, 61, 62): Available for future use
 
 #### Expression Control (Per Layer)
 Each layer's expression parameters are controlled by MIDI knobs on the corresponding row:
@@ -468,6 +470,59 @@ The timing offset feature allows real-time shifting of note start times for frac
 - Works seamlessly with note duration scalar (Knob 2)
 - Visual feedback in GUI shows current offset percentage
 - Debug output shows applied offset in console
+
+## Arpeggio Chord Mode
+
+When both chord mode and arpeggio mode are enabled, chord notes are triggered with random delays creating arpeggiated chord effects:
+
+### MIDI Control
+- **Slider 3** (CC 27): Arpeggio min delay (0-90% of duration)
+- **Slider 4** (CC 31): Arpeggio max delay (0-90% of duration)
+
+### Behavior
+- Each chord note receives a random delay between min and max percentages of the chord duration
+- Notes distributed across Layer1, Layer2, Layer3 (same multi-instrument routing as normal chord mode)
+- Expression and bend envelopes triggered with each note independently
+- Delays recalculated randomly on each loop iteration
+- Requires both chord mode AND arpeggio mode to be enabled
+
+### OSC API
+- `/system/arpeggio_mode [bool]` - Enable/disable arpeggio mode
+- `/system/arpeggio_min [float]` - Set min delay (0.0-0.9 = 0-90%)
+- `/system/arpeggio_max [float]` - Set max delay (0.0-0.9 = 0-90%)
+
+### Helper Functions
+- `~setArpeggioMode.(true/false)` - Enable/disable arpeggio mode
+- `~setArpeggioMinDelay.(0.1)` - Set min delay (0.0-0.9)
+- `~setArpeggioMaxDelay.(0.5)` - Set max delay (0.0-0.9)
+- `~getArpeggioStatus.()` - Display current arpeggio settings
+
+### Usage Example
+```supercollider
+// Enable chord mode first
+NetAddr.localAddr.sendMsg('/system/chord_mode', true);
+
+// Enable arpeggio mode
+~setArpeggioMode.(true);
+
+// Set delay range to 10-50% of duration
+~setArpeggioMinDelay.(0.1);  // 10%
+~setArpeggioMaxDelay.(0.5);  // 50%
+
+// Start playing - each chord will arpeggiate with random delays
+~startLayers.();
+
+// Check status
+~getArpeggioStatus.();
+```
+
+### Technical Details
+- Delays are percentages of chord duration (scales with BPM changes)
+- Min and max values automatically swap if min > max
+- Uses `/layer[N]/note` for arpeggiated notes (not `/chord` path)
+- Random delays generated using `rrand()` on each chord trigger
+- GUI checkbox disabled when chord mode is off
+- Real-time MIDI slider control updates display
 
 ## Requirements
 

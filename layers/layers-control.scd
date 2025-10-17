@@ -964,6 +964,61 @@
 ~setupMelodyRestMIDI.();
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                         ARPEGGIO CONTROL                                   │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Set up MIDI CC handlers for arpeggio control (Sliders 3-4)
+~setupArpeggioMIDI = {
+    // Clean up existing handlers if they exist
+    if (~arpeggioMinMIDIFunc.notNil) {
+        ~arpeggioMinMIDIFunc.free;
+    };
+    if (~arpeggioMaxMIDIFunc.notNil) {
+        ~arpeggioMaxMIDIFunc.free;
+    };
+
+    // CC 27: Slider 3 - Arpeggio min delay (0-90% of duration)
+    ~arpeggioMinMIDIFunc = MIDIFunc.cc({ |val, num, chan, src|
+        var minDelay;
+
+        // Map 0-127 to 0-0.9 (0-90% of duration)
+        minDelay = val.linlin(0, 127, 0.0, 0.9);
+
+        // Update state via OSC message for consistency
+        NetAddr.localAddr.sendMsg('/system/arpeggio_min', minDelay);
+    }, 27);  // CC 27 = Slider 3 on MIDIMix
+
+    // CC 31: Slider 4 - Arpeggio max delay (0-90% of duration)
+    ~arpeggioMaxMIDIFunc = MIDIFunc.cc({ |val, num, chan, src|
+        var maxDelay;
+
+        // Map 0-127 to 0-0.9 (0-90% of duration)
+        maxDelay = val.linlin(0, 127, 0.0, 0.9);
+
+        // Update state via OSC message for consistency
+        NetAddr.localAddr.sendMsg('/system/arpeggio_max', maxDelay);
+    }, 31);  // CC 31 = Slider 4 on MIDIMix
+
+    "Arpeggio MIDI control active (Sliders 3-4 / CC 27, 31)".postln;
+};
+
+// Clean up arpeggio MIDI handlers
+~cleanupArpeggioMIDI = {
+    if (~arpeggioMinMIDIFunc.notNil) {
+        ~arpeggioMinMIDIFunc.free;
+        ~arpeggioMinMIDIFunc = nil;
+    };
+    if (~arpeggioMaxMIDIFunc.notNil) {
+        ~arpeggioMaxMIDIFunc.free;
+        ~arpeggioMaxMIDIFunc = nil;
+    };
+    "Arpeggio MIDI handlers cleaned up".postln;
+};
+
+// Initialize arpeggio MIDI handlers
+~setupArpeggioMIDI.();
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         BEND CONTROL FUNCTIONS                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -1235,4 +1290,39 @@
     };
 };
 
-"Dependent layers control system loaded with melody switching and bend control".postln;
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    ARPEGGIO CONTROL HELPER FUNCTIONS                       │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Enable/disable arpeggio mode
+~setArpeggioMode = { |enabled|
+    NetAddr.localAddr.sendMsg('/system/arpeggio_mode', enabled);
+};
+
+// Set arpeggio min delay (0.0-0.9 = 0-90% of duration)
+~setArpeggioMinDelay = { |percentage|
+    NetAddr.localAddr.sendMsg('/system/arpeggio_min', percentage.clip(0.0, 0.9));
+};
+
+// Set arpeggio max delay (0.0-0.9 = 0-90% of duration)
+~setArpeggioMaxDelay = { |percentage|
+    NetAddr.localAddr.sendMsg('/system/arpeggio_max', percentage.clip(0.0, 0.9));
+};
+
+// Get current arpeggio status
+~getArpeggioStatus = {
+    "Arpeggio mode: % (requires chord mode)".format(
+        ~oscLayers.state.arpeggioMode
+    ).postln;
+    "  Min delay: %% of duration".format(
+        (~oscLayers.state.arpeggioMinDelay * 100).round(1)
+    ).postln;
+    "  Max delay: %% of duration".format(
+        (~oscLayers.state.arpeggioMaxDelay * 100).round(1)
+    ).postln;
+    if (~oscLayers.state.arpeggioMode and: { ~oscLayers.state.chordMode.not }) {
+        "  WARNING: Arpeggio enabled but chord mode is OFF".warn;
+    };
+};
+
+"Dependent layers control system loaded with melody switching, bend control, and arpeggio".postln;
