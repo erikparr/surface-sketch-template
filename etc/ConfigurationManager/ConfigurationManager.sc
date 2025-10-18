@@ -427,6 +427,11 @@ ConfigurationManager {
 		if(success and: { ~oscLayers.notNil }) {
 			"Synchronizing OSC layers with VST configuration...".postln;
 			this.syncOSCLayersWithVSTs();
+
+			// Initialize dynamic layers system after VST groups are created
+			if(~initDynamicLayersSystem.notNil) {
+				~initDynamicLayersSystem.();
+			};
 		};
 
 		// FIXED: Sync MIDI controller with loaded VST configuration

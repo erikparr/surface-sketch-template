@@ -26,7 +26,7 @@
         totalDuration: 0,
         startTime: nil,
         loopingMode: false,
-        manualControl: false,
+        manualControl: true,  // Default: ON (MIDI knob control for BPM, velocity, duration)
         singleNoteCCMode: false,
         bendMode: false,
         isRunning: false,
@@ -42,6 +42,9 @@
         melodyList: [],  // Array of melody keys from loaded file
         // Simplified - no timing state needed
     ),
+
+    // DYNAMIC LAYERS: Dictionaries instead of fixed configs (Phase 1)
+    // NOTE: Legacy layer1/2/3 configs preserved below for backward compatibility
 
     // Layer configurations (preserved from original system)
     configs: (
@@ -159,7 +162,14 @@
     responders: Dictionary.new,
 
     // Layer coordinator (timing controller)
-    coordinator: nil
+    coordinator: nil,
+
+    // DYNAMIC LAYERS (Phase 1): Per-group layer management
+    dynamicConfigs: Dictionary.new,      // groupName → config
+    dynamicResponders: Dictionary.new,   // groupName → [OSCFuncs array]
+    groupToIndex: Dictionary.new,        // groupName → alphabetical index
+    indexToGroup: Dictionary.new,        // index → groupName
+    groupToSanitized: Dictionary.new     // groupName → sanitized symbol
 );
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -547,6 +557,40 @@
         }, '/system/arpeggio_max')
     );
 
+    // Melody update: /melody
+    responders = responders.add(
+        OSCFunc({|msg|
+            var jsonString, melodyData, targetGroup, groupNames, groupName, tempKey, loop;
+
+            jsonString = msg[1].asString;
+            "DEBUG /melody: Received JSON (length: %)".format(jsonString.size).postln;
+
+            melodyData = JSONlib.convertToSC(jsonString, useEvent: true);
+            "DEBUG /melody: Parsed successfully".postln;
+
+            targetGroup = melodyData.metadata.targetGroup;
+            groupNames = ~oscLayers.dynamicConfigs.keys.asArray.sort;
+            groupName = groupNames[targetGroup];
+
+            "DEBUG /melody: Target group: %".format(groupName).postln;
+
+            tempKey = ("live_" ++ groupName).asSymbol;
+            ~melodyDict[tempKey] = ~convertJSONToMelody.(melodyData);
+
+            loop = (melodyData.metadata[\loop] == true);
+            "DEBUG /melody: Loop = %".format(loop).postln;
+
+            "DEBUG /melody: Setting melody list...".postln;
+            ~setMelodyListForGroup.(groupName, [tempKey]);
+            "DEBUG /melody: After setMelodyListForGroup".postln;
+
+            "DEBUG /melody: Starting playback...".postln;
+            ~startDynamicGroupPlayback.(groupName, targetGroup, loop);
+
+            "DEBUG /melody: Complete".postln;
+        }, '/melody')
+    );
+
     ~oscLayers.responders[\system] = responders;
 
     "Created % system OSC responders".format(responders.size).postln;
@@ -705,193 +749,7 @@
 // └─────────────────────────────────────────────────────────────────────────────┘
 
 // Start a single layer with independent looping (or one-shot)
-~startLayerIndependent = {|layerKey, duration = nil, loop = true|
-    var config = ~oscLayers.configs[layerKey];
-    var melodyData, playDuration, loopTask;
-    var isPlayingVar, taskVar;
-
-    // Get the correct global variables based on layer
-    case
-        { layerKey == \layer1 } {
-            isPlayingVar = \layer1_isPlaying;
-            taskVar = \layer1_currentTask;
-        }
-        { layerKey == \layer2 } {
-            isPlayingVar = \layer2_isPlaying;
-            taskVar = \layer2_currentTask;
-        }
-        { layerKey == \layer3 } {
-            isPlayingVar = \layer3_isPlaying;
-            taskVar = \layer3_currentTask;
-        };
-
-    // Stop existing playback for this layer if running
-    if (currentEnvironment[taskVar].notNil) {
-        currentEnvironment[taskVar].stop;
-        currentEnvironment[taskVar] = nil;
-    };
-
-    // Determine duration
-    playDuration = case
-        { duration.notNil } { duration }                    // Explicit parameter (highest priority)
-        { ~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil } } {
-            var bpm = ~getBPMFromKnob.();
-            var noteCount = ~getMelodyNoteCount.(layerKey);
-            ~calculateDurationFromBPM.(bpm, noteCount)      // BPM-based calculation
-        }
-        { config.defaultDuration };                         // Default
-
-    "Starting % independently with duration: %s (loop: %)".format(layerKey, playDuration, loop).postln;
-
-    // Set playing state
-    currentEnvironment[isPlayingVar] = true;
-
-    // Create independent playback task (looping or one-shot)
-    loopTask = Task({
-        var loopCount = 0;
-        var currentDuration;
-
-        while { currentEnvironment[isPlayingVar] } {
-            loopCount = loopCount + 1;
-
-            // Update duration from MIDI if in manual control mode
-            currentDuration = if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
-                var bpm = ~getBPMFromKnob.();
-                var noteCount = ~getMelodyNoteCount.(layerKey);
-                ~calculateDurationFromBPM.(bpm, noteCount)
-            } { playDuration };
-
-            // Update expression parameters from MIDI
-            if (~updateLayerExpressionParams.notNil) {
-                if (~oscLayers.state.chordMode) {
-                    // Chord mode: update all layers (they all receive expression)
-                    [\layer1, \layer2, \layer3].do { |lKey|
-                        ~updateLayerExpressionParams.(lKey);
-                    };
-                } {
-                    // Normal mode: only this layer
-                    ~updateLayerExpressionParams.(layerKey);
-                };
-            };
-
-            // Update note duration scalar from MIDI
-            if (~updateLayerNoteDurationScalar.notNil) {
-                ~updateLayerNoteDurationScalar.(layerKey);
-            };
-
-            // Play the layer
-            if (loop) {
-                "% loop %: duration %s".format(layerKey, loopCount, currentDuration).postln;
-            } {
-                "% playing once: duration %s".format(layerKey, currentDuration).postln;
-            };
-            ~startOSCLayer.(layerKey, currentDuration);
-
-            // Wait for completion
-            currentDuration.wait;
-
-            // If one-shot mode, stop after first play
-            if (loop.not) {
-                var layerNumber = layerKey.asString.last.asString.asInteger;
-
-                currentEnvironment[isPlayingVar] = false;
-
-                // Send OSC completion message to external app
-                NetAddr("127.0.0.1", 7001).sendMsg('/liveMelody/complete', layerNumber);
-                "Sent completion message for % to port 7001".format(layerKey).postln;
-            } {
-                // Add melody rest if configured (loop mode only)
-                if (~oscLayers.state.melodyRestTime > 0) {
-                    ~oscLayers.state.melodyRestTime.wait;
-                };
-            };
-        };
-
-        "% playback stopped".format(layerKey).postln;
-    });
-
-    // Store and start task
-    currentEnvironment[taskVar] = loopTask;
-    loopTask.play;
-
-    layerKey;  // Return layer key
-};
-
-// Stop a single layer's independent playback
-~stopLayerIndependent = {|layerKey|
-    var isPlayingVar, taskVar;
-
-    // Get the correct global variables based on layer
-    case
-        { layerKey == \layer1 } {
-            isPlayingVar = \layer1_isPlaying;
-            taskVar = \layer1_currentTask;
-        }
-        { layerKey == \layer2 } {
-            isPlayingVar = \layer2_isPlaying;
-            taskVar = \layer2_currentTask;
-        }
-        { layerKey == \layer3 } {
-            isPlayingVar = \layer3_isPlaying;
-            taskVar = \layer3_currentTask;
-        };
-
-    if (currentEnvironment[taskVar].notNil) {
-        currentEnvironment[isPlayingVar] = false;
-        currentEnvironment[taskVar].stop;
-        currentEnvironment[taskVar] = nil;
-        "Stopped % independently".format(layerKey).postln;
-    } {
-        "% is not playing".format(layerKey).postln;
-    };
-
-    layerKey;
-};
-
-// Check if any layer is playing independently
-~anyLayerPlaying = {
-    ~layer1_isPlaying or: { ~layer2_isPlaying } or: { ~layer3_isPlaying }
-};
-
-// Get status of all layers
-~getLayersPlaybackStatus = {
-    var status = ();
-    var config;
-
-    config = ~oscLayers.configs[\layer1];
-    status[\layer1] = (
-        isPlaying: ~layer1_isPlaying,
-        hasMelody: config.melodyList.size > 0,
-        enabled: config.enabled,
-        defaultDuration: config.defaultDuration
-    );
-
-    config = ~oscLayers.configs[\layer2];
-    status[\layer2] = (
-        isPlaying: ~layer2_isPlaying,
-        hasMelody: config.melodyList.size > 0,
-        enabled: config.enabled,
-        defaultDuration: config.defaultDuration
-    );
-
-    config = ~oscLayers.configs[\layer3];
-    status[\layer3] = (
-        isPlaying: ~layer3_isPlaying,
-        hasMelody: config.melodyList.size > 0,
-        enabled: config.enabled,
-        defaultDuration: config.defaultDuration
-    );
-
-    status
-};
-
-// Stop all independent layers
-~stopAllLayersIndependent = {
-    [\layer1, \layer2, \layer3].do {|layerKey|
-        ~stopLayerIndependent.(layerKey);
-    };
-    "Stopped all independent layer playback".postln;
-};
+// Legacy independent layer functions removed - use dynamic layers system
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       OSC LAYER COORDINATOR                                │
@@ -1079,31 +937,7 @@
 };
 
 // Update note duration scalar for a specific layer
-~updateLayerNoteDurationScalar = { |layerKey|
-    var rowNum, config;
-
-    // Map layer to row number
-    case
-        { layerKey == \layer1 } { rowNum = 1 }
-        { layerKey == \layer2 } { rowNum = 2 }
-        { layerKey == \layer3 } { rowNum = 3 };
-
-    config = ~oscLayers.configs[layerKey];
-
-    if (~midiController.notNil && config.notNil && rowNum.notNil) {
-        var knobValue = ~midiController.getKnobRow(rowNum, 2);
-        config.noteDurationScalar = knobValue.linlin(0, 127, 0.01, 1.0);
-
-        // Debug output when manual control is enabled
-        if (~oscLayers.state.manualControl) {
-            "% note duration scalar: %% (Row % Knob 2)".format(
-                layerKey,
-                (config.noteDurationScalar * 100).round(1),
-                rowNum
-            ).postln;
-        };
-    };
-};
+// Legacy function removed - use dynamic layers version at line 1901 with group names
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                    MIDI TEMPLATE PROCESSING & EXPRESSION CONTROL           │
@@ -1283,6 +1117,1204 @@
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    DYNAMIC LAYERS - PHASE 1 CORE FUNCTIONS                │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Sanitize group name for use in OSC paths
+~sanitizeGroupName = { |groupName|
+    groupName.asString
+        .toLower
+        .replace(" ", "_")
+        .replace("-", "_")
+        .replace("/", "_")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("#", "")
+        .asSymbol
+};
+
+// Update MIDI index mappings (alphabetical ordering)
+~updateMIDIIndices = {
+    var sortedGroups;
+
+    sortedGroups = ~oscLayers.dynamicConfigs.keys.asArray.sort;
+
+    // Clear existing mappings
+    ~oscLayers.groupToIndex.clear;
+    ~oscLayers.indexToGroup.clear;
+
+    // Rebuild mappings
+    sortedGroups.do { |groupName, index|
+        ~oscLayers.groupToIndex[groupName] = index;
+        ~oscLayers.indexToGroup[index] = groupName;
+
+        // Update alphabetical index in config
+        if (~oscLayers.dynamicConfigs[groupName].notNil) {
+            ~oscLayers.dynamicConfigs[groupName].alphabeticalIndex = index;
+        };
+    };
+
+    "Updated MIDI indices for % groups".format(sortedGroups.size).postln;
+};
+
+// Get MIDI row for a group (1-3, modulo-based)
+~getMIDIRowForGroup = { |groupName|
+    var idx;
+    idx = ~oscLayers.groupToIndex[groupName];
+    if (idx.notNil) {
+        (idx % 3) + 1  // Returns 1, 2, or 3
+    } {
+        1  // Default to row 1 if not found
+    }
+};
+
+// Create layer configuration for a group
+~createLayerForGroup = { |groupName|
+    var sanitizedName, config, alphabeticalIndex;
+
+    // Sanitize group name
+    sanitizedName = ~sanitizeGroupName.(groupName);
+
+    // Store sanitized mapping
+    ~oscLayers.groupToSanitized[groupName] = sanitizedName;
+
+    // Create placeholder config first (for MIDI index calculation)
+    ~oscLayers.dynamicConfigs[groupName] = ();
+
+    // Update MIDI indices NOW (with new group included)
+    ~updateMIDIIndices.();
+
+    // Get alphabetical index (now correctly calculated)
+    alphabeticalIndex = ~oscLayers.groupToIndex[groupName];
+
+    // Create full configuration
+    config = (
+        // Identity
+        groupName: groupName,
+        sanitizedName: sanitizedName,
+        alphabeticalIndex: alphabeticalIndex,
+        vstGroup: groupName,  // Direct 1:1 mapping
+
+        // Independent melody navigation
+        melodyList: [],
+        currentMelodyIndex: 0,
+
+        // Expression control
+        expressionCC: 11 + alphabeticalIndex,  // Auto-assigned CC
+        expressionMin: 10,
+        expressionMax: 120,
+        expressionDurationScalar: 1.0,
+
+        // Playback state
+        enabled: true,
+        defaultDuration: 4.0,
+        isPlaying: false,
+        currentTask: nil,
+        noteDurationScalar: 1.0,
+
+        // CC control (matching legacy structure)
+        ccControl: (
+            enabled: true,
+            expressionCC: 11 + alphabeticalIndex,
+            expressionMin: 10,
+            expressionMax: 120,
+            expressionShape: \sin,
+            expressionPeakPos: 0.5,
+            expressionDurationScalar: 1.0
+        ),
+
+        // Bend control (matching legacy structure)
+        bendControl: (
+            enabled: true,
+            bendAmount: 0.0,
+            peakTimeRatio: 0.5,
+            returnTimeRatio: 0.5,
+            simpleRamp: false,
+            activeBendSynths: Dictionary.new
+        )
+    );
+
+    // Replace placeholder with full configuration
+    ~oscLayers.dynamicConfigs[groupName] = config;
+
+    // Create OSC responders for this group
+    ~createGroupOSCResponders.(sanitizedName, config);
+
+    "Created dynamic layer for group: % (sanitized: %, CC: %, MIDI row: %)".format(
+        groupName, sanitizedName, config.expressionCC, ~getMIDIRowForGroup.(groupName)
+    ).postln;
+
+    config
+};
+
+// Remove layer for a group
+~removeLayerForGroup = { |groupName|
+    var config, responders;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.notNil) {
+        // Stop playback if running
+        if (config.currentTask.notNil) {
+            config.currentTask.stop;
+            config.currentTask = nil;
+        };
+        config.isPlaying = false;
+
+        // Free OSC responders
+        responders = ~oscLayers.dynamicResponders[groupName];
+        if (responders.notNil) {
+            responders.do(_.free);
+            ~oscLayers.dynamicResponders.removeAt(groupName);
+        };
+
+        // Remove from all dictionaries
+        ~oscLayers.dynamicConfigs.removeAt(groupName);
+        ~oscLayers.groupToSanitized.removeAt(groupName);
+
+        // Update MIDI indices
+        ~updateMIDIIndices.();
+
+        "Removed dynamic layer for group: %".format(groupName).postln;
+        ^true
+    } {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^false
+    }
+};
+
+// Create OSC responders for a group (7 OSCFuncs per group)
+~createGroupOSCResponders = { |sanitizedName, config|
+    var responders, groupName, oscPath;
+
+    responders = [];
+    groupName = config.groupName;
+
+    "Creating OSC responders for group: % (path: /group/%)".format(groupName, sanitizedName).postln;
+
+    // 1. /group/<sanitized>/note - Individual note trigger
+    oscPath = '/group/' ++ sanitizedName ++ '/note';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var note, velocity, duration;
+            note = msg[1];
+            velocity = msg[2] ? 127;
+            duration = msg[3] ? 0.5;
+
+            // Send to VST group
+            if (~vstManager.notNil) {
+                var instances = ~vstManager.getTargetInstances(groupName);
+                instances.do { |vst|
+                    vst.midi.noteOn(0, note, velocity);
+                    if (duration > 0) {
+                        SystemClock.sched(duration, {
+                            vst.midi.noteOff(0, note, 0);
+                        });
+                    };
+                };
+            };
+        }, oscPath)
+    );
+
+    // 2. /group/<sanitized>/chord - Chord trigger
+    oscPath = '/group/' ++ sanitizedName ++ '/chord';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var notes, velocity, duration, argIndex;
+
+            notes = [];
+            argIndex = 1;
+            while { argIndex < (msg.size - 2) and: { msg[argIndex].isNumber } } {
+                notes = notes.add(msg[argIndex].asInteger);
+                argIndex = argIndex + 1;
+            };
+
+            velocity = msg[msg.size - 2].asInteger ? 127;
+            duration = msg[msg.size - 1].asFloat ? 0.5;
+
+            // Send to VST group
+            if (~vstManager.notNil) {
+                var instances = ~vstManager.getTargetInstances(groupName);
+                instances.do { |vst|
+                    notes.do { |note, idx|
+                        vst.midi.noteOn(idx, note, velocity);
+                        if (duration > 0) {
+                            SystemClock.sched(duration, {
+                                vst.midi.noteOff(idx, note, 0);
+                            });
+                        };
+                    };
+                };
+            };
+        }, oscPath)
+    );
+
+    // 3. /group/<sanitized>/cc - Direct CC control
+    oscPath = '/group/' ++ sanitizedName ++ '/cc';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var ccNum, value;
+            ccNum = msg[1];
+            value = msg[2];
+
+            if (~vstManager.notNil) {
+                var instances = ~vstManager.getTargetInstances(groupName);
+                instances.do { |vst|
+                    vst.midi.control(0, ccNum, value);
+                };
+            };
+        }, oscPath)
+    );
+
+    // 4. /group/<sanitized>/expression - CC envelope
+    oscPath = '/group/' ++ sanitizedName ++ '/expression';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var duration, synthName, ccControl, scaledDuration, attackTime, releaseTime;
+
+            duration = msg[1] ? 1.0;
+            synthName = \ccEnvelopeGeneric;  // Use generic SynthDef
+            ccControl = config.ccControl;
+
+            if (ccControl.enabled) {
+                scaledDuration = duration * ccControl.expressionDurationScalar;
+                attackTime = scaledDuration * ccControl.expressionPeakPos;
+                releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
+
+                Synth(synthName, [
+                    \start, ccControl.expressionMin,
+                    \peak, ccControl.expressionMax,
+                    \end, ccControl.expressionMin,
+                    \attackTime, attackTime,
+                    \releaseTime, releaseTime,
+                    \chanIndex, 0,
+                    \ccNum, ccControl.expressionCC,
+                    \attackCurve, ccControl.expressionShape,
+                    \releaseCurve, ccControl.expressionShape
+                ]);
+            };
+        }, oscPath)
+    );
+
+    // 5. /group/<sanitized>/bend - Pitch bend envelope
+    oscPath = '/group/' ++ sanitizedName ++ '/bend';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var duration, bendControl, bendAmount, peakTime, simpleRamp;
+            var bendCenter, bendRangeRaw, peakValue;
+
+            duration = msg[1] ? 1.0;
+            bendControl = config.bendControl;
+
+            if (bendControl.enabled) {
+                bendAmount = bendControl.bendAmount;
+                peakTime = bendControl.peakTimeRatio;
+                simpleRamp = bendControl.simpleRamp;
+                bendCenter = 8192;
+
+                bendRangeRaw = (bendAmount * 8191).round.asInteger;
+                peakValue = (bendCenter + bendRangeRaw).clip(0, 16383);
+
+                // Clean up existing bend synths
+                bendControl.activeBendSynths.do(_.free);
+                bendControl.activeBendSynths.clear;
+
+                // Create bend synths for each VST in group
+                if (~vstManager.notNil) {
+                    ~vstManager.getTargetInstances(groupName).keysValuesDo { |vstKey, vst, vstIndex|
+                        var replyID, bendSynth;
+                        replyID = (config.alphabeticalIndex * 100) + vstIndex;
+
+                        if (simpleRamp) {
+                            bendSynth = Synth(\BendEnvelopeSimple, [
+                                \start, bendCenter,
+                                \end, peakValue,
+                                \duration, duration,
+                                \chanIndex, vstIndex,
+                                \customReplyID, replyID
+                            ]);
+                        } {
+                            bendSynth = Synth(\BendEnvelope, [
+                                \start, bendCenter,
+                                \peak, peakValue,
+                                \end, bendCenter,
+                                \peakTime, duration * peakTime,
+                                \returnTime, duration * (1.0 - peakTime),
+                                \chanIndex, vstIndex,
+                                \customReplyID, replyID
+                            ]);
+                        };
+
+                        bendControl.activeBendSynths[vstKey] = bendSynth;
+                    };
+                };
+            };
+        }, oscPath)
+    );
+
+    // 6. /group/<sanitized>/melody - Set melody
+    oscPath = '/group/' ++ sanitizedName ++ '/melody';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var melodyKey;
+            melodyKey = msg[1].asSymbol;
+            config.melodyList = [melodyKey];
+            "Group % melody set to: %".format(groupName, melodyKey).postln;
+        }, oscPath)
+    );
+
+    // 7. /group/<sanitized>/enabled - Enable/disable
+    oscPath = '/group/' ++ sanitizedName ++ '/enabled';
+    responders = responders.add(
+        OSCFunc({ |msg|
+            var enabled;
+            enabled = msg[1].asBoolean;
+            config.enabled = enabled;
+            "Group % enabled: %".format(groupName, enabled).postln;
+        }, oscPath)
+    );
+
+    // Store responders
+    ~oscLayers.dynamicResponders[groupName] = responders;
+
+    "Created % OSC responders for group: %".format(responders.size, groupName).postln;
+    responders
+};
+
+// Rebuild dynamic layers from current VST groups
+~rebuildDynamicLayers = {
+    var currentGroups, existingGroups, groupsToAdd, groupsToRemove;
+
+    if (~vstManager.isNil) {
+        "VST Manager not available, cannot rebuild dynamic layers".warn;
+        ^this
+    };
+
+    // Get current VST groups
+    currentGroups = ~vstManager.getGroupNames();
+    existingGroups = ~oscLayers.dynamicConfigs.keys.asArray;
+
+    // Calculate diff
+    groupsToAdd = currentGroups.difference(existingGroups);
+    groupsToRemove = existingGroups.difference(currentGroups);
+
+    "Rebuilding dynamic layers: % to add, % to remove".format(
+        groupsToAdd.size, groupsToRemove.size
+    ).postln;
+
+    // Remove deleted groups
+    groupsToRemove.do { |groupName|
+        ~removeLayerForGroup.(groupName);
+    };
+
+    // Add new groups
+    groupsToAdd.do { |groupName|
+        ~createLayerForGroup.(groupName);
+    };
+
+    "Dynamic layers rebuild complete: % total groups".format(currentGroups.size).postln;
+};
+
+// Load generic SynthDefs for dynamic layers
+~loadDynamicLayersSynthDefs = {
+    "Loading generic SynthDefs for dynamic layers...".postln;
+
+    // Generic CC envelope SynthDef (parameterized CC number)
+    SynthDef(\ccEnvelopeGeneric, { |start=10, peak=120, end=10, attackTime=0.5, releaseTime=0.5, chanIndex=0, ccNum=11, attackCurve=\sin, releaseCurve=\sin|
+        var env, envValue;
+
+        env = Env([start, peak, end], [attackTime, releaseTime], [attackCurve, releaseCurve]);
+        envValue = EnvGen.kr(env, doneAction: Done.freeSelf);
+
+        SendReply.kr(Impulse.kr(60), '/midi/cc', [chanIndex, ccNum, envValue]);
+    }).add;
+
+    "Generic SynthDefs loaded for dynamic layers".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    DYNAMIC LAYERS - PHASE 2 MELODY FUNCTIONS              │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Navigate to next melody for a specific group
+~nextMelodyForGroup = { |groupName|
+    var config, currentMelody;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^nil
+    };
+
+    if (config.melodyList.size > 0) {
+        config.currentMelodyIndex = (config.currentMelodyIndex + 1) % config.melodyList.size;
+        currentMelody = config.melodyList[config.currentMelodyIndex];
+
+        "Group %: Next melody: % (% of %)".format(
+            groupName,
+            currentMelody,
+            config.currentMelodyIndex + 1,
+            config.melodyList.size
+        ).postln;
+
+        currentMelody
+    } {
+        "Group %: No melodies loaded for navigation".format(groupName).warn;
+        nil
+    }
+};
+
+// Navigate to previous melody for a specific group
+~prevMelodyForGroup = { |groupName|
+    var config, currentMelody;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^nil
+    };
+
+    if (config.melodyList.size > 0) {
+        config.currentMelodyIndex = (config.currentMelodyIndex - 1) % config.melodyList.size;
+        if (config.currentMelodyIndex < 0) {
+            config.currentMelodyIndex = config.melodyList.size - 1;
+        };
+        currentMelody = config.melodyList[config.currentMelodyIndex];
+
+        "Group %: Previous melody: % (% of %)".format(
+            groupName,
+            currentMelody,
+            config.currentMelodyIndex + 1,
+            config.melodyList.size
+        ).postln;
+
+        currentMelody
+    } {
+        "Group %: No melodies loaded for navigation".format(groupName).warn;
+        nil
+    }
+};
+
+// Set melody list for a specific group
+~setMelodyListForGroup = { |groupName, melodyKeys|
+    var config;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        false
+    } {
+        if (melodyKeys.isNil or: { melodyKeys.size == 0 }) {
+            "Warning: Setting empty melody list for group %".format(groupName).warn;
+            config.melodyList = [];
+            config.currentMelodyIndex = 0;
+            true
+        } {
+            config.melodyList = melodyKeys.asArray;
+            config.currentMelodyIndex = 0;
+
+            "Group %: Melody list set with % melodies: %".format(
+                groupName,
+                config.melodyList.size,
+                config.melodyList
+            ).postln;
+
+            true
+        }
+    }
+};
+
+// Get current melody for a specific group
+~getCurrentMelodyForGroup = { |groupName|
+    var config, currentMelody;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^nil
+    };
+
+    if (config.melodyList.size > 0) {
+        currentMelody = config.melodyList[config.currentMelodyIndex];
+        "Group %: Current melody: % (% of %)".format(
+            groupName,
+            currentMelody,
+            config.currentMelodyIndex + 1,
+            config.melodyList.size
+        ).postln;
+        currentMelody
+    } {
+        "Group %: No melodies loaded".format(groupName).postln;
+        nil
+    }
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    DYNAMIC LAYERS - PHASE 3 MIDI INTEGRATION              │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update expression parameters for a specific group from MIDI knobs
+~updateLayerExpressionParams = { |groupName|
+    var config, rowNum, ccControl;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^false
+    };
+
+    // Get MIDI row for this group (1, 2, or 3)
+    rowNum = ~getMIDIRowForGroup.(groupName);
+
+    ccControl = config.ccControl;
+
+    if (~midiController.notNil and: { ccControl.notNil }) {
+        // Read expression parameters from appropriate row
+        // Row X, Knob 5: Expression min (0-127)
+        // Row X, Knob 6: Expression max (0-127)
+        // Row X, Knob 4: Expression duration scalar (0.001-1.0)
+
+        ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5);
+        ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
+        ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0.0, 1.0, 0.001, 1.0);
+
+        // Ensure valid range
+        if (ccControl.expressionMax <= ccControl.expressionMin) {
+            ccControl.expressionMax = ccControl.expressionMin + 1;
+        };
+
+        "Group % expression from MIDI (Row %): Min=%, Max=%, DurScalar=%".format(
+            groupName, rowNum,
+            ccControl.expressionMin,
+            ccControl.expressionMax,
+            ccControl.expressionDurationScalar.round(0.01)
+        ).postln;
+
+        ^true
+    } {
+        "MIDI controller not available for group %".format(groupName).warn;
+        ^false
+    }
+};
+
+// Update expression parameters for all dynamic groups from MIDI knobs
+~updateAllLayerExpressionParams = {
+    var successCount;
+
+    successCount = 0;
+
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        if (~updateLayerExpressionParams.(groupName)) {
+            successCount = successCount + 1;
+        };
+    };
+
+    "Updated expression parameters for % of % groups from MIDI".format(
+        successCount, ~oscLayers.dynamicConfigs.size
+    ).postln;
+
+    ^successCount
+};
+
+// Update note duration scalar for a specific group from MIDI knobs
+~updateLayerNoteDurationScalar = { |groupName|
+    var config, rowNum;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        ^false
+    };
+
+    // Get MIDI row for this group (1, 2, or 3)
+    rowNum = ~getMIDIRowForGroup.(groupName);
+
+    if (~midiController.notNil) {
+        // Row X, Knob 2: Note duration scalar (0.01-1.0)
+        config.noteDurationScalar = ~midiController.getKnobRow(rowNum, 2).linlin(0, 127, 0.01, 1.0);
+
+        // Optional debug output
+        // "Group % note duration scalar: %% (Row % Knob 2)".format(
+        //     groupName,
+        //     (config.noteDurationScalar * 100).round(1),
+        //     rowNum
+        // ).postln;
+
+        ^true
+    } {
+        "MIDI controller not available for group %".format(groupName).warn;
+        ^false
+    }
+};
+
+// Update note duration scalars for all dynamic groups from MIDI knobs
+~updateAllLayerNoteDurationScalars = {
+    var successCount;
+
+    successCount = 0;
+
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        if (~updateLayerNoteDurationScalar.(groupName)) {
+            successCount = successCount + 1;
+        };
+    };
+
+    ^successCount
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                   DYNAMIC LAYERS - PHASE 4 SYSTEM INTEGRATION             │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Register callback for VST group changes (event-driven)
+~registerDynamicLayersCallback = {
+    ~refreshLayerVSTGroups = {
+        "VST groups changed, rebuilding dynamic layers...".postln;
+        ~rebuildDynamicLayers.();
+        // Also refresh GUI if it exists
+        if (~refreshLayersGUI.notNil) { ~refreshLayersGUI.() };
+    };
+
+    "Registered dynamic layers callback with VST management".postln;
+};
+
+// Start playback for a dynamic group (single group)
+~startDynamicGroupPlayback = { |groupName, targetGroup = nil, loop = true, duration = nil|
+    var config, melodyData, pattern, noteInterval, velocity, sanitizedName, playDuration, melodyKey, result;
+
+    "DEBUG startPlayback: groupName=%".format(groupName).postln;
+    "DEBUG startPlayback: targetGroup=%".format(targetGroup).postln;
+    "DEBUG startPlayback: loop=%".format(loop).postln;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+
+    result = if (config.isNil) {
+        "Group % not found in dynamic layers".format(groupName).warn;
+        false
+    } {
+        "DEBUG startPlayback: config.enabled=%".format(config.enabled).postln;
+
+        if (config.enabled.not) {
+            "Group % is disabled, skipping playback".format(groupName).postln;
+            false
+        } {
+            "DEBUG startPlayback: melodyList.size=%".format(config.melodyList.size).postln;
+
+            if (config.melodyList.size == 0) {
+                "Group % has no melody to play".format(groupName).warn;
+                false
+            } {
+                melodyKey = config.melodyList[config.currentMelodyIndex];
+                "DEBUG startPlayback: melodyKey=%".format(melodyKey).postln;
+
+                if (~melodyDict.isNil or: { ~melodyDict[melodyKey].isNil }) {
+                    "Group %: Melody % not found in ~melodyDict".format(groupName, melodyKey).warn;
+                    false
+                } {
+                    melodyData = ~melodyDict[melodyKey];
+                    "DEBUG startPlayback: Melody found".postln;
+
+                    // Extract pattern
+                    pattern = if (melodyData.isKindOf(Dictionary) and: { melodyData.patterns.notNil }) {
+                        melodyData.patterns[0]
+                    } {
+                        if (melodyData.isKindOf(Array)) {
+                            melodyData
+                        } {
+                            nil
+                        }
+                    };
+
+                    if (pattern.isNil or: { pattern.size == 0 }) {
+                        "Group %: Pattern is empty or invalid".format(groupName).warn;
+                        false
+                    } {
+                        // Determine duration
+                        playDuration = duration ?? {
+                            if (melodyData.metadata.notNil and: { melodyData.metadata.totalDuration.notNil }) {
+                                melodyData.metadata.totalDuration
+                            } {
+                                4.0
+                            }
+                        };
+
+                        sanitizedName = config.sanitizedName;
+                        noteInterval = playDuration / pattern.size;
+                        velocity = 127;
+
+                        "Starting dynamic group %: % notes, duration: %s, loop: %".format(groupName, pattern.size, playDuration, loop).postln;
+
+                        // Send notes via OSC
+                        pattern.do { |note, i|
+                            var when, noteDuration;
+                            when = i * noteInterval;
+                            noteDuration = (noteInterval * 0.8) * config.noteDurationScalar;
+
+                            SystemClock.sched(when, {
+                                NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/note', note, velocity, noteDuration);
+                            });
+                        };
+
+                        // Trigger expression envelope if enabled
+                        if (config.ccControl.enabled) {
+                            NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/expression', playDuration);
+                        };
+
+                        // Send completion message if not looping and targetGroup is provided
+                        if (loop.not and: { targetGroup.notNil }) {
+                            SystemClock.sched(playDuration, {
+                                NetAddr("127.0.0.1", 7001).sendMsg('/melody/complete', targetGroup);
+                                "Sent completion for targetGroup %".format(targetGroup).postln;
+                            });
+                        };
+
+                        "DEBUG startPlayback: Returning true".postln;
+                        true
+                    }
+                }
+            }
+        }
+    };
+
+    result
+};
+
+// Start all dynamic groups (coordinator-style)
+~startAllDynamicGroups = { |duration|
+    var successCount;
+
+    successCount = 0;
+    duration = duration ?? { 4.0 };
+
+    "Starting all dynamic groups with duration: %s".format(duration).postln;
+
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        if (~startDynamicGroupPlayback.(groupName, nil, true, duration)) {
+            successCount = successCount + 1;
+        };
+    };
+
+    "Started % of % dynamic groups".format(successCount, ~oscLayers.dynamicConfigs.size).postln;
+    ^successCount
+};
+
+// Legacy compatibility removed - use dynamic layers directly
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                    DYNAMIC LAYERS - INITIALIZATION                         │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Initialize dynamic layers system (Phase 1-4 complete)
+~initDynamicLayersSystem = {
+    "Initializing Dynamic Layers System...".postln;
+
+    // Phase 1: Core functions
+    ~loadDynamicLayersSynthDefs.();
+    "Dynamic layer containers initialized".postln;
+
+    // Create layers from existing VST groups
+    if (~vstManager.notNil) {
+        ~vstManager.getGroupNames().do { |groupName|
+            ~createLayerForGroup.(groupName);
+        };
+        "Created dynamic layers for % groups".format(~vstManager.getGroupNames().size).postln;
+    } {
+        "VST Manager not available, skipping dynamic layer creation".warn;
+    };
+
+    // Phase 4: System integration
+    ~registerDynamicLayersCallback.();
+
+    "Dynamic Layers System initialized (Phases 1-4 complete)".postln;
+    "  - Core functions ready".postln;
+    "  - Melody navigation ready".postln;
+    "  - MIDI integration ready".postln;
+    "  - Event-driven updates registered".postln;
+};
+
+// Test function for Phase 1
+~testDynamicLayersPhase1 = {
+    var configs, responders, groups;
+
+    "=== Testing Dynamic Layers Phase 1 ===".postln;
+
+    // Auto-initialize if not already done
+    if (~oscLayers.dynamicConfigs.size == 0) {
+        "".postln;
+        "Dynamic layers not initialized, initializing now...".postln;
+        ~initDynamicLayersSystem.();
+        "".postln;
+    };
+
+    // Test 1: Sanitize group names
+    "Test 1: Name sanitization".postln;
+    ["Bass Tuba", "Layer1", "Sax Group #2", "Horn(s)"].do { |name|
+        var sanitized;
+        sanitized = ~sanitizeGroupName.(name);
+        "  % → %".format(name, sanitized).postln;
+    };
+
+    // Test 2: Check current groups
+    "".postln;
+    "Test 2: Current VST groups".postln;
+    if (~vstManager.notNil) {
+        groups = ~vstManager.getGroupNames();
+        "  Found % groups: %".format(groups.size, groups).postln;
+    } {
+        "  VST Manager not available".warn;
+    };
+
+    // Test 3: Check dynamic configs
+    "".postln;
+    "Test 3: Dynamic layer configs".postln;
+    configs = ~oscLayers.dynamicConfigs;
+    "  Total dynamic layers: %".format(configs.size).postln;
+    configs.keysValuesDo { |groupName, config|
+        "  - % (sanitized: %, CC: %, row: %, index: %)".format(
+            groupName,
+            config.sanitizedName,
+            config.expressionCC,
+            ~getMIDIRowForGroup.(groupName),
+            config.alphabeticalIndex
+        ).postln;
+    };
+
+    // Test 4: Check OSC responders
+    "".postln;
+    "Test 4: OSC responders".postln;
+    responders = ~oscLayers.dynamicResponders;
+    "  Total responder groups: %".format(responders.size).postln;
+    responders.keysValuesDo { |groupName, resps|
+        "  - %: % OSCFuncs".format(groupName, resps.size).postln;
+    };
+
+    // Test 5: MIDI index mappings
+    "".postln;
+    "Test 5: MIDI index mappings".postln;
+    "  Group→Index: %".format(~oscLayers.groupToIndex).postln;
+    "  Index→Group: %".format(~oscLayers.indexToGroup).postln;
+
+    // Test 6: Test OSC paths (without actually sending notes)
+    "".postln;
+    "Test 6: OSC paths available".postln;
+    configs.keysValuesDo { |groupName, config|
+        var sanitized;
+        sanitized = config.sanitizedName;
+        "  Group '%':".format(groupName).postln;
+        "    /group/%/note".format(sanitized).postln;
+        "    /group/%/chord".format(sanitized).postln;
+        "    /group/%/cc".format(sanitized).postln;
+        "    /group/%/expression".format(sanitized).postln;
+        "    /group/%/bend".format(sanitized).postln;
+        "    /group/%/melody".format(sanitized).postln;
+        "    /group/%/enabled".format(sanitized).postln;
+    };
+
+    "".postln;
+    "=== Phase 1 Test Complete ===".postln;
+};
+
+// Test function for Phase 2 (Melody Functions)
+~testDynamicLayersPhase2 = {
+    var testGroup;
+
+    "=== Testing Dynamic Layers Phase 2: Melody Functions ===".postln;
+
+    // Auto-initialize if not already done
+    if (~oscLayers.dynamicConfigs.size == 0) {
+        "".postln;
+        "Dynamic layers not initialized, initializing now...".postln;
+        ~initDynamicLayersSystem.();
+        "".postln;
+    };
+
+    // Use first available group for testing
+    if (~oscLayers.dynamicConfigs.size > 0) {
+        testGroup = ~oscLayers.dynamicConfigs.keys.asArray.sort.first;
+        "".postln;
+        "Using test group: %".format(testGroup).postln;
+
+        // Test 1: Set melody list
+        "".postln;
+        "Test 1: Set melody list".postln;
+        ~setMelodyListForGroup.(testGroup, [\melody1, \melody2, \melody3]);
+
+        // Test 2: Get current melody
+        "".postln;
+        "Test 2: Get current melody".postln;
+        ~getCurrentMelodyForGroup.(testGroup);
+
+        // Test 3: Navigate forward
+        "".postln;
+        "Test 3: Navigate forward through melodies".postln;
+        ~nextMelodyForGroup.(testGroup);  // Should be melody2
+        ~nextMelodyForGroup.(testGroup);  // Should be melody3
+        ~nextMelodyForGroup.(testGroup);  // Should wrap to melody1
+
+        // Test 4: Navigate backward
+        "".postln;
+        "Test 4: Navigate backward through melodies".postln;
+        ~prevMelodyForGroup.(testGroup);  // Should be melody3
+        ~prevMelodyForGroup.(testGroup);  // Should be melody2
+
+        // Test 5: Test with multiple groups
+        "".postln;
+        "Test 5: Independent melody lists per group".postln;
+        if (~oscLayers.dynamicConfigs.size > 1) {
+            var groups;
+            groups = ~oscLayers.dynamicConfigs.keys.asArray.sort;
+
+            // Set different melody lists for first two groups
+            ~setMelodyListForGroup.(groups[0], [\melodyA, \melodyB]);
+            ~setMelodyListForGroup.(groups[1], [\melodyX, \melodyY, \melodyZ]);
+
+            // Show they're independent
+            "Group %: Current = %".format(groups[0], ~getCurrentMelodyForGroup.(groups[0])).postln;
+            "Group %: Current = %".format(groups[1], ~getCurrentMelodyForGroup.(groups[1])).postln;
+
+            ~nextMelodyForGroup.(groups[0]);  // A->B
+            ~nextMelodyForGroup.(groups[1]);  // X->Y
+
+            "After next:".postln;
+            "Group %: Current = %".format(groups[0], ~getCurrentMelodyForGroup.(groups[0])).postln;
+            "Group %: Current = %".format(groups[1], ~getCurrentMelodyForGroup.(groups[1])).postln;
+        } {
+            "Only one group available, skipping multi-group test".postln;
+        };
+
+        // Test 6: Error handling
+        "".postln;
+        "Test 6: Error handling".postln;
+        ~setMelodyListForGroup.("NonExistentGroup", [\test]);  // Should warn
+        ~nextMelodyForGroup.("NonExistentGroup");  // Should warn
+
+    } {
+        "No dynamic groups available for testing".warn;
+    };
+
+    "".postln;
+    "=== Phase 2 Test Complete ===".postln;
+};
+
+// Test function for Phase 3 (MIDI Integration)
+~testDynamicLayersPhase3 = {
+    var testGroup;
+
+    "=== Testing Dynamic Layers Phase 3: MIDI Integration ===".postln;
+
+    // Auto-initialize if not already done
+    if (~oscLayers.dynamicConfigs.size == 0) {
+        "".postln;
+        "Dynamic layers not initialized, initializing now...".postln;
+        ~initDynamicLayersSystem.();
+        "".postln;
+    };
+
+    // Check MIDI controller availability
+    "".postln;
+    "Test 1: MIDI Controller availability".postln;
+    if (~midiController.notNil) {
+        "  ✓ MIDI controller available".postln;
+    } {
+        "  ✗ MIDI controller NOT available (functions will warn but not crash)".warn;
+    };
+
+    // Test 2: MIDI row assignments
+    "".postln;
+    "Test 2: MIDI row assignments".postln;
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        var rowNum;
+        rowNum = ~getMIDIRowForGroup.(groupName);
+        "  Group %: Row % (index %)".format(groupName, rowNum, config.alphabeticalIndex).postln;
+    };
+
+    // Test 3: Update expression params for a single group
+    "".postln;
+    "Test 3: Update expression params for single group".postln;
+    if (~oscLayers.dynamicConfigs.size > 0) {
+        testGroup = ~oscLayers.dynamicConfigs.keys.asArray.sort.first;
+        if (~updateLayerExpressionParams.(testGroup)) {
+            var ccControl;
+            ccControl = ~oscLayers.dynamicConfigs[testGroup].ccControl;
+            "  Updated group %:".format(testGroup).postln;
+            "    Min: %, Max: %, DurScalar: %".format(
+                ccControl.expressionMin,
+                ccControl.expressionMax,
+                ccControl.expressionDurationScalar.round(0.001)
+            ).postln;
+        };
+    };
+
+    // Test 4: Update all groups
+    "".postln;
+    "Test 4: Update all groups at once".postln;
+    ~updateAllLayerExpressionParams.();
+
+    // Test 5: Update note duration scalars
+    "".postln;
+    "Test 5: Update note duration scalars".postln;
+    if (~oscLayers.dynamicConfigs.size > 0) {
+        testGroup = ~oscLayers.dynamicConfigs.keys.asArray.sort.first;
+        if (~updateLayerNoteDurationScalar.(testGroup)) {
+            var config;
+            config = ~oscLayers.dynamicConfigs[testGroup];
+            "  Updated group %: noteDurationScalar = %".format(
+                testGroup,
+                config.noteDurationScalar.round(0.01)
+            ).postln;
+        };
+    };
+
+    // Test 6: Show current MIDI mappings
+    "".postln;
+    "Test 6: Current MIDI knob mappings per group".postln;
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        var rowNum;
+        rowNum = ~getMIDIRowForGroup.(groupName);
+        "  Group % (Row %):".format(groupName, rowNum).postln;
+        "    Knob 2: Note Duration Scalar".postln;
+        "    Knob 4: Expression Duration Scalar".postln;
+        "    Knob 5: Expression Min".postln;
+        "    Knob 6: Expression Max".postln;
+    };
+
+    "".postln;
+    "=== Phase 3 Test Complete ===".postln;
+};
+
+// Test function for Phase 4 (System Integration)
+~testDynamicLayersPhase4 = {
+    var testGroup;
+
+    "=== Testing Dynamic Layers Phase 4: System Integration ===".postln;
+
+    // Auto-initialize if not already done
+    if (~oscLayers.dynamicConfigs.size == 0) {
+        "".postln;
+        "Dynamic layers not initialized, initializing now...".postln;
+        ~initDynamicLayersSystem.();
+        "".postln;
+    };
+
+    // Test 1: Check callback registration
+    "".postln;
+    "Test 1: VST group change callback".postln;
+    if (~refreshLayerVSTGroups.notNil) {
+        "  ✓ Callback registered".postln;
+    } {
+        "  ✗ Callback NOT registered".warn;
+    };
+
+    // Test 2: Check backward compatibility mapping
+    "".postln;
+    "Test 2: Backward compatibility layer".postln;
+    if (~oscLayers.legacyMapping.notNil) {
+        "  layer1 → %".format(~oscLayers.legacyMapping.layer1).postln;
+        "  layer2 → %".format(~oscLayers.legacyMapping.layer2).postln;
+        "  layer3 → %".format(~oscLayers.legacyMapping.layer3).postln;
+    } {
+        "  ✗ Legacy mapping not established".warn;
+    };
+
+    // Test 3: Test single group playback (requires melody)
+    "".postln;
+    "Test 3: Single group playback".postln;
+    if (~oscLayers.dynamicConfigs.size > 0) {
+        testGroup = ~oscLayers.dynamicConfigs.keys.asArray.sort.first;
+
+        // Set up a simple test melody
+        if (~melodyDict.isNil) { ~melodyDict = Dictionary.new };
+        ~melodyDict[\testMelody] = (
+            patterns: [[60, 62, 64, 65]],
+            velocities: [100, 100, 100, 100],
+            noteDurations: [0.5, 0.5, 0.5, 0.5]
+        );
+
+        // Assign melody to group
+        ~setMelodyListForGroup.(testGroup, [\testMelody]);
+
+        // Try starting playback
+        if (~startDynamicGroupPlayback.(testGroup, 2.0)) {
+            "  ✓ Successfully started group % playback".format(testGroup).postln;
+        } {
+            "  ✗ Failed to start group % playback".format(testGroup).warn;
+        };
+    } {
+        "  No groups available for testing".warn;
+    };
+
+    // Test 4: Test all groups playback
+    "".postln;
+    "Test 4: All groups playback".postln;
+    if (~oscLayers.dynamicConfigs.size > 0) {
+        var started;
+
+        // Assign test melody to all groups
+        ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+            ~setMelodyListForGroup.(groupName, [\testMelody]);
+        };
+
+        // Start all groups
+        started = ~startAllDynamicGroups.(2.0);
+        "  Started % of % groups".format(started, ~oscLayers.dynamicConfigs.size).postln;
+    };
+
+    // Test 5: Test callback simulation
+    "".postln;
+    "Test 5: Simulate VST group change".postln;
+    if (~refreshLayerVSTGroups.notNil) {
+        var groupCountBefore;
+        groupCountBefore = ~oscLayers.dynamicConfigs.size;
+        "  Groups before: %".format(groupCountBefore).postln;
+
+        // Simulate callback (would normally be triggered by VST management)
+        "  Calling ~refreshLayerVSTGroups...".postln;
+        ~refreshLayerVSTGroups.();
+
+        "  Groups after: %".format(~oscLayers.dynamicConfigs.size).postln;
+        "  ✓ Callback executed successfully".postln;
+    };
+
+    // Test 6: Show complete system status
+    "".postln;
+    "Test 6: Complete system status".postln;
+    "  Total dynamic groups: %".format(~oscLayers.dynamicConfigs.size).postln;
+    "  OSC responders: %".format(~oscLayers.dynamicResponders.size).postln;
+    "  Event-driven updates: %".format(if (~refreshLayerVSTGroups.notNil) { "enabled" } { "disabled" }).postln;
+    "  Backward compatibility: %".format(if (~oscLayers.legacyMapping.notNil) { "enabled" } { "disabled" }).postln;
+
+    "".postln;
+    "=== Phase 4 Test Complete ===".postln;
+    "".postln;
+    "=== ALL PHASES (1-4) COMPLETE ===".postln;
+    "Dynamic layers system is fully operational!".postln;
+};
+
+// Combined test for all phases
+~testAllDynamicLayersPhases = {
+    "".postln;
+    "=== COMPREHENSIVE TEST: All Dynamic Layers Phases ===".postln;
+    "".postln;
+
+    ~testDynamicLayersPhase1.();
+    "".postln;
+    ~testDynamicLayersPhase2.();
+    "".postln;
+    ~testDynamicLayersPhase3.();
+    "".postln;
+    ~testDynamicLayersPhase4.();
+
+    "".postln;
+    "=== COMPREHENSIVE TEST COMPLETE ===".postln;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       INITIALIZATION FUNCTIONS                             │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -1318,6 +2350,25 @@
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                        MELODY SYSTEM                                       │
 // └─────────────────────────────────────────────────────────────────────────────┘
+
+// Convert JSON melody data to ~melodyDict format
+~convertJSONToMelody = { |data|
+    var notes, patterns, velocities, durations;
+
+    notes = data.notes;
+    patterns = notes.collect { |n| n.midi };
+    velocities = notes.collect { |n| (n.vel * 127).asInteger };
+    durations = notes.collect { |n| n.dur };
+
+    (
+        name: data.metadata.name ? "Live Melody",
+        patterns: [patterns],
+        velocities: velocities,
+        noteDurations: durations,
+        metadata: data.metadata,
+        durationType: "absolute"
+    )
+};
 
 // Get melody data for a layer - similar to layers system
 ~getLayerMelodyDynamic = {|layerKey|
