@@ -654,7 +654,7 @@
 
 // Play chord with per-note velocity and duration from JSON
 ~playChordToGroupJSON = { |groupName, noteDataArray|
-    var instances, groupType, config, sanitizedName, maxDuration;
+    var instances, groupType, config, sanitizedName, maxDuration, rowNum, velocity;
 
     // Validate VST Manager
     if (~vstManager.isNil) {
@@ -709,16 +709,21 @@
         maxDuration = max(maxDuration, dur);
     };
 
+    // Get MIDI row for this group to read velocity
+    rowNum = ~getMIDIRowForGroup.(groupName);
+
+    // Read velocity from MIDI controller Row X Knob 3
+    velocity = (~midiController.getKnobRow(rowNum, 3) * 127).asInteger.clip(1, 127);
+
     // Multi-instrument routing: each note to different VST
     noteDataArray.do { |noteData, idx|
-        var targetVST, midiNote, velocity, duration;
+        var targetVST, midiNote, duration;
         targetVST = instances.wrapAt(idx);
         midiNote = noteData[\midi].asInteger;
-        velocity = (noteData[\vel] * 127).asInteger.clip(0, 127);
         duration = (noteData[\dur].asFloat) * config.noteDurationScalar;  // Apply MIDI scalar
 
         if (targetVST.notNil) {
-            // Send note on
+            // Send note on (use velocity from MIDI controller)
             targetVST.midi.noteOn(0, midiNote, velocity);
 
             // Schedule note off
@@ -734,6 +739,9 @@
 
     // Trigger expression envelope if enabled
     if (config.ccControl.enabled) {
+        // Update expression parameters from MIDI knobs RIGHT before triggering
+        ~updateLayerExpressionParams.(groupName);
+
         // Track which group triggered the envelope for /midi/cc routing
         ~oscLayers.lastTriggeredGroup = groupName;
 
@@ -1205,9 +1213,9 @@
                 notes.size, groupName, targetGroup
             ).postln;
 
-            // Update MIDI parameters before playback
-            ~updateLayerExpressionParams.(groupName);
+            // Update note duration scalar before playback
             ~updateLayerNoteDurationScalar.(groupName);
+            // Note: Expression params updated just-in-time before envelope trigger
 
             // Play chord with per-note velocity/duration
             ~playChordToGroupJSON.(groupName, notes);
@@ -1968,7 +1976,7 @@
 
 // Start playback for a dynamic group (single group)
 ~startDynamicGroupPlayback = { |groupName, targetGroup = nil, loop = true, duration = nil|
-    var config, melodyData, pattern, noteInterval, velocity, sanitizedName, playDuration, melodyKey, result;
+    var config, melodyData, pattern, noteInterval, velocity, sanitizedName, playDuration, melodyKey, result, rowNum;
 
     "DEBUG startPlayback: groupName=%".format(groupName).postln;
     "DEBUG startPlayback: targetGroup=%".format(targetGroup).postln;
@@ -2028,7 +2036,10 @@
 
                         sanitizedName = config.sanitizedName;
                         noteInterval = playDuration / pattern.size;
-                        velocity = 127;
+
+                        // Read velocity from MIDI controller Row X Knob 3
+                        rowNum = ~getMIDIRowForGroup.(groupName);
+                        velocity = (~midiController.getKnobRow(rowNum, 3) * 127).asInteger.clip(1, 127);
 
                         "Starting dynamic group %: % notes, duration: %s, loop: %".format(groupName, pattern.size, playDuration, loop).postln;
 
@@ -2045,6 +2056,9 @@
 
                         // Trigger expression envelope if enabled
                         if (config.ccControl.enabled) {
+                            // Update expression parameters from MIDI knobs RIGHT before triggering
+                            ~updateLayerExpressionParams.(groupName);
+
                             NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/expression', playDuration);
                         };
 
