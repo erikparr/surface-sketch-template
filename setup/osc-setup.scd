@@ -207,3 +207,62 @@
         vst.midi.control(0, ccNum, exprValue);
     };
 }, '/expression3', s.addr);
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │              DYNAMIC LAYERS EXPRESSION ENVELOPE RESPONDER                  │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// OSC responder for /midi/cc from generic ccEnvelopeGeneric SynthDef
+// Routes CC messages to dynamic group VST instances
+~midiCCFunc.free;
+~midiCCFunc = OSCFunc({ |msg|
+    var replyID, chanIndex, ccNum, ccValue, groupName, instances;
+
+    replyID = msg[2];
+    chanIndex = msg[3].asInteger;
+    ccNum = msg[4].asInteger;
+    ccValue = msg[5].asInteger.clip(0, 127);
+
+    // Determine target group from dynamic layers system
+    // For chord groups, use the group that triggered the envelope
+    if (~oscLayers.notNil and: { ~oscLayers.lastTriggeredGroup.notNil }) {
+        groupName = ~oscLayers.lastTriggeredGroup;
+    } {
+        // Fallback: use active chord group or first available group
+        if (~oscLayers.notNil and: { ~oscLayers.state.notNil and: { ~oscLayers.state.activeChordGroup.notNil } }) {
+            groupName = ~oscLayers.state.activeChordGroup;
+        } {
+            // Last resort: get first chord group
+            if (~vstManager.notNil) {
+                var chordGroups = ~vstManager.getChordGroupNames();
+                if (chordGroups.size > 0) {
+                    groupName = chordGroups.first;
+                };
+            };
+        };
+    };
+
+    // Send CC to all VST instances in target group
+    if (groupName.notNil and: { ~vstManager.notNil }) {
+        instances = ~vstManager.getTargetInstances(groupName);
+
+        // Debug logging (throttled)
+        if (~midiCCLogCounter.isNil) { ~midiCCLogCounter = 0 };
+        ~midiCCLogCounter = (~midiCCLogCounter + 1);
+        if (~midiCCLogCounter % 50 == 1) {  // Log every 50th message
+            "[/midi/cc] Group: %, CC%: % → % VSTs".format(
+                groupName, ccNum, ccValue, instances.size
+            ).postln;
+        };
+
+        instances.values.do { |vst|
+            vst.midi.control(0, ccNum, ccValue);
+        };
+    } {
+        // Warning only on first failure
+        if (~midiCCWarningShown.isNil) {
+            "WARNING: /midi/cc received but no target group available".warn;
+            ~midiCCWarningShown = true;
+        };
+    };
+}, '/midi/cc', s.addr);

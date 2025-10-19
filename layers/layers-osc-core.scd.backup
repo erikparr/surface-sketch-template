@@ -654,7 +654,7 @@
 
 // Play chord with per-note velocity and duration from JSON
 ~playChordToGroupJSON = { |groupName, noteDataArray|
-    var instances, groupType, config, sanitizedName, maxDuration;
+    var instances, groupType, config, midiVelocity, sanitizedName, maxDuration;
 
     // Validate VST Manager
     if (~vstManager.isNil) {
@@ -681,6 +681,13 @@
         false;
     };
 
+    // Update parameters from MIDI if manual control enabled
+    config = ~oscLayers.dynamicConfigs[groupName];
+    if (config.notNil and: { ~oscLayers.state.manualControl and: { ~midiController.notNil }}) {
+        ~updateLayerExpressionParams.(groupName);
+        ~updateLayerNoteDurationScalar.(groupName);
+    };
+
     // Get VST instances
     instances = ~vstManager.getTargetInstances(groupName).values.asArray;
 
@@ -689,33 +696,47 @@
         nil
     };
 
-    // Get dynamic layer config for MIDI parameters and expression envelope
-    config = ~oscLayers.dynamicConfigs[groupName];
-    sanitizedName = ~oscLayers.groupToSanitized[groupName];
-
-    if (config.isNil or: { sanitizedName.isNil }) {
-        "ERROR: No dynamic layer config for group '%'".format(groupName).error;
-        ^false;
-    };
-
     "Chord JSON: % notes → % VSTs in group '%'".format(
         noteDataArray.size, instances.size, groupName
     ).postln;
 
-    // Calculate maximum note duration for expression envelope
-    maxDuration = 0;
-    noteDataArray.do { |noteData|
-        var dur = (noteData[\dur].asFloat) * config.noteDurationScalar;
-        maxDuration = max(maxDuration, dur);
+    // Read global velocity from MIDI if manual control enabled
+    "DEBUG: manualControl=%, midiController.notNil=%".format(
+        ~oscLayers.state.manualControl,
+        ~midiController.notNil
+    ).postln;
+
+    midiVelocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+        var rawValue, scaledValue;
+        rawValue = ~midiController.getKnobRow(1, 3);
+        scaledValue = rawValue.linlin(0.0, 1.0, 1, 127).asInteger;
+        "DEBUG: Reading velocity from MIDI Row 1 Knob 3: raw=%, scaled=%".format(rawValue, scaledValue).postln;
+        scaledValue;
+    } {
+        "DEBUG: Using JSON velocity (manual control disabled or MIDI not available)".postln;
+        nil  // Use JSON velocity
     };
+
+    // Find max duration for expression envelope
+    maxDuration = noteDataArray.collect({ |noteData| noteData[\dur].asFloat }).maxItem ? 1.0;
 
     // Multi-instrument routing: each note to different VST
     noteDataArray.do { |noteData, idx|
-        var targetVST, midiNote, velocity, duration;
-        targetVST = instances.wrapAt(idx);
-        midiNote = noteData[\midi].asInteger;
-        velocity = (noteData[\vel] * 127).asInteger.clip(0, 127);
-        duration = (noteData[\dur].asFloat) * config.noteDurationScalar;  // Apply MIDI scalar
+        var targetVST = instances.wrapAt(idx);
+        var midiNote = noteData[\midi].asInteger;
+        var velocity = midiVelocity ?? { (noteData[\vel] * 127).asInteger.clip(0, 127) };
+        var duration = noteData[\dur].asFloat;
+
+        // Apply note duration scalar if manual control enabled and config exists
+        if (config.notNil and: { ~oscLayers.state.manualControl }) {
+            var originalDur = duration;
+            duration = duration * config.noteDurationScalar;
+            "DEBUG: Duration scaled from %s to %s (scalar=%)".format(
+                originalDur.round(0.001),
+                duration.round(0.001),
+                config.noteDurationScalar.round(0.01)
+            ).postln;
+        };
 
         if (targetVST.notNil) {
             // Send note on
@@ -732,17 +753,20 @@
         };
     };
 
-    // Trigger expression envelope if enabled
-    if (config.ccControl.enabled) {
-        // Track which group triggered the envelope for /midi/cc routing
-        ~oscLayers.lastTriggeredGroup = groupName;
+    // Trigger expression envelope if enabled and config exists
+    "DEBUG: config.notNil=%, config.ccControl.enabled=%".format(
+        config.notNil,
+        if (config.notNil) { config.ccControl.enabled } { "N/A" }
+    ).postln;
 
-        NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/expression', maxDuration);
-        "  Expression envelope triggered (dur: %s, min: %, max: %)".format(
-            maxDuration.round(0.001),
-            config.ccControl.expressionMin,
-            config.ccControl.expressionMax
+    if (config.notNil and: { config.ccControl.enabled }) {
+        sanitizedName = config.sanitizedName;
+        "DEBUG: Triggering expression for group '%' (sanitized: '%'), duration=%".format(
+            groupName, sanitizedName, maxDuration
         ).postln;
+        NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/expression', maxDuration);
+    } {
+        "DEBUG: Expression NOT triggered (config nil or disabled)".postln;
     };
 
     true;
@@ -1060,9 +1084,9 @@
             // PHASE 2: Fallback to direct knob reads (backward compatibility)
             if (foundInTemplate.not and: { ~midiController.notNil }) {
                 // Read expression parameters from appropriate row (legacy behavior)
-                config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5);
-                config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
-                config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0.0, 1.0, 0.001, 1.0);
+                config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5).asInteger.clip(0, 127);
+                config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 7).asInteger.clip(0, 127);
+                config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 6).linlin(0, 127, 0.001, 1.0);
 
                 "OSC: Layer % expression from direct knobs (Row %): Min=%, Max=%, DurScalar=%".format(
                     layerKey, rowNum,
@@ -1204,10 +1228,6 @@
             "EXTERNAL OSC /chord: % notes → chord group '%' (target: %)".format(
                 notes.size, groupName, targetGroup
             ).postln;
-
-            // Update MIDI parameters before playback
-            ~updateLayerExpressionParams.(groupName);
-            ~updateLayerNoteDurationScalar.(groupName);
 
             // Play chord with per-note velocity/duration
             ~playChordToGroupJSON.(groupName, notes);
@@ -1532,28 +1552,63 @@
     oscPath = '/group/' ++ sanitizedName ++ '/expression';
     responders = responders.add(
         OSCFunc({ |msg|
-            var duration, synthName, ccControl, scaledDuration, attackTime, releaseTime;
+            var duration, synthName, ccControl, scaledDuration, attackTime, releaseTime, instances;
+
+            "DEBUG: Expression OSC received for '%' (path: %)".format(groupName, oscPath).postln;
 
             duration = msg[1] ? 1.0;
             synthName = \ccEnvelopeGeneric;  // Use generic SynthDef
             ccControl = config.ccControl;
+
+            "DEBUG: ccControl.enabled=%, min=%, max=%, CC=%".format(
+                ccControl.enabled,
+                ccControl.expressionMin,
+                ccControl.expressionMax,
+                ccControl.expressionCC
+            ).postln;
 
             if (ccControl.enabled) {
                 scaledDuration = duration * ccControl.expressionDurationScalar;
                 attackTime = scaledDuration * ccControl.expressionPeakPos;
                 releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
 
-                Synth(synthName, [
-                    \start, ccControl.expressionMin,
-                    \peak, ccControl.expressionMax,
-                    \end, ccControl.expressionMin,
-                    \attackTime, attackTime,
-                    \releaseTime, releaseTime,
-                    \chanIndex, 0,
-                    \ccNum, ccControl.expressionCC,
-                    \attackCurve, ccControl.expressionShape,
-                    \releaseCurve, ccControl.expressionShape
-                ]);
+                // Get VST instances to send CC
+                instances = if (~vstManager.notNil) {
+                    ~vstManager.getTargetInstances(groupName)
+                } {
+                    nil
+                };
+
+                "DEBUG: Creating expression synth - min=%, max=%, dur=%, CC=%, VSTs=%".format(
+                    ccControl.expressionMin,
+                    ccControl.expressionMax,
+                    scaledDuration,
+                    ccControl.expressionCC,
+                    if (instances.notNil) { instances.size } { 0 }
+                ).postln;
+
+                // Send CC envelopes directly to each VST
+                if (instances.notNil) {
+                    instances.do { |vst|
+                        var env, envTask;
+                        env = Env([ccControl.expressionMin, ccControl.expressionMax, ccControl.expressionMin],
+                                  [attackTime, releaseTime],
+                                  ccControl.expressionShape);
+
+                        envTask = Task({
+                            var steps = 60;  // 60 steps per second
+                            var stepDur = scaledDuration / steps;
+                            steps.do { |i|
+                                var envValue = env.at(i / steps);
+                                vst.midi.control(0, ccControl.expressionCC, envValue.asInteger);
+                                stepDur.wait;
+                            };
+                        }).play;
+                    };
+                    "DEBUG: Sent CC envelope to % VSTs".format(instances.size).postln;
+                };
+            } {
+                "DEBUG: Expression disabled for group '%'".format(groupName).postln;
             };
         }, oscPath)
     );
@@ -1839,31 +1894,14 @@
     ccControl = config.ccControl;
 
     if (~midiController.notNil and: { ccControl.notNil }) {
-        var rawMin, rawMax;
-
         // Read expression parameters from appropriate row
         // Row X, Knob 5: Expression min (0-127)
-        // Row X, Knob 6: Expression max (0-127)
-        // Row X, Knob 4: Expression duration scalar (0.001-1.0)
+        // Row X, Knob 7: Expression max (0-127)
+        // Row X, Knob 6: Expression duration scalar (0.001-1.0)
 
-        rawMin = ~midiController.getKnobRow(rowNum, 5);
-        rawMax = ~midiController.getKnobRow(rowNum, 6);
-
-        // Smart scaling: detect if already in CC range or normalized
-        // If value > 1.0, assume it's already CC range (0-127)
-        // If value ≤ 1.0, assume it's normalized (0.0-1.0) and scale
-        if (rawMin > 1.0 or: { rawMax > 1.0 }) {
-            // Already in CC range, use as-is
-            ccControl.expressionMin = rawMin.asInteger.clip(0, 127);
-            ccControl.expressionMax = rawMax.asInteger.clip(0, 127);
-        } {
-            // Normalized range, scale to CC
-            ccControl.expressionMin = (rawMin * 127).asInteger.clip(0, 127);
-            ccControl.expressionMax = (rawMax * 127).asInteger.clip(0, 127);
-        };
-
-        // Duration scalar (always normalized 0.0-1.0)
-        ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).clip(0.0, 1.0).linlin(0.0, 1.0, 0.001, 1.0);
+        ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5).linlin(0.0, 1.0, 0, 127).asInteger;
+        ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 7).linlin(0.0, 1.0, 0, 127).asInteger;
+        ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 6).linlin(0.0, 1.0, 0.001, 1.0);
 
         // Ensure valid range
         if (ccControl.expressionMax <= ccControl.expressionMin) {
@@ -2017,6 +2055,12 @@
                         "Group %: Pattern is empty or invalid".format(groupName).warn;
                         false
                     } {
+                        // Update parameters from MIDI if manual control enabled
+                        if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+                            ~updateLayerExpressionParams.(groupName);
+                            ~updateLayerNoteDurationScalar.(groupName);
+                        };
+
                         // Determine duration
                         playDuration = duration ?? {
                             if (melodyData.metadata.notNil and: { melodyData.metadata.totalDuration.notNil }) {
@@ -2028,7 +2072,13 @@
 
                         sanitizedName = config.sanitizedName;
                         noteInterval = playDuration / pattern.size;
-                        velocity = 127;
+
+                        // Read velocity from MIDI if manual control enabled
+                        velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+                            ~midiController.getKnobRow(1, 3).linlin(0.0, 1.0, 1, 127).asInteger;
+                        } {
+                            127
+                        };
 
                         "Starting dynamic group %: % notes, duration: %s, loop: %".format(groupName, pattern.size, playDuration, loop).postln;
 

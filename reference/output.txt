@@ -1,17 +1,491 @@
-Assigning loaded VSTs to layer groups...
-VSTManager: Group 'Layer1' created (type: regular, members: [Bass Tuba 01])
-Group 'Layer1' created with 1 members: [Bass Tuba 01]
-VSTManager: Group 'Layer2' created (type: regular, members: [SWAM Bass Tuba 01])
-Group 'Layer2' created with 1 members: [SWAM Bass Tuba 01]
-VSTManager: Group 'Layer3' created (type: regular, members: [SWAM Bass Tuba 02])
-Group 'Layer3' created with 1 members: [SWAM Bass Tuba 02]
+compiling class library...
+	Found 865 primitives.
+	Compiling directory '/Applications/SuperCollider.app/Contents/Resources/SCClassLibrary'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/Extensions'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Tendency'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/TabbedView2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/XML'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Ctk'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JoshMisc'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/JSONlib'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Singleton'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/FreeAfter'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Connection'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Collapse'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/WindowViewRecall'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/UnitTest2'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Deferred'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/Log'
+	Compiling directory '/Users/erikparr/Library/Application Support/SuperCollider/downloaded-quarks/wslib'
+	numentries = 1726591 / 37897488 = 0.046
+	9316 method selectors, 4068 classes
+	method table size 33330328 bytes, big table size 303179904
+	Number of Symbols 22643
+	Byte Code Size 902249
+	compiled 858 files in 0.99 seconds
+
+Info: 2 methods are currently overwritten by extensions. To see which, execute:
+MethodOverride.printAll
+
+compile done
+localhost : setting clientID to 0.
+internal : setting clientID to 0.
+Class tree inited in 0.01 seconds
+Ctk init class runs
+
+
+*** Welcome to SuperCollider 3.14.0-dev. *** For help press Cmd-D.
+Booting server 'localhost' on address 127.0.0.1:57110.
+VSTPlugin 0.6
+SCDoc: Indexing help-files...
+Number of Devices: 3
+   0 : "SB242Y"
+   1 : "Mac Studio Speakers"
+   2 : "Babyface Pro (70798404)"
+
+"Babyface Pro (70798404)" Input Device
+   Streams: 1
+      0  channels 14
+
+"Babyface Pro (70798404)" Output Device
+   Streams: 1
+      0  channels 14
+
+SC_AudioDriver: sample rate = 48000.000000, driver's block size = 512
+SuperCollider 3 server ready.
+SCDoc: Indexed 2289 documents in 0.86 seconds
+Requested notification messages from server 'localhost'
+localhost: server process's maxLogins (1) matches with my options.
+localhost: keeping clientID (0) as confirmed by server process.
+Shared memory server interface initialized
+MIDI Sources:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+MIDI Destinations:
+	MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp")
+	MIDIEndPoint("USB MIDI Device", "USB MIDI Device")
+	MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)")
+	MIDIEndPoint("Keystation 61 MK3", "(Transport)")
+	MIDIEndPoint("MIDI Mix", "MIDI Mix")
+[MIDIEndPoint("BOUNCEwarp", "BOUNCEwarp"), MIDIEndPoint("USB MIDI Device", "USB MIDI Device"), MIDIEndPoint("Keystation 61 MK3", "(USB MIDI)"), MIDIEndPoint("Keystation 61 MK3", "(Transport)"), MIDIEndPoint("MIDI Mix", "MIDI Mix")]
+Loading setup...
+Loading setup file: synths-setup.scd
+Loading OSC Layer System (default)...
+OSC Layers Core loaded
+  - Pure OSC-based layer control
+  - No ProcMod dependencies
+  - Preserved function interfaces
+Initializing OSC Layers System...
+Creating OSC responders for layer1
+Created 6 OSC responders for layer1
+Creating OSC responders for layer2
+Created 6 OSC responders for layer2
+Creating OSC responders for layer3
+Created 6 OSC responders for layer3
+Creating system OSC responders...
+Created 11 system OSC responders
+Setting up external OSC control on port 7000...
+External OSC control enabled on port 7000
+Send OSC to this computer's IP on port 7000 for external control
+OSC compatibility layer established
+OSC Layers System initialized successfully
+  - 3 layers with OSC control
+  - System-wide OSC commands
+  - External control ready on port 7000
+  - Compatibility layer established
+  - All existing functionality preserved
+Layers timing utilities loaded successfully
+Melody rest MIDI control active (Slider 2 / CC 23)
+Dependent layers control system loaded with melody switching, bend control, and chord groups
+Loading Simplified Layer Timing...
+Simplified Layer Timing loaded
+MIDI Control: Slider 1 - Layer spread (0=sync, 1=1sec apart)
+
+=== OSC Layers System Loaded Successfully ===
+✓ Pure OSC control architecture
+✓ External control ready on port 7000
+✓ Dynamic layers system will initialize when VST groups are ready
+
+PRIMARY EXTERNAL CONTROL:
+  Send melody JSON to /melody with metadata.targetGroup index
+  Port 7000 for incoming, Port 7001 for /melody/complete notifications
+  Example: NetAddr("127.0.0.1", 7000).sendMsg('/melody', jsonString)
+
+OSC Control (Advanced):
+  /system/start, /system/stop - System control
+  /group/<name>/note - Direct note triggering
+  /group/<name>/melody - Assign melody by key
+
+Dynamic Layers Functions:
+  ~initDynamicLayersSystem.()          - Initialize dynamic layers
+  ~startDynamicGroupPlayback.(group)   - Start single group
+  ~startAllDynamicGroups.(duration)    - Start all groups
+
+MIDI Control:
+  Row 1 Knob 8: BPM (60-400)
+  Row 1 Knob 3: Note velocity
+  Row 1 Knob 2: Note duration scalar
+  Slider 2: Melody rest time (0-1s)
+=============================================
+
+Loading setup file: vstplugin-setup.scd
+Searching for VST plugins...
+VST plugin search complete.
+VSTManager: Initializing... Server: %
+VSTManager: Performing initial VST search...
+WARNING: keyword arg 'completion' not found in call to Meta_VSTPlugin:search
+VSTManager: Initialization complete.
+VSTManager initialized.
+VSTManager is ready for use.
+Starting VST instance loading...
+Waiting for VST search to complete (5 seconds)...
+WARNING: already searching!
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST'...
+read cache file /Users/erikparr/Library/Application Support/vstplugin/sc/cache_amd64.ini
+Loading setup file: configuration-manager.scd
+Configuration Manager initialized.
+VST Configuration functions ready.
+found 0 plugins
+searching in '/Library/Audio/Plug-Ins/VST'...
+/Library/Audio/Plug-Ins/VST/Analog Lab V.vst
+/Library/Audio/Plug-Ins/VST/ARP 2600 V3.vst
+/Library/Audio/Plug-Ins/VST/Augmented STRINGS.vst
+/Library/Audio/Plug-Ins/VST/Augmented VOICES.vst
+/Library/Audio/Plug-Ins/VST/B-3 V2.vst
+/Library/Audio/Plug-Ins/VST/Buchla Easel V.vst
+/Library/Audio/Plug-Ins/VST/Clavinet V.vst
+/Library/Audio/Plug-Ins/VST/CMI V.vst
+/Library/Audio/Plug-Ins/VST/CS-80 V4.vst
+/Library/Audio/Plug-Ins/VST/CZ V.vst
+/Library/Audio/Plug-Ins/VST/DX7 V.vst
+/Library/Audio/Plug-Ins/VST/Emulator II V.vst
+/Library/Audio/Plug-Ins/VST/Farfisa V.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Contrast.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM Equalize.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqShift.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp Stereo.vst
+/Library/Audio/Plug-Ins/VST/GRM/GRM FreqWarp.vst
+/Library/Audio/Plug-Ins/VST/iZotope Trash 2.vst
+/Library/Audio/Plug-Ins/VST/Jun-6 V.vst
+/Library/Audio/Plug-Ins/VST/Jup-8 V4.vst
+/Library/Audio/Plug-Ins/VST/Kontakt.vst
+/Library/Audio/Plug-Ins/VST/KORG MS-20 V.vst
+/Library/Audio/Plug-Ins/VST/Matrix-12 V2.vst
+/Library/Audio/Plug-Ins/VST/Mellotron V.vst
+/Library/Audio/Plug-Ins/VST/Mini V3.vst
+/Library/Audio/Plug-Ins/VST/Modular V3.vst
+/Library/Audio/Plug-Ins/VST/Omnisphere.vst
+/Library/Audio/Plug-Ins/VST/OP-Xa V.vst
+/Library/Audio/Plug-Ins/VST/Piano V3.vst
+/Library/Audio/Plug-Ins/VST/Pigments.vst
+/Library/Audio/Plug-Ins/VST/Prophet-5 V.vst
+/Library/Audio/Plug-Ins/VST/Prophet-VS V.vst
+/Library/Audio/Plug-Ins/VST/SEM V2.vst
+/Library/Audio/Plug-Ins/VST/Solina V2.vst
+/Library/Audio/Plug-Ins/VST/SQ80 V.vst
+/Library/Audio/Plug-Ins/VST/Stage-73 V2.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Alto Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Baritone Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bass Tuba.vst
+/Library/Audio/Plug-Ins/VST/SWAM Bassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Cello 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Clarinet 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Contrabassoon 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Double Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM English Horn 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Euphonium.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flugelhorn.vst
+/Library/Audio/Plug-Ins/VST/SWAM Flute 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn Bb.vst
+/Library/Audio/Plug-Ins/VST/SWAM French Horn F.vst
+/Library/Audio/Plug-Ins/VST/SWAM Oboe 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Piccolo Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Soprano Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Bass Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Sax 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tenor Trombone.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet C.vst
+/Library/Audio/Plug-Ins/VST/SWAM Trumpet.vst
+/Library/Audio/Plug-Ins/VST/SWAM Tuba Eb.vst
+/Library/Audio/Plug-Ins/VST/SWAM VariFlute.vst
+/Library/Audio/Plug-Ins/VST/SWAM Viola 3.vst
+/Library/Audio/Plug-Ins/VST/SWAM Violin 3.vst
+/Library/Audio/Plug-Ins/VST/Synclavier V.vst
+/Library/Audio/Plug-Ins/VST/Synthi V.vst
+/Library/Audio/Plug-Ins/VST/ValhallaFreqEcho.vst
+/Library/Audio/Plug-Ins/VST/ValhallaShimmer_x64.vst
+/Library/Audio/Plug-Ins/VST/Vocoder V.vst
+/Library/Audio/Plug-Ins/VST/VOX Continental V2.vst
+/Library/Audio/Plug-Ins/VST/Wurli V2.vst
+found 81 plugins
+searching in '/Users/erikparr/Library/Audio/Plug-Ins/VST3'...
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/adelay.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again-sampleaccurate.vst3
+	[1/2] Advanced Tutorial
+	[2/2] AGain Sample Accurate
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/again.vst3
+	[1/2] AGain VST3
+	[2/2] AGain SideChain VST3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/againsimple.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/BasicVST.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/channelcontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/dataexchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/hostchecker.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/legacymidiccout.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/mda-vst3.vst3
+	[1/34] mda Shepard
+	[2/34] mda DeEsser
+	[3/34] mda MultiBand
+	[4/34] mda DubDelay
+	[5/34] mda BeatBox
+	[6/34] mda Tracker
+	[7/34] mda TalkBox
+	[8/34] mda Ambience
+	[9/34] mda Delay
+	[10/34] mda Sub-Bass Synthesizer
+	[11/34] mda RezFilter
+	[12/34] mda Detune
+	[13/34] mda Combo
+	[14/34] mda Limiter
+	[15/34] mda Leslie
+	[16/34] mda RingMod
+	[17/34] mda Round Panner
+	[18/34] mda Dither
+	[19/34] mda TestTone
+	[20/34] mda Piano
+	[21/34] mda Bandisto
+	[22/34] mda Image
+	[23/34] mda RePsycho!
+	[24/34] mda DX10
+	[25/34] mda Thru-Zero Flanger
+	[26/34] mda EPiano
+	[27/34] mda Degrade
+	[28/34] mda Stereo Simulator
+	[29/34] mda SpecMeter
+	[30/34] mda Dynamics
+	[31/34] mda Overdrive
+	[32/34] mda Splitter
+	[33/34] mda Loudness
+	[34/34] mda JX10
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/MIDI Warp.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/multiple-program-changes.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressionsynth.vst3
+	[1/2] Note Expression Synth With UI
+	[2/2] Note Expression Synth
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/noteexpressiontext.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/panner.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/pitchnames.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/prefetchable.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/programchange.vst3
+/Users/erikparr/Library/Audio/Plug-Ins/VST3/syncdelay.vst3
+found 55 plugins
+searching in '/Library/Audio/Plug-Ins/VST3'...
+'/Library/Audio/Plug-Ins/VST3/Analog Lab V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/ARP 2600 V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented STRINGS.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Augmented VOICES.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/B-3 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Buchla Easel V.vst3
+'/Library/Audio/Plug-Ins/VST3/Clavinet V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CMI V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/CS-80 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/CZ V.vst3
+'/Library/Audio/Plug-Ins/VST3/DX7 V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Emulator II V.vst3
+'/Library/Audio/Plug-Ins/VST3/Eventide/Physion Mk II.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Eventide/SplitEQ.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Farfisa V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Contrast.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Equalize.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM EqualizeMono.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Shift.vst3
+/Library/Audio/Plug-Ins/VST3/GRM/GRM Warp.vst3
+/Library/Audio/Plug-Ins/VST3/iZotope Trash 2.vst3
+'/Library/Audio/Plug-Ins/VST3/Jun-6 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Jup-8 V4.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Kontakt 7.vst3
+/Library/Audio/Plug-Ins/VST3/Kontakt 8.vst3
+/Library/Audio/Plug-Ins/VST3/Kontakt.vst3
+'/Library/Audio/Plug-Ins/VST3/KORG MS-20 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MagicBlur.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MagicDelay.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFilter.vst3
+/Library/Audio/Plug-Ins/VST3/MagicFusion.vst3
+'/Library/Audio/Plug-Ins/VST3/MagicPitch.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Matrix-12 V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Mellotron V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MIDI Warp.vst3
+/Library/Audio/Plug-Ins/VST3/MIDI-Warp-v2.vst3
+'/Library/Audio/Plug-Ins/VST3/Mini V3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/MMM.vst3
+/Library/Audio/Plug-Ins/VST3/MMMm.vst3
+/Library/Audio/Plug-Ins/VST3/Modular V3.vst3
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 DualMonoIn VST3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/MORPH 3 VST3.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/Neutone FX.vst3
+/Library/Audio/Plug-Ins/VST3/Neutone Morpho.vst3
+/Library/Audio/Plug-Ins/VST3/Omnisphere.vst3
+'/Library/Audio/Plug-Ins/VST3/OP-Xa V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Piano V3.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Pigments.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-5 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Prophet-VS V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/QuantumDelay.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/QuantumDistortion.vst3
+/Library/Audio/Plug-Ins/VST3/QuantumFilter.vst3
+/Library/Audio/Plug-Ins/VST3/Rift Feedback Lite.vst3
+/Library/Audio/Plug-Ins/VST3/SEM V2.vst3
+'/Library/Audio/Plug-Ins/VST3/SimpleVST.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Solina V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/SQ80 V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Stage-73 V2.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Alto Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Baritone Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Bassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Cello 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Clarinet 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Contrabassoon 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Double Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM English Horn 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Euphonium.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flugelhorn.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Flute 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn Bb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM French Horn F.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Oboe 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Piccolo Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Soprano Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Bass Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Sax 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tenor Trombone.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet C.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Trumpet.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Tuba Eb.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM VariFlute.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Viola 3.vst3
+/Library/Audio/Plug-Ins/VST3/SWAM Violin 3.vst3
+'/Library/Audio/Plug-Ins/VST3/Synclavier V.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Synthi V.vst3' is black-listed.
+/Library/Audio/Plug-Ins/VST3/ValhallaFreqEcho.vst3
+/Library/Audio/Plug-Ins/VST3/ValhallaShimmer.vst3
+/Library/Audio/Plug-Ins/VST3/Vocoder V.vst3
+'/Library/Audio/Plug-Ins/VST3/VOX Continental V2.vst3' is black-listed.
+'/Library/Audio/Plug-Ins/VST3/Wurli V2.vst3' is black-listed.
+found 64 plugins
+Loading setup file: vst-management.scd
+ERROR: Failed to read tmp file!
+ConfigurationManager: Looking for configs in: /Users/erikparr/surfacing/surfacing/layers/../data/vst-configurations
+Found 3 files in config directory
+Checking file: btuba-btuba-btuba.json (extension: json)
+Reading config file: /Users/erikparr/surfacing/surfacing/layers/../data/vst-configurations/btuba-btuba-btuba.json
+Config loaded successfully, name: bTuba-bTuba-bTuba
+Checking file: chord-btuba.json (extension: json)
+Reading config file: /Users/erikparr/surfacing/surfacing/layers/../data/vst-configurations/chord-btuba.json
+Config loaded successfully, name: chord-btuba
+Checking file: default.json (extension: json)
+Found 2 valid configurations
+Updating VST manager UI...
+VST Manager: Group selector refreshed.
+Loading setup file: midi-setup.scd
+MIDI setup function defined. Call ~initMIDISetup.() when VST Manager is ready.
+Loading setup file: osc-setup.scd
+Loading setup file: parameter-monitor-gui.scd
+Parameter Monitor GUI loaded. Use ~debugParameterMonitor.() to check state.
+All setup files loaded successfully!
+Found default configuration: chord-btuba. Loading instead of hardcoded setup...
+Loading VST configuration: chord-btuba
+Clearing current VST state...
+Loading VST instances...
+WARNING: VSTManager: Group 'chordGroup1' not found.
+VSTManager: VST 'SWAM Bass Tuba 02' added to group 'chordGroup1' (type: regular). Current members: [SWAM Bass Tuba 02]
+VSTManager: VST loaded: SWAM Bass Tuba 02
+Loaded VST instance: SWAM Bass Tuba 02 on bus 2
+VSTManager: Updated  127  parameters for  SWAM Bass Tuba 02
+WARNING: VSTManager: VST 'SWAM Bass Tuba 00' not found in group 'chordGroup1'.
+VSTManager: VST 'SWAM Bass Tuba 00' added to group 'chordGroup1' (type: regular). Current members: [SWAM Bass Tuba 00, SWAM Bass Tuba 02]
+VSTManager: VST loaded: SWAM Bass Tuba 00
+Loaded VST instance: SWAM Bass Tuba 00 on bus 6
+VSTManager: Updated  127  parameters for  SWAM Bass Tuba 00
+WARNING: VSTManager: VST 'SWAM Bass Tuba 01' not found in group 'chordGroup1'.
+VSTManager: VST 'SWAM Bass Tuba 01' added to group 'chordGroup1' (type: regular). Current members: [SWAM Bass Tuba 02, SWAM Bass Tuba 01, SWAM Bass Tuba 00]
+VSTManager: VST loaded: SWAM Bass Tuba 01
+Loaded VST instance: SWAM Bass Tuba 01 on bus 4
+VSTManager: Updated  127  parameters for  SWAM Bass Tuba 01
+Opening VST editor: SWAM Bass Tuba 02
+Opening VST editor: SWAM Bass Tuba 00
+Opening VST editor: SWAM Bass Tuba 01
+Initializing Dynamic Layers System...
+Initializing Dynamic Layers System...
+Loading generic SynthDefs for dynamic layers...
+Generic SynthDefs loaded for dynamic layers
+Dynamic layer containers initialized
+Updated MIDI indices for 1 groups
+Creating OSC responders for group: chordGroup1 (path: /group/chordgroup1)
+Created 7 OSC responders for group: chordGroup1
+Created dynamic layer for group: chordGroup1 (sanitized: chordgroup1, CC: 11, MIDI row: 1)
+Created dynamic layers for 1 groups
+Updated chord group indices (0 groups)
+Registered dynamic layers callback with VST management
+Dynamic Layers System initialized (Phases 1-4 complete)
+  - Core functions ready
+  - Melody navigation ready
+  - MIDI integration ready
+  - Event-driven updates registered
+Restoring groups from configuration...
+VSTManager: Group 'chordGroup1' created (type: chord, members: [SWAM Bass Tuba 01, SWAM Bass Tuba 02, SWAM Bass Tuba 00])
+Group 'chordGroup1' restored (type: chord, members: [SWAM Bass Tuba 01, SWAM Bass Tuba 02, SWAM Bass Tuba 00])
 Synchronizing OSC layers with VST configuration...
-Syncing 3 OSC layers with 3 VST groups
+Syncing 3 OSC layers with 1 VST groups
 Creating default melody for OSC layers...
-  Layer layer1 → Group 'Layer1', Melody: defaultMelody
-  Layer layer2 → Group 'Layer2', Melody: defaultMelody
-  Layer layer3 → Group 'Layer3', Melody: defaultMelody
+  Layer layer1 → Group 'chordGroup1', Melody: defaultMelody
+  Layer layer2 → Group 'chordGroup1', Melody: defaultMelody
+  Layer layer3 → Group 'chordGroup1', Melody: defaultMelody
 OSC Layers synchronized with VST configuration
+VST groups changed, rebuilding dynamic layers...
+Rebuilding dynamic layers: 0 to add, 0 to remove
+Updated chord group indices (1 groups)
+Dynamic layers rebuild complete: 1 total groups
+Updating chord group indices...
+Updated chord group indices (1 groups)
+Initializing Dynamic Layers System...
+Loading generic SynthDefs for dynamic layers...
+Generic SynthDefs loaded for dynamic layers
+Dynamic layer containers initialized
+Updated MIDI indices for 1 groups
+Creating OSC responders for group: chordGroup1 (path: /group/chordgroup1)
+Created 7 OSC responders for group: chordGroup1
+Created dynamic layer for group: chordGroup1 (sanitized: chordgroup1, CC: 11, MIDI row: 1)
+Created dynamic layers for 1 groups
+Updated chord group indices (1 groups)
+Registered dynamic layers callback with VST management
+Dynamic Layers System initialized (Phases 1-4 complete)
+  - Core functions ready
+  - Melody navigation ready
+  - MIDI integration ready
+  - Event-driven updates registered
 Default configuration loaded successfully.
 VSTs loaded, updating UI...
 Updating all VST manager UIs...
@@ -87,66 +561,430 @@ Auto-creating Parameter Monitor GUI...
 Default VST configuration setup complete.
 VST Manager: Group selector refreshed.
 Generated OSC addresses for 33 parameters
-Initializing Dynamic Layers System (delayed)...
-Initializing Dynamic Layers System...
-Loading generic SynthDefs for dynamic layers...
-Generic SynthDefs loaded for dynamic layers
-Dynamic layer containers initialized
-Updated MIDI indices for 1 groups
-Creating OSC responders for group: Layer1 (path: /group/layer1)
-Created 7 OSC responders for group: Layer1
-Created dynamic layer for group: Layer1 (sanitized: layer1, CC: 11, MIDI row: 1)
-Updated MIDI indices for 2 groups
-Creating OSC responders for group: Layer2 (path: /group/layer2)
-Created 7 OSC responders for group: Layer2
-Created dynamic layer for group: Layer2 (sanitized: layer2, CC: 12, MIDI row: 2)
-Updated MIDI indices for 3 groups
-Creating OSC responders for group: Layer3 (path: /group/layer3)
-Created 7 OSC responders for group: Layer3
-Created dynamic layer for group: Layer3 (sanitized: layer3, CC: 13, MIDI row: 3)
-Created dynamic layers for 3 groups
-Updated chord group indices (0 groups)
-Registered dynamic layers callback with VST management
-Dynamic Layers System initialized (Phases 1-4 complete)
-  - Core functions ready
-  - Melody navigation ready
-  - MIDI integration ready
-  - Event-driven updates registered
-VSTManager: Group 'groupChord1' created (type: chord, members: [Bass Tuba 01])
-VST Manager: Group selector refreshed.
-VST groups changed, rebuilding dynamic layers...
-Rebuilding dynamic layers: 1 to add, 0 to remove
-Updated MIDI indices for 4 groups
-Creating OSC responders for group: groupChord1 (path: /group/groupchord1)
-Created 7 OSC responders for group: groupChord1
-Created dynamic layer for group: groupChord1 (sanitized: groupchord1, CC: 14, MIDI row: 1)
-Updated chord group indices (1 groups)
-Dynamic layers rebuild complete: 4 total groups
-VSTManager: VST 'Bass Tuba 01' added to group 'groupChord1' (type: chord). Current members: [Bass Tuba 01]
-VST Manager: Group selector refreshed.
-VST groups changed, rebuilding dynamic layers...
-Rebuilding dynamic layers: 0 to add, 0 to remove
-Updated chord group indices (1 groups)
-Dynamic layers rebuild complete: 4 total groups
-VSTManager: VST 'SWAM Bass Tuba 01' added to group 'groupChord1' (type: chord). Current members: [SWAM Bass Tuba 01, Bass Tuba 01]
-VST Manager: Group selector refreshed.
-VST groups changed, rebuilding dynamic layers...
-Rebuilding dynamic layers: 0 to add, 0 to remove
-Updated chord group indices (1 groups)
-Dynamic layers rebuild complete: 4 total groups
-VSTManager: VST 'SWAM Bass Tuba 02' added to group 'groupChord1' (type: chord). Current members: [SWAM Bass Tuba 01, Bass Tuba 01, SWAM Bass Tuba 02]
-VST Manager: Group selector refreshed.
-VST groups changed, rebuilding dynamic layers...
-Rebuilding dynamic layers: 0 to add, 0 to remove
-Updated chord group indices (1 groups)
-Dynamic layers rebuild complete: 4 total groups
-EXTERNAL OSC /chord: 3 notes → chord group 'groupChord1' (target: 0)
-Chord JSON: 3 notes → 3 VSTs in group 'groupChord1'
-  Note 58 (vel 78, dur 1.5s) → VST idx 0
-  Note 54 (vel 60, dur 1.5s) → VST idx 1
-  Note 63 (vel 19, dur 1.5s) → VST idx 2
-EXTERNAL OSC /chord: 3 notes → chord group 'groupChord1' (target: 0)
-Chord JSON: 3 notes → 3 VSTs in group 'groupChord1'
-  Note 58 (vel 78, dur 1.5s) → VST idx 0
-  Note 54 (vel 60, dur 1.5s) → VST idx 1
-  Note 63 (vel 19, dur 1.5s) → VST idx 2
+MIDIController Knob CC: 54 val: 127 (norm: 1.0) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 125 (norm: 0.98425196850394) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 120 (norm: 0.94488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 117 (norm: 0.92125984251969) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 7 (norm: 0.05511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 6 (norm: 0.047244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 5 (norm: 0.039370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 3 (norm: 0.023622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 120 (norm: 0.94488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 117 (norm: 0.92125984251969) chan: 0 src: 1298960095
+MIDIController Knob CC: 46 val: 2 (norm: 0.015748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 46 val: 3 (norm: 0.023622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 46 val: 4 (norm: 0.031496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 125 (norm: 0.98425196850394) chan: 0 src: 1298960095
+MIDIController Knob CC: 50 val: 127 (norm: 1.0) chan: 0 src: 1298960095
+EXTERNAL OSC /chord: 3 notes → chord group 'chordGroup1' (target: 0)
+Group chordGroup1 expression from MIDI (Row 1): Min=4, Max=127, DurScalar=1.0
+Chord JSON: 3 notes → 3 VSTs in group 'chordGroup1'
+  Note 78 (vel 81, dur 0.922s) → VST idx 0
+  Note 82 (vel 53, dur 0.922s) → VST idx 1
+  Note 73 (vel 86, dur 0.922s) → VST idx 2
+  Expression envelope triggered (dur: 0.922s, min: 4, max: 127)
+[/midi/cc] Group: chordGroup1, CC11: 4 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 115 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 27 → 3 VSTs
+MIDIController Knob CC: 58 val: 4 (norm: 0.031496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 5 (norm: 0.039370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 6 (norm: 0.047244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 7 (norm: 0.05511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 8 (norm: 0.062992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 9 (norm: 0.070866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 10 (norm: 0.078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 13 (norm: 0.10236220472441) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 14 (norm: 0.11023622047244) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 12 (norm: 0.094488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 10 (norm: 0.078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 8 (norm: 0.062992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 6 (norm: 0.047244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 5 (norm: 0.039370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 4 (norm: 0.031496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 2 (norm: 0.015748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 1 (norm: 0.0078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 0 (norm: 0.0) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 115 (norm: 0.90551181102362) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 113 (norm: 0.88976377952756) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 110 (norm: 0.86614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 108 (norm: 0.8503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 107 (norm: 0.84251968503937) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 106 (norm: 0.83464566929134) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 105 (norm: 0.82677165354331) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 103 (norm: 0.81102362204724) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 102 (norm: 0.80314960629921) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 101 (norm: 0.79527559055118) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 99 (norm: 0.77952755905512) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 97 (norm: 0.76377952755906) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 96 (norm: 0.75590551181102) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 94 (norm: 0.74015748031496) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 92 (norm: 0.7244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 90 (norm: 0.70866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 88 (norm: 0.69291338582677) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 86 (norm: 0.67716535433071) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 84 (norm: 0.66141732283465) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 82 (norm: 0.64566929133858) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 80 (norm: 0.62992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 78 (norm: 0.61417322834646) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 76 (norm: 0.59842519685039) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 74 (norm: 0.58267716535433) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 72 (norm: 0.56692913385827) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 70 (norm: 0.5511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 68 (norm: 0.53543307086614) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 66 (norm: 0.51968503937008) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 64 (norm: 0.50393700787402) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 62 (norm: 0.48818897637795) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 60 (norm: 0.47244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 57 (norm: 0.4488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 55 (norm: 0.43307086614173) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 53 (norm: 0.41732283464567) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 52 (norm: 0.40944881889764) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 50 (norm: 0.39370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 49 (norm: 0.38582677165354) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 48 (norm: 0.37795275590551) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 46 (norm: 0.36220472440945) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 45 (norm: 0.35433070866142) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 43 (norm: 0.33858267716535) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 42 (norm: 0.33070866141732) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 41 (norm: 0.32283464566929) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 39 (norm: 0.30708661417323) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 38 (norm: 0.2992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 37 (norm: 0.29133858267717) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 36 (norm: 0.28346456692913) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 35 (norm: 0.2755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 33 (norm: 0.25984251968504) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 32 (norm: 0.25196850393701) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 31 (norm: 0.24409448818898) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 29 (norm: 0.22834645669291) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 27 (norm: 0.21259842519685) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 26 (norm: 0.20472440944882) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 25 (norm: 0.19685039370079) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 23 (norm: 0.18110236220472) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 22 (norm: 0.17322834645669) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 21 (norm: 0.16535433070866) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 19 (norm: 0.1496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 18 (norm: 0.14173228346457) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 16 (norm: 0.1259842519685) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 15 (norm: 0.11811023622047) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 14 (norm: 0.11023622047244) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 13 (norm: 0.10236220472441) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 10 (norm: 0.078740157480315) chan: 0 src: 1298960095
+EXTERNAL OSC /chord: 3 notes → chord group 'chordGroup1' (target: 0)
+Group chordGroup1 expression from MIDI (Row 1): Min=4, Max=127, DurScalar=1.0
+Chord JSON: 3 notes → 3 VSTs in group 'chordGroup1'
+  Note 78 (vel 81, dur 0.088s) → VST idx 0
+  Note 82 (vel 53, dur 0.088s) → VST idx 1
+  Note 73 (vel 86, dur 0.088s) → VST idx 2
+  Expression envelope triggered (dur: 0.088s, min: 4, max: 127)
+MIDIController Knob CC: 20 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 13 (norm: 0.10236220472441) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 14 (norm: 0.11023622047244) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 16 (norm: 0.1259842519685) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 17 (norm: 0.13385826771654) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 19 (norm: 0.1496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 20 (norm: 0.15748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 21 (norm: 0.16535433070866) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 23 (norm: 0.18110236220472) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 24 (norm: 0.18897637795276) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 26 (norm: 0.20472440944882) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 28 (norm: 0.22047244094488) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 30 (norm: 0.23622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 32 (norm: 0.25196850393701) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 35 (norm: 0.2755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 38 (norm: 0.2992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 42 (norm: 0.33070866141732) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 45 (norm: 0.35433070866142) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 49 (norm: 0.38582677165354) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 53 (norm: 0.41732283464567) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 57 (norm: 0.4488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 61 (norm: 0.48031496062992) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 64 (norm: 0.50393700787402) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 67 (norm: 0.52755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 70 (norm: 0.5511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 72 (norm: 0.56692913385827) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 74 (norm: 0.58267716535433) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 76 (norm: 0.59842519685039) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 78 (norm: 0.61417322834646) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 80 (norm: 0.62992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 83 (norm: 0.65354330708661) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 85 (norm: 0.66929133858268) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 88 (norm: 0.69291338582677) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 90 (norm: 0.70866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 93 (norm: 0.73228346456693) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 95 (norm: 0.74803149606299) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 97 (norm: 0.76377952755906) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 99 (norm: 0.77952755905512) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 100 (norm: 0.78740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 102 (norm: 0.80314960629921) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 104 (norm: 0.81889763779528) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 106 (norm: 0.83464566929134) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 108 (norm: 0.8503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 109 (norm: 0.85826771653543) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 111 (norm: 0.8740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 120 (norm: 0.94488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 123 (norm: 0.96850393700787) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 20 val: 127 (norm: 1.0) chan: 0 src: 1298960095
+EXTERNAL OSC /chord: 3 notes → chord group 'chordGroup1' (target: 0)
+Group chordGroup1 expression from MIDI (Row 1): Min=4, Max=127, DurScalar=1.0
+Chord JSON: 3 notes → 3 VSTs in group 'chordGroup1'
+  Note 78 (vel 81, dur 1.0s) → VST idx 0
+  Note 82 (vel 53, dur 1.0s) → VST idx 1
+  Note 73 (vel 86, dur 1.0s) → VST idx 2
+  Expression envelope triggered (dur: 1.0s, min: 4, max: 127)
+[/midi/cc] Group: chordGroup1, CC11: 57 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 93 → 3 VSTs
+MIDIController Knob CC: 54 val: 115 (norm: 0.90551181102362) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 113 (norm: 0.88976377952756) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 111 (norm: 0.8740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 110 (norm: 0.86614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 109 (norm: 0.85826771653543) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 108 (norm: 0.8503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 107 (norm: 0.84251968503937) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 106 (norm: 0.83464566929134) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 104 (norm: 0.81889763779528) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 103 (norm: 0.81102362204724) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 102 (norm: 0.80314960629921) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 100 (norm: 0.78740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 99 (norm: 0.77952755905512) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 98 (norm: 0.77165354330709) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 97 (norm: 0.76377952755906) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 96 (norm: 0.75590551181102) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 94 (norm: 0.74015748031496) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 93 (norm: 0.73228346456693) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 91 (norm: 0.71653543307087) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 90 (norm: 0.70866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 89 (norm: 0.7007874015748) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 87 (norm: 0.68503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 86 (norm: 0.67716535433071) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 85 (norm: 0.66929133858268) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 83 (norm: 0.65354330708661) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 82 (norm: 0.64566929133858) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 80 (norm: 0.62992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 79 (norm: 0.62204724409449) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 78 (norm: 0.61417322834646) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 77 (norm: 0.60629921259843) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 76 (norm: 0.59842519685039) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 75 (norm: 0.59055118110236) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 72 (norm: 0.56692913385827) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 70 (norm: 0.5511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 68 (norm: 0.53543307086614) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 67 (norm: 0.52755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 65 (norm: 0.51181102362205) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 63 (norm: 0.49606299212598) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 61 (norm: 0.48031496062992) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 59 (norm: 0.46456692913386) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 58 (norm: 0.45669291338583) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 57 (norm: 0.4488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 56 (norm: 0.44094488188976) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 55 (norm: 0.43307086614173) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 54 (norm: 0.4251968503937) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 53 (norm: 0.41732283464567) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 52 (norm: 0.40944881889764) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 51 (norm: 0.40157480314961) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 50 (norm: 0.39370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 49 (norm: 0.38582677165354) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 48 (norm: 0.37795275590551) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 47 (norm: 0.37007874015748) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 46 (norm: 0.36220472440945) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 45 (norm: 0.35433070866142) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 44 (norm: 0.34645669291339) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 43 (norm: 0.33858267716535) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 42 (norm: 0.33070866141732) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 41 (norm: 0.32283464566929) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 39 (norm: 0.30708661417323) chan: 0 src: 1298960095
+MIDIController Knob CC: 54 val: 38 (norm: 0.2992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 2 (norm: 0.015748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 3 (norm: 0.023622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 4 (norm: 0.031496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 6 (norm: 0.047244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 7 (norm: 0.05511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 9 (norm: 0.070866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 10 (norm: 0.078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 13 (norm: 0.10236220472441) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 14 (norm: 0.11023622047244) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 16 (norm: 0.1259842519685) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 17 (norm: 0.13385826771654) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 19 (norm: 0.1496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 21 (norm: 0.16535433070866) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 23 (norm: 0.18110236220472) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 26 (norm: 0.20472440944882) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 28 (norm: 0.22047244094488) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 30 (norm: 0.23622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 32 (norm: 0.25196850393701) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 34 (norm: 0.26771653543307) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 35 (norm: 0.2755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 36 (norm: 0.28346456692913) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 38 (norm: 0.2992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 39 (norm: 0.30708661417323) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 40 (norm: 0.31496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 42 (norm: 0.33070866141732) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 44 (norm: 0.34645669291339) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 45 (norm: 0.35433070866142) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 47 (norm: 0.37007874015748) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 48 (norm: 0.37795275590551) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 50 (norm: 0.39370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 51 (norm: 0.40157480314961) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 53 (norm: 0.41732283464567) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 55 (norm: 0.43307086614173) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 58 (norm: 0.45669291338583) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 61 (norm: 0.48031496062992) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 64 (norm: 0.50393700787402) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 67 (norm: 0.52755905511811) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 69 (norm: 0.54330708661417) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 72 (norm: 0.56692913385827) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 74 (norm: 0.58267716535433) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 76 (norm: 0.59842519685039) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 79 (norm: 0.62204724409449) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 81 (norm: 0.63779527559055) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 83 (norm: 0.65354330708661) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 85 (norm: 0.66929133858268) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 87 (norm: 0.68503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 89 (norm: 0.7007874015748) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 90 (norm: 0.70866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 92 (norm: 0.7244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 94 (norm: 0.74015748031496) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 96 (norm: 0.75590551181102) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 98 (norm: 0.77165354330709) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 100 (norm: 0.78740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 102 (norm: 0.80314960629921) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 105 (norm: 0.82677165354331) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 106 (norm: 0.83464566929134) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 108 (norm: 0.8503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 109 (norm: 0.85826771653543) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 110 (norm: 0.86614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 112 (norm: 0.88188976377953) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 115 (norm: 0.90551181102362) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 118 (norm: 0.92913385826772) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 127 (norm: 1.0) chan: 0 src: 1298960095
+EXTERNAL OSC /chord: 3 notes → chord group 'chordGroup1' (target: 0)
+Group chordGroup1 expression from MIDI (Row 1): Min=4, Max=127, DurScalar=1.0
+Chord JSON: 3 notes → 3 VSTs in group 'chordGroup1'
+  Note 78 (vel 81, dur 1.0s) → VST idx 0
+  Note 82 (vel 53, dur 1.0s) → VST idx 1
+  Note 73 (vel 86, dur 1.0s) → VST idx 2
+  Expression envelope triggered (dur: 1.0s, min: 4, max: 127)
+[/midi/cc] Group: chordGroup1, CC11: 16 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 119 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 32 → 3 VSTs
+MIDIController Knob CC: 58 val: 126 (norm: 0.99212598425197) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 124 (norm: 0.97637795275591) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 122 (norm: 0.96062992125984) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 121 (norm: 0.95275590551181) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 119 (norm: 0.93700787401575) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 117 (norm: 0.92125984251969) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 116 (norm: 0.91338582677165) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 114 (norm: 0.89763779527559) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 113 (norm: 0.88976377952756) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 111 (norm: 0.8740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 110 (norm: 0.86614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 108 (norm: 0.8503937007874) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 106 (norm: 0.83464566929134) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 105 (norm: 0.82677165354331) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 103 (norm: 0.81102362204724) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 101 (norm: 0.79527559055118) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 98 (norm: 0.77165354330709) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 97 (norm: 0.76377952755906) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 94 (norm: 0.74015748031496) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 92 (norm: 0.7244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 90 (norm: 0.70866141732283) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 88 (norm: 0.69291338582677) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 86 (norm: 0.67716535433071) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 84 (norm: 0.66141732283465) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 82 (norm: 0.64566929133858) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 79 (norm: 0.62204724409449) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 77 (norm: 0.60629921259843) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 75 (norm: 0.59055118110236) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 73 (norm: 0.5748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 70 (norm: 0.5511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 68 (norm: 0.53543307086614) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 66 (norm: 0.51968503937008) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 64 (norm: 0.50393700787402) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 63 (norm: 0.49606299212598) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 61 (norm: 0.48031496062992) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 59 (norm: 0.46456692913386) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 57 (norm: 0.4488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 55 (norm: 0.43307086614173) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 53 (norm: 0.41732283464567) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 52 (norm: 0.40944881889764) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 50 (norm: 0.39370078740157) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 49 (norm: 0.38582677165354) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 48 (norm: 0.37795275590551) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 46 (norm: 0.36220472440945) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 45 (norm: 0.35433070866142) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 44 (norm: 0.34645669291339) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 43 (norm: 0.33858267716535) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 42 (norm: 0.33070866141732) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 40 (norm: 0.31496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 39 (norm: 0.30708661417323) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 38 (norm: 0.2992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 36 (norm: 0.28346456692913) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 34 (norm: 0.26771653543307) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 33 (norm: 0.25984251968504) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 31 (norm: 0.24409448818898) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 29 (norm: 0.22834645669291) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 28 (norm: 0.22047244094488) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 26 (norm: 0.20472440944882) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 24 (norm: 0.18897637795276) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 22 (norm: 0.17322834645669) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 20 (norm: 0.15748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 19 (norm: 0.1496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 17 (norm: 0.13385826771654) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 15 (norm: 0.11811023622047) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 14 (norm: 0.11023622047244) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 12 (norm: 0.094488188976378) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 11 (norm: 0.086614173228346) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 10 (norm: 0.078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 8 (norm: 0.062992125984252) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 7 (norm: 0.05511811023622) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 6 (norm: 0.047244094488189) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 4 (norm: 0.031496062992126) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 3 (norm: 0.023622047244094) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 2 (norm: 0.015748031496063) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 1 (norm: 0.0078740157480315) chan: 0 src: 1298960095
+MIDIController Knob CC: 58 val: 0 (norm: 0.0) chan: 0 src: 1298960095
+EXTERNAL OSC /chord: 3 notes → chord group 'chordGroup1' (target: 0)
+Group chordGroup1 expression from MIDI (Row 1): Min=4, Max=127, DurScalar=1.0
+Chord JSON: 3 notes → 3 VSTs in group 'chordGroup1'
+  Note 78 (vel 81, dur 1.0s) → VST idx 0
+  Note 82 (vel 53, dur 1.0s) → VST idx 1
+  Note 73 (vel 86, dur 1.0s) → VST idx 2
+  Expression envelope triggered (dur: 1.0s, min: 4, max: 127)
+[/midi/cc] Group: chordGroup1, CC11: 78 → 3 VSTs
+[/midi/cc] Group: chordGroup1, CC11: 73 → 3 VSTs
