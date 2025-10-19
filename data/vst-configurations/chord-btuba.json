@@ -1,1 +1,41 @@
-{ "configName": "chord-btuba", "description": "", "groups": { "Layer1": { "members": [  ], "metadata": { "createdAt": "Date(2025, 10, 18, 17, 33, 25, 6, 1760834005.0146)" }, "type": "regular" }, "Layer2": { "members": [  ], "metadata": { "createdAt": "Date(2025, 10, 18, 17, 33, 25, 6, 1760834005.0146)" }, "type": "regular" }, "Layer3": { "members": [  ], "metadata": { "createdAt": "Date(2025, 10, 18, 17, 33, 25, 6, 1760834005.0147)" }, "type": "regular" }, "chordGroup1": { "members": [ "SWAM Bass Tuba 01", "Bass Tuba 01", "SWAM Bass Tuba 02" ], "metadata": { "createdAt": "Date(2025, 10, 18, 17, 33, 46, 6, 1760834026.2541)" }, "type": "chord" } }, "isDefault": false, "midiSettings": { "activeKeyboardGroup": "Layer1", "expressionKnobEnabled": false, "manualVelocityEnabled": false }, "timestamp": "251018_173457", "vstInstances": [ { "name": "SWAM Bass Tuba 02", "outputBus": 2, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" }, { "name": "SWAM Bass Tuba 01", "outputBus": 4, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" }, { "name": "Bass Tuba 01", "outputBus": 6, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" } ] }
+{
+  "configName": "chord-btuba",
+  "description": "",
+  "isDefault": false,
+  "timestamp": "251018_191704",
+  "vstInstances": [
+    {
+      "name": "SWAM Bass Tuba 02",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 2,
+      "group": "chordGroup1"
+    },
+    {
+      "name": "SWAM Bass Tuba 00",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 6,
+      "group": "chordGroup1"
+    },
+    {
+      "name": "SWAM Bass Tuba 01",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 4,
+      "group": "chordGroup1"
+    }
+  ],
+  "groups": {
+    "chordGroup1": {
+      "members": [
+        "SWAM Bass Tuba 01",
+        "SWAM Bass Tuba 02",
+        "SWAM Bass Tuba 00"
+      ],
+      "type": "chord"
+    }
+  },
+  "midiSettings": {
+    "expressionKnobEnabled": false,
+    "manualVelocityEnabled": false,
+    "activeKeyboardGroup": "chordGroup1"
+  }
+}

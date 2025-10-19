@@ -665,12 +665,19 @@
     // Validate group
     groupType = ~vstManager.getGroupType(groupName);
     if (groupType.isNil) {
-        "Group '%' not found".format(groupName).warn;
+        "ERROR: Group '%' not found. Available groups: %".format(
+            groupName,
+            ~vstManager.getGroupNames()
+        ).error;
         false;
     };
 
     if (groupType != \chord) {
-        "Group '%' is not a chord group (type: %)".format(groupName, groupType).warn;
+        "ERROR: Group '%' is type '%' but expected 'chord'. This group cannot be used with /chord endpoint.".format(
+            groupName, groupType
+        ).error;
+        "  → To fix: Re-save this group as a chord group, or use a different group.".postln;
+        "  → Available chord groups: %".format(~vstManager.getChordGroupNames()).postln;
         false;
     };
 
@@ -740,15 +747,21 @@
 
 // Resolve chord group by index or name
 ~resolveChordGroup = { |target|
-    var groupName;
+    var groupName, chordGroups;
 
     // If integer, treat as chord group index
     if (target.isKindOf(Integer) or: { target.isKindOf(Float) }) {
         groupName = ~oscLayers.indexToChordGroup[target.asInteger];
         if (groupName.isNil) {
-            "Chord group index % not found (max: %)".format(
-                target, ~oscLayers.indexToChordGroup.size - 1
-            ).warn;
+            chordGroups = ~vstManager.getChordGroupNames();
+            "ERROR: Chord group index % not found.".format(target).error;
+            if (chordGroups.size == 0) {
+                "  → No chord groups exist! Create a chord group first.".postln;
+                "  → All current groups are type 'regular': %".format(~vstManager.getGroupNames()).postln;
+            } {
+                "  → Available chord groups (count: %): %".format(chordGroups.size, chordGroups).postln;
+                "  → Valid indices: 0 to %".format(chordGroups.size - 1).postln;
+            };
         };
     } {
         // Otherwise treat as group name

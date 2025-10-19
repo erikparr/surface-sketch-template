@@ -62,8 +62,8 @@ ConfigurationManager {
 
 			// Find which group this instance belongs to
 			groupName = nil;
-			vstManager.groups.keysValuesDo { |gName, members|
-				if(members.includes(instanceName)) {
+			vstManager.groups.keysValuesDo { |gName, groupConfig|
+				if(groupConfig.members.includes(instanceName)) {
 					groupName = gName;
 				};
 			};
@@ -78,36 +78,14 @@ ConfigurationManager {
 			instanceData = instanceData.add(instanceConfig);
 		};
 
-		// Serialize groups - if groups are empty, auto-assign VSTs to Layer1, Layer2, Layer3
+		// Serialize groups with type information
 		groupData = ();
 		if(vstManager.groups.notNil) {
-			var hasPopulatedGroups = false;
-			vstManager.groups.keysValuesDo { |groupName, members|
-				groupData.put(groupName, members.copy);
-				if(members.size > 0) {
-					hasPopulatedGroups = true;
-				};
-			};
-
-			// If all groups are empty, auto-assign VSTs to Layer groups
-			if(hasPopulatedGroups.not and: { instanceData.size > 0 }) {
-				var layerNames = [\Layer1, \Layer2, \Layer3];
-				("Auto-assigning VSTs to layer groups...").postln;
-
-				// Clear and recreate groups
-				groupData = ();
-				layerNames.do { |layerName|
-					groupData.put(layerName.asString, []);
-				};
-
-				// Assign each VST instance to a layer group
-				instanceData.do { |instanceConfig, i|
-					var layerIndex = i % 3;
-					var layerName = layerNames[layerIndex].asString;
-					instanceConfig.put(\group, layerName);
-					groupData[layerName] = groupData[layerName].add(instanceConfig[\name]);
-					("Assigning % to %").format(instanceConfig[\name], layerName).postln;
-				};
+			vstManager.groups.keysValuesDo { |groupName, groupConfig|
+				groupData.put(groupName, (
+					members: groupConfig.members.copy,
+					type: groupConfig.type
+				));
 			};
 		};
 
@@ -396,37 +374,35 @@ ConfigurationManager {
 		// Wait for VSTs to initialize
 		2.wait;
 
-		// FIXED: Assign loaded VSTs to layer groups in order
-		if(success) {
-			"Assigning loaded VSTs to layer groups...".postln;
-			loadedVSTNames = vstManager.vstInstances.keys.asArray.sort;
-			layerGroups = ["Layer1", "Layer2", "Layer3"];
+		// Restore groups from configuration
+		if(success and: { groups.notNil }) {
+			"Restoring groups from configuration...".postln;
 
-			// Create layer groups and assign VSTs to them
-			layerGroups.do { |groupName, index|
-				var members = [];
+			groups.keysValuesDo { |groupName, groupData|
+				var members, groupType;
 
-				// Assign VSTs to this group (distribute evenly)
-				loadedVSTNames.do { |vstName, vstIndex|
-					if((vstIndex % 3) == index) {
-						members = members.add(vstName);
-					};
-				};
+				members = groupData["members"];
+				groupType = groupData["type"].asSymbol;
 
-				// Create group with members
-				vstManager.createGroup(groupName, members);
-				("Group '%' created with % members: %").format(
-					groupName, members.size, members
+				vstManager.createGroup(groupName, members, groupType);
+				("Group '%' restored (type: %, members: %)").format(
+					groupName, groupType, members
 				).postln;
 			};
 		};
 
 		// Apply MIDI settings (will be expanded when GUI integration is added)
 
-		// FIXED: Sync OSC layers system with loaded VST configuration
+		// Sync OSC layers system with loaded VST configuration
 		if(success and: { ~oscLayers.notNil }) {
 			"Synchronizing OSC layers with VST configuration...".postln;
 			this.syncOSCLayersWithVSTs();
+
+			// Update chord group indices for /chord endpoint
+			if(~updateChordGroupIndices.notNil) {
+				"Updating chord group indices...".postln;
+				~updateChordGroupIndices.();
+			};
 
 			// Initialize dynamic layers system after VST groups are created
 			if(~initDynamicLayersSystem.notNil) {
@@ -434,7 +410,7 @@ ConfigurationManager {
 			};
 		};
 
-		// FIXED: Sync MIDI controller with loaded VST configuration
+		// Sync MIDI controller with loaded VST configuration
 		if(success and: { ~updateMIDIController.notNil }) {
 			"Synchronizing MIDI controller with VST configuration...".postln;
 			~updateMIDIController.value();

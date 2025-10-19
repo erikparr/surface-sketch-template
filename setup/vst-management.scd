@@ -41,10 +41,9 @@
     var multiInstrumentToggle; // <-- For Multi-Instrument Mode toggle
     var groupMgmtLayout, addToGroupLayout, addToGroupButton, existingGroupMenu;
     var createGroupLayout, newGroupNameField, createNewGroupButton, groupTypeMenu, groupTypeLayout;
-    var chordGroupLayout, chordGroupSelector, setChordGroupButton, refreshChordGroupsButton, chordGroupItems;
     // Configuration management variables
     var configLayout, configSelectorMenu, configMenuItems, loadConfigButton, saveConfigButton;
-    var saveConfigLayout, configNameField, configDescField, deleteConfigButton, setDefaultButton;
+    var saveConfigLayout, configNameField, deleteConfigButton, setDefaultButton;
     var updateConfigurationsList;
 
     // Check if VSTManager is available
@@ -322,52 +321,6 @@
     layout.add(keyboardGroupHLayout); // Add the keyboard group layout to the main layout
     // --- End Keyboard Group Assignment UI ---
 
-    // --- Chord Group Management UI ---
-    layout.add(StaticText().string_("Active Chord Group:"));
-    chordGroupLayout = HLayout();
-
-    // Chord group selector
-    chordGroupSelector = PopUpMenu();
-    chordGroupItems = ["None"] ++ (~vstManager.getChordGroupNames() ? []);
-    chordGroupSelector.items = chordGroupItems;
-    if(chordGroupItems.notEmpty) { chordGroupSelector.value = 0 };
-
-    chordGroupLayout.add(chordGroupSelector, stretch: 1);
-
-    // Set Active button
-    setChordGroupButton = Button().states_([["Set Active"]])
-    .action_({ |btn|
-        var selectedIndex = chordGroupSelector.value;
-        if(selectedIndex.notNil) {
-            if(selectedIndex == 0) {
-                // "None" selected
-                ~vstManager.setActiveChordGroup(nil);
-                ~oscLayers.state.activeChordGroup = nil;
-                statusText.string = "Cleared active chord group";
-            } {
-                var groupName = chordGroupItems[selectedIndex];
-                if(~vstManager.setActiveChordGroup(groupName)) {
-                    ~oscLayers.state.activeChordGroup = groupName;
-                    statusText.string = "Active chord group: %".format(groupName);
-                };
-            };
-        };
-    });
-    chordGroupLayout.add(setChordGroupButton);
-
-    // Refresh button
-    refreshChordGroupsButton = Button().states_([["Refresh"]])
-    .action_({
-        chordGroupItems = ["None"] ++ (~vstManager.getChordGroupNames() ? []);
-        chordGroupSelector.items = chordGroupItems;
-        if(chordGroupItems.notEmpty) { chordGroupSelector.value = 0 };
-        statusText.string = "Chord groups refreshed";
-    });
-    chordGroupLayout.add(refreshChordGroupsButton);
-
-    layout.add(chordGroupLayout);
-    // --- End Chord Group Management UI ---
-
     // --- MIDI Control Overrides UI ---
     midiControlOverridesLayout = HLayout();
     expressionKnobToggle = CheckBox()
@@ -503,10 +456,6 @@
     configNameField = TextField().string_("");
     saveConfigLayout.add(configNameField);
 
-    saveConfigLayout.add(StaticText().string_("Description (optional):"));
-    configDescField = TextField().string_("");
-    saveConfigLayout.add(configDescField);
-
     saveConfigButton = Button().states_([["Save Configuration"]]);
     saveConfigLayout.add(saveConfigButton);
 
@@ -603,9 +552,8 @@
 
     // Configuration button actions
     saveConfigButton.action = { |btn|
-        var configName, configDesc, invalidChars;
+        var configName, invalidChars;
         configName = configNameField.string.stripWhiteSpace;
-        configDesc = configDescField.string.stripWhiteSpace;
 
         // Validate configuration name
         if(configName.isEmpty) {
@@ -627,10 +575,9 @@
         };
 
         if(~saveVSTConfiguration.notNil) {
-            if(~saveVSTConfiguration.(configName, configDesc)) {
+            if(~saveVSTConfiguration.(configName, "")) {
                 statusText.string = "Configuration saved: " ++ configName;
                 configNameField.string = "";
-                configDescField.string = "";
                 updateConfigurationsList.();
             } {
                 statusText.string = "Failed to save configuration";

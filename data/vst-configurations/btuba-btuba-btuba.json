@@ -1,1 +1,45 @@
-{ "configName": "bTuba-bTuba-bTuba", "description": "", "groups": { "Layer1": [ "Bass Tuba 01" ], "Layer2": [ "SWAM Bass Tuba 01", "SWAM Baritone Sax 3 02" ], "Layer3": [ "SWAM Bass Tuba 01", "SWAM Bass Tuba 02" ] }, "isDefault": false, "midiSettings": { "activeKeyboardGroup": "Layer1", "expressionKnobEnabled": false, "manualVelocityEnabled": false }, "timestamp": "251017_143311", "vstInstances": [ { "group": "Layer3", "name": "SWAM Bass Tuba 02", "outputBus": 2, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" }, { "group": "Layer2", "name": "SWAM Bass Tuba 01", "outputBus": 4, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" }, { "group": "Layer1", "name": "Bass Tuba 01", "outputBus": 6, "pluginPath": "\/Library\/Audio\/Plug-Ins\/VST3\/SWAM Bass Tuba.vst3" } ] }
+{
+  "configName": "bTuba-bTuba-bTuba",
+  "description": "",
+  "isDefault": false,
+  "timestamp": "251017_143311",
+  "vstInstances": [
+    {
+      "name": "SWAM Bass Tuba 02",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 2,
+      "group": "Layer3"
+    },
+    {
+      "name": "SWAM Bass Tuba 01",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 4,
+      "group": "Layer2"
+    },
+    {
+      "name": "Bass Tuba 01",
+      "pluginPath": "/Library/Audio/Plug-Ins/VST3/SWAM Bass Tuba.vst3",
+      "outputBus": 6,
+      "group": "Layer1"
+    }
+  ],
+  "groups": {
+    "Layer1": {
+      "members": ["Bass Tuba 01"],
+      "type": "regular"
+    },
+    "Layer2": {
+      "members": ["SWAM Bass Tuba 01", "SWAM Baritone Sax 3 02"],
+      "type": "regular"
+    },
+    "Layer3": {
+      "members": ["SWAM Bass Tuba 01", "SWAM Bass Tuba 02"],
+      "type": "regular"
+    }
+  },
+  "midiSettings": {
+    "expressionKnobEnabled": false,
+    "manualVelocityEnabled": false,
+    "activeKeyboardGroup": "Layer1"
+  }
+}
