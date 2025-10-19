@@ -93,7 +93,8 @@
 			}.fork;
 		};
 	} {
-		"ERROR: ~initDynamicLayersSystem function not found".error;
+		// Function not loaded yet - this is expected during initial startup
+		"Dynamic layers system will be initialized once all components are loaded".postln;
 	};
 }.fork;
 

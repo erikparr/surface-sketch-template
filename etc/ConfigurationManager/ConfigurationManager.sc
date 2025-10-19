@@ -466,26 +466,8 @@ ConfigurationManager {
 		// Get first available melody
 		defaultMelody = ~melodyDict.keys.asArray.first;
 
-		// Sync layer configs with VST groups
-		[\layer1, \layer2, \layer3].do { |layerKey, index|
-			var config = ~oscLayers.configs[layerKey];
-			var targetGroup;
-
-			if(index < groupNames.size) {
-				targetGroup = groupNames[index];
-			} {
-				targetGroup = groupNames.wrapAt(index);
-			};
-
-			// Update layer configuration
-			config.vstGroup = targetGroup;
-			config.melodyList = [defaultMelody];
-			config.enabled = true;
-
-			"  Layer % → Group '%', Melody: %".format(layerKey, targetGroup, defaultMelody).postln;
-		};
-
-		"OSC Layers synchronized with VST configuration".postln;
+		// Legacy layer sync removed - dynamic layers are initialized separately
+		"Legacy OSC layer sync skipped (using dynamic layers only)".postln;
 
 		// Refresh GUI if available
 		if(~refreshLayerVSTGroups.notNil) {

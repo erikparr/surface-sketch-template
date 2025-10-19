@@ -42,119 +42,8 @@
     ),
 
     // DYNAMIC LAYERS: Dictionaries instead of fixed configs (Phase 1)
-    // NOTE: Legacy layer1/2/3 configs preserved below for backward compatibility
-
-    // Layer configurations (preserved from original system)
-    configs: (
-        layer1: (
-            melodyList: [],
-            assignedLayerId: \layer1,  // Which layer data to use from current melody
-            vstGroup: 'Layer1',
-            enabled: true,
-            duration: 0,
-            noteDurationScalar: 1.0,
-            // Independent playback state
-            isPlaying: false,
-            currentTask: nil,
-            defaultDuration: 4.0,
-            ccControl: (
-                enabled: true,
-                expressionCC: 11,
-                expressionMin: 10,
-                expressionMax: 120,
-                expressionShape: \sin,
-                expressionPeakPos: 0.5,
-                expressionDurationScalar: 1.0
-            ),
-            windowing: (
-                enabled: false,
-                windowSize: 5,
-                overlapTriggerIndex: 2,
-                stepSize: 1,
-                melodyDurationScalar: 1.0
-            ),
-            bendControl: (
-                enabled: true,
-                bendAmount: 0.0,
-                peakTimeRatio: 0.5,
-                returnTimeRatio: 0.5,
-                simpleRamp: false,
-                activeBendSynths: Dictionary.new
-            )
-        ),
-        layer2: (
-            melodyList: [],
-            assignedLayerId: \layer2,  // Which layer data to use from current melody
-            vstGroup: 'Layer2',
-            enabled: true,
-            duration: 0,
-            noteDurationScalar: 1.0,
-            // Independent playback state
-            isPlaying: false,
-            currentTask: nil,
-            defaultDuration: 4.0,
-            ccControl: (
-                enabled: true,
-                expressionCC: 12,
-                expressionMin: 10,
-                expressionMax: 120,
-                expressionShape: \sin,
-                expressionPeakPos: 0.5,
-                expressionDurationScalar: 1.0
-            ),
-            windowing: (
-                enabled: false,
-                windowSize: 5,
-                overlapTriggerIndex: 2,
-                stepSize: 1,
-                melodyDurationScalar: 1.0
-            ),
-            bendControl: (
-                enabled: true,
-                bendAmount: 0.0,
-                peakTimeRatio: 0.5,
-                returnTimeRatio: 0.5,
-                simpleRamp: false,
-                activeBendSynths: Dictionary.new
-            )
-        ),
-        layer3: (
-            melodyList: [],
-            assignedLayerId: \layer3,  // Which layer data to use from current melody
-            vstGroup: 'Layer3',
-            enabled: true,
-            duration: 0,
-            noteDurationScalar: 1.0,
-            // Independent playback state
-            isPlaying: false,
-            currentTask: nil,
-            defaultDuration: 4.0,
-            ccControl: (
-                enabled: true,
-                expressionCC: 13,
-                expressionMin: 10,
-                expressionMax: 120,
-                expressionShape: \sin,
-                expressionPeakPos: 0.5,
-                expressionDurationScalar: 1.0
-            ),
-            windowing: (
-                enabled: false,
-                windowSize: 5,
-                overlapTriggerIndex: 2,
-                stepSize: 1,
-                melodyDurationScalar: 1.0
-            ),
-            bendControl: (
-                enabled: true,
-                bendAmount: 0.0,
-                peakTimeRatio: 0.5,
-                returnTimeRatio: 0.5,
-                simpleRamp: false,
-                activeBendSynths: Dictionary.new
-            )
-        )
-    ),
+    // Legacy layer configs removed - using only dynamic layers now
+    configs: nil,  // Deprecated - use dynamicConfigs instead
 
     // OSC responders for each layer
     responders: Dictionary.new,
@@ -174,184 +63,7 @@
     indexToChordGroup: Dictionary.new    // 0 → "chordGroup1"
 );
 
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                       LAYER OSC RESPONDERS                                 │
-// └─────────────────────────────────────────────────────────────────────────────┘
-
-// Create OSC responders for a single layer
-~createLayerOSCResponders = {|layerKey|
-    var layerNum = layerKey.asString.last.asString.asInteger;
-    var config = ~oscLayers.configs[layerKey];
-    var responders = [];
-
-    "Creating OSC responders for %".format(layerKey).postln;
-
-    // Individual note control: /layer1/note, /layer2/note, /layer3/note
-    responders = responders.add(
-        OSCFunc({|msg|
-            var note = msg[1];
-            var velocity = msg[2] ? 127;
-            var duration = msg[3] ? 0.5;
-
-            // "OSC: Layer % note % vel % dur %".format(layerNum, note, velocity, duration).postln;
-
-            // Send to VST - single note to all VSTs on channel 0
-            if (~vstManager.notNil) {
-                var instances = ~vstManager.getTargetInstances(config.vstGroup);
-                instances.do { |vst|
-                    vst.midi.noteOn(0, note, velocity);
-                    if (duration > 0) {
-                        SystemClock.sched(duration, {
-                            vst.midi.noteOff(0, note, 0);
-                        });
-                    };
-                };
-            };
-
-            // Trigger CC envelope if single note mode
-            if (~oscLayers.state.singleNoteCCMode and: { config.ccControl.enabled }) {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
-            };
-
-            // Trigger bend envelope if bend mode
-            if (~oscLayers.state.bendMode and: { config.bendControl.enabled }) {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/bend', duration);
-            };
-
-        }, '/layer' ++ layerNum ++ '/note')
-    );
-
-    // CC control: /layer1/cc, /layer2/cc, /layer3/cc
-    responders = responders.add(
-        OSCFunc({|msg|
-            var ccNum = msg[1];
-            var value = msg[2];
-
-            if (~vstManager.notNil) {
-                var instances = ~vstManager.getTargetInstances(config.vstGroup);
-                instances.do { |vst|
-                    vst.midi.control(0, ccNum, value);
-                };
-            };
-        }, '/layer' ++ layerNum ++ '/cc')
-    );
-
-    // Expression envelope: /layer1/expression, /layer2/expression, /layer3/expression
-    responders = responders.add(
-        OSCFunc({|msg|
-            var duration = msg[1] ? 1.0;
-            var synthName = ('ccEnvelope' ++ layerNum).asSymbol;
-            var ccControl = config.ccControl;
-
-            if (ccControl.enabled) {
-                var scaledDuration = duration * ccControl.expressionDurationScalar;
-                var attackTime = scaledDuration * ccControl.expressionPeakPos;
-                var releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
-
-                Synth(synthName, [
-                    \start, ccControl.expressionMin,
-                    \peak, ccControl.expressionMax,
-                    \end, ccControl.expressionMin,
-                    \attackTime, attackTime,
-                    \releaseTime, releaseTime,
-                    \chanIndex, 0,
-                    \ccNum, ccControl.expressionCC,
-                    \attackCurve, ccControl.expressionShape,
-                    \releaseCurve, ccControl.expressionShape
-                ]);
-            };
-        }, '/layer' ++ layerNum ++ '/expression')
-    );
-
-    // Bend envelope: /layer1/bend, /layer2/bend, /layer3/bend
-    responders = responders.add(
-        OSCFunc({|msg|
-            var duration = msg[1] ? 1.0;
-            var bendControl = config.bendControl;
-
-            if (bendControl.enabled and: { ~getLayerBendAmount.notNil }) {
-                var bendAmount = ~getLayerBendAmount.();
-                var peakTime = ~getLayerBendPeakTime.();
-                var simpleRamp = ~getLayerBendSimpleRamp.();
-                var bendCenter = 8192;  // MIDI pitch bend center
-                var bendRangeRaw, peakValue;
-
-                // FIXED: Convert octave range (-1 to +1) to MIDI offset and apply to center
-                bendRangeRaw = (bendAmount * 8191).round.asInteger;  // Max range ±8191
-                peakValue = (bendCenter + bendRangeRaw).clip(0, 16383);
-
-                // Clean up existing bend synths for this layer
-                bendControl.activeBendSynths.do(_.free);
-                bendControl.activeBendSynths.clear;
-
-                // NEW: Create one bend synth per VST in this layer's group
-                if (~vstManager.notNil) {
-                    ~vstManager.getTargetInstances(config.vstGroup).keysValuesDo { |vstKey, vst, vstIndex|
-                        var layerReplyID = (layerNum * 100) + vstIndex;  // Layer-encoded ID
-                        var bendSynth;
-
-                        if (simpleRamp) {
-                            bendSynth = Synth(\BendEnvelopeSimple, [
-                                \start, bendCenter,       // MIDI center (8192)
-                                \end, peakValue,          // MIDI converted value
-                                \duration, duration,
-                                \chanIndex, vstIndex,
-                                \customReplyID, layerReplyID
-                            ]);
-                        } {
-                            bendSynth = Synth(\BendEnvelope, [
-                                \start, bendCenter,       // MIDI center (8192)
-                                \peak, peakValue,         // MIDI converted value
-                                \end, bendCenter,         // MIDI center (8192)
-                                \peakTime, duration * peakTime,
-                                \returnTime, duration * (1.0 - peakTime),
-                                \chanIndex, vstIndex,
-                                \customReplyID, layerReplyID  // Layer-encoded replyID
-                            ]);
-                        };
-
-                        // Store synth for cleanup
-                        bendControl.activeBendSynths[vstKey] = bendSynth;
-                    };
-
-                    "Layer % bend: Created % synths for group % (amount: % octaves → MIDI: %)".format(
-                        layerKey, bendControl.activeBendSynths.size, config.vstGroup,
-                        bendAmount.round(0.01), peakValue
-                    ).postln;
-                };
-            };
-        }, '/layer' ++ layerNum ++ '/bend')
-    );
-
-    // Melody change: /layer1/melody, /layer2/melody, /layer3/melody
-    responders = responders.add(
-        OSCFunc({|msg|
-            var melodyKey = msg[1].asSymbol;
-            if (~setLayerMelody.notNil) {
-                ~setLayerMelody.(layerKey, melodyKey);
-            } {
-                // Fallback: set melody directly in OSC config
-                config.melodyList = [melodyKey];
-                "Layer % melody set to: % (OSC direct)".format(layerKey, melodyKey).postln;
-            };
-        }, '/layer' ++ layerNum ++ '/melody')
-    );
-
-    // Configuration changes: /layer1/enabled, /layer2/enabled, /layer3/enabled
-    responders = responders.add(
-        OSCFunc({|msg|
-            var enabled = msg[1].asBoolean;
-            config.enabled = enabled;
-            "Layer % enabled: %".format(layerKey, enabled).postln;
-        }, '/layer' ++ layerNum ++ '/enabled')
-    );
-
-    // Store responders
-    ~oscLayers.responders[layerKey] = responders;
-
-    "Created % OSC responders for %".format(responders.size, layerKey).postln;
-    responders;
-};
+// Legacy layer OSC responders removed - using only dynamic layers now
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       SYSTEM OSC RESPONDERS                                │
@@ -566,9 +278,17 @@
     // Calculate timing
     noteInterval = duration / pattern.size;
 
-    // Get velocity
+    // Get velocity from Row 1 Knob 3 (legacy layer system)
     velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
-        ~midiController.getKnobRow1(3).linlin(0, 127, 1, 127).asInteger;
+        var rawVel;
+        rawVel = ~midiController.getKnobRow1(3);
+
+        // Smart scaling: detect if already in MIDI range or normalized
+        if (rawVel > 1.0) {
+            rawVel.asInteger.clip(1, 127);  // Already MIDI range
+        } {
+            (rawVel * 127).asInteger.clip(1, 127);  // Normalized, scale to MIDI
+        };
     } {
         127; // Default velocity
     };
@@ -712,8 +432,22 @@
     // Get MIDI row for this group to read velocity
     rowNum = ~getMIDIRowForGroup.(groupName);
 
-    // Read velocity from MIDI controller Row X Knob 3
-    velocity = (~midiController.getKnobRow(rowNum, 3) * 127).asInteger.clip(1, 127);
+    // Read velocity from MIDI controller Row X Knob 3 (with safety checks)
+    velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+        var rawVel;
+        rawVel = ~midiController.getKnobRow(rowNum, 3);
+
+        // Smart scaling: detect if already in MIDI range or normalized
+        if (rawVel > 1.0) {
+            rawVel.asInteger.clip(1, 127);  // Already MIDI range
+        } {
+            (rawVel * 127).asInteger.clip(1, 127);  // Normalized, scale to MIDI
+        };
+    } {
+        127;  // Default velocity if manual control off or controller unavailable
+    };
+
+    "Velocity from MIDI (Row % Knob 3): %".format(rowNum, velocity).postln;
 
     // Multi-instrument routing: each note to different VST
     noteDataArray.do { |noteData, idx|
@@ -1004,89 +738,7 @@
 // Update note duration scalar for a specific layer
 // Legacy function removed - use dynamic layers version at line 1901 with group names
 
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                    MIDI TEMPLATE PROCESSING & EXPRESSION CONTROL           │
-// └─────────────────────────────────────────────────────────────────────────────┘
-
-// Update expression parameters for all layers from MIDI knobs
-~updateAllLayerExpressionParams = {
-    [\layer1, \layer2, \layer3].do { |layerKey, index|
-        var rowNum = index + 1; // layer1=row1, layer2=row2, layer3=row3
-        var config = ~oscLayers.configs[layerKey];
-        var foundInTemplate = false;
-
-        if (config.notNil && config.ccControl.notNil) {
-
-            // PHASE 1: Try to get values from template system
-            if (~processTemplateKnobValues.notNil and: { ~rowMappings.notNil }) {
-                // First, update all template parameter storage
-                ~processTemplateKnobValues.();
-
-                // Check if current row has template mappings for expression parameters
-                ~rowMappings.keysValuesDo { |templateRowNum, mapping|
-                    if (mapping.enabled and: { templateRowNum == rowNum and: { foundInTemplate.not } }) {
-                        var template = ~controlTemplates[mapping.template];
-                        var paramStorage = ~getGroupParams.(mapping.vstGroup);
-
-                        if (template.notNil and: { paramStorage.notNil }) {
-                            var hasExpressionMin = false;
-                            var hasExpressionMax = false;
-                            var hasExpressionDur = false;
-
-                            // Check what expression parameters this template handles
-                            template.knobMappings.do { |knobMap|
-                                switch(knobMap.param,
-                                    \expressionMin, {
-                                        hasExpressionMin = true;
-                                        config.ccControl.expressionMin = paramStorage[\expressionMin] ? 10;
-                                    },
-                                    \expressionMax, {
-                                        hasExpressionMax = true;
-                                        config.ccControl.expressionMax = paramStorage[\expressionMax] ? 120;
-                                    },
-                                    \expressionDurationScalar, {
-                                        hasExpressionDur = true;
-                                        config.ccControl.expressionDurationScalar = paramStorage[\expressionDurationScalar] ? 0.5;
-                                    }
-                                );
-                            };
-
-                            if (hasExpressionMin or: { hasExpressionMax }) {
-                                foundInTemplate = true;
-                                "OSC: Layer % expression from template (Row % %): Min=%, Max=%, DurScalar=%".format(
-                                    layerKey, rowNum, mapping.template,
-                                    config.ccControl.expressionMin,
-                                    config.ccControl.expressionMax,
-                                    config.ccControl.expressionDurationScalar.round(0.01)
-                                ).postln;
-                            };
-                        };
-                    };
-                };
-            };
-
-            // PHASE 2: Fallback to direct knob reads (backward compatibility)
-            if (foundInTemplate.not and: { ~midiController.notNil }) {
-                // Read expression parameters from appropriate row (legacy behavior)
-                config.ccControl.expressionMin = ~midiController.getKnobRow(rowNum, 5);
-                config.ccControl.expressionMax = ~midiController.getKnobRow(rowNum, 6);
-                config.ccControl.expressionDurationScalar = ~midiController.getKnobRow(rowNum, 4).linlin(0.0, 1.0, 0.001, 1.0);
-
-                "OSC: Layer % expression from direct knobs (Row %): Min=%, Max=%, DurScalar=%".format(
-                    layerKey, rowNum,
-                    config.ccControl.expressionMin,
-                    config.ccControl.expressionMax,
-                    config.ccControl.expressionDurationScalar.round(0.01)
-                ).postln;
-            };
-
-            // PHASE 3: Ensure valid ranges regardless of source
-            if (config.ccControl.expressionMax <= config.ccControl.expressionMin) {
-                config.ccControl.expressionMax = config.ccControl.expressionMin + 1;
-            };
-        };
-    };
-};
+// Legacy MIDI template processing removed - use dynamic layers only
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                       EXTERNAL CONTROL SETUP                               │
@@ -1340,7 +992,10 @@
 
 // Create layer configuration for a group
 ~createLayerForGroup = { |groupName|
-    var sanitizedName, config, alphabeticalIndex;
+    var sanitizedName, config, alphabeticalIndex, rowNum;
+    var rawMin = 10;   // Default fallback
+    var rawMax = 120;  // Default fallback
+    var durationScalar = 1.0;
 
     // Sanitize group name
     sanitizedName = ~sanitizeGroupName.(groupName);
@@ -1357,6 +1012,28 @@
     // Get alphabetical index (now correctly calculated)
     alphabeticalIndex = ~oscLayers.groupToIndex[groupName];
 
+    // Get MIDI row for this group (for reading current values)
+    rowNum = ~getMIDIRowForGroup.(groupName);
+
+    // Read current MIDI values for expression
+
+    if (~midiController.notNil) {
+        rawMin = ~midiController.getKnobRow(rowNum, 5);
+        rawMax = ~midiController.getKnobRow(rowNum, 6);
+
+        // Smart scaling: detect if already in CC range or normalized
+        if (rawMin > 1.0 or: { rawMax > 1.0 }) {
+            rawMin = rawMin.asInteger.clip(0, 127);
+            rawMax = rawMax.asInteger.clip(0, 127);
+        } {
+            rawMin = (rawMin * 127).asInteger.clip(0, 127);
+            rawMax = (rawMax * 127).asInteger.clip(0, 127);
+        };
+
+        // Duration scalar from knob 4
+        durationScalar = ~midiController.getKnobRow(rowNum, 4).clip(0.0, 1.0).linlin(0.0, 1.0, 0.001, 1.0);
+    };
+
     // Create full configuration
     config = (
         // Identity
@@ -1371,9 +1048,9 @@
 
         // Expression control
         expressionCC: 11 + alphabeticalIndex,  // Auto-assigned CC
-        expressionMin: 10,
-        expressionMax: 120,
-        expressionDurationScalar: 1.0,
+        expressionMin: rawMin,      // Use MIDI value
+        expressionMax: rawMax,      // Use MIDI value
+        expressionDurationScalar: durationScalar,
 
         // Playback state
         enabled: true,
@@ -1386,11 +1063,11 @@
         ccControl: (
             enabled: true,
             expressionCC: 11 + alphabeticalIndex,
-            expressionMin: 10,
-            expressionMax: 120,
+            expressionMin: rawMin,      // Use MIDI value
+            expressionMax: rawMax,      // Use MIDI value
             expressionShape: \sin,
             expressionPeakPos: 0.5,
-            expressionDurationScalar: 1.0
+            expressionDurationScalar: durationScalar
         ),
 
         // Bend control (matching legacy structure)
@@ -1410,8 +1087,8 @@
     // Create OSC responders for this group
     ~createGroupOSCResponders.(sanitizedName, config);
 
-    "Created dynamic layer for group: % (sanitized: %, CC: %, MIDI row: %)".format(
-        groupName, sanitizedName, config.expressionCC, ~getMIDIRowForGroup.(groupName)
+    "Created dynamic layer for group: % (sanitized: %, CC: %, MIDI row: %, min: %, max: %)".format(
+        groupName, sanitizedName, config.expressionCC, rowNum, rawMin, rawMax
     ).postln;
 
     config
@@ -1550,6 +1227,14 @@
                 scaledDuration = duration * ccControl.expressionDurationScalar;
                 attackTime = scaledDuration * ccControl.expressionPeakPos;
                 releaseTime = scaledDuration * (1.0 - ccControl.expressionPeakPos);
+
+                "DEBUG Synth args: start=%, peak=%, end=%, attackTime=%, releaseTime=%".format(
+                    ccControl.expressionMin,
+                    ccControl.expressionMax,
+                    ccControl.expressionMin,
+                    attackTime,
+                    releaseTime
+                ).postln;
 
                 Synth(synthName, [
                     \start, ccControl.expressionMin,
@@ -2037,11 +1722,23 @@
                         sanitizedName = config.sanitizedName;
                         noteInterval = playDuration / pattern.size;
 
-                        // Read velocity from MIDI controller Row X Knob 3
+                        // Read velocity from MIDI controller Row X Knob 3 (with safety checks)
                         rowNum = ~getMIDIRowForGroup.(groupName);
-                        velocity = (~midiController.getKnobRow(rowNum, 3) * 127).asInteger.clip(1, 127);
+                        velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
+                            var rawVel;
+                            rawVel = ~midiController.getKnobRow(rowNum, 3);
 
-                        "Starting dynamic group %: % notes, duration: %s, loop: %".format(groupName, pattern.size, playDuration, loop).postln;
+                            // Smart scaling: detect if already in MIDI range or normalized
+                            if (rawVel > 1.0) {
+                                rawVel.asInteger.clip(1, 127);  // Already MIDI range
+                            } {
+                                (rawVel * 127).asInteger.clip(1, 127);  // Normalized, scale to MIDI
+                            };
+                        } {
+                            127;  // Default velocity if manual control off or controller unavailable
+                        };
+
+                        "Starting dynamic group %: % notes, duration: %s, loop: %, velocity: %".format(groupName, pattern.size, playDuration, loop, velocity).postln;
 
                         // Send notes via OSC
                         pattern.do { |note, i|
@@ -2108,7 +1805,18 @@
 
 // Initialize dynamic layers system (Phase 1-4 complete)
 ~initDynamicLayersSystem = {
+    var existingGroups;
+
     "Initializing Dynamic Layers System...".postln;
+
+    // Clean up existing dynamic layers to prevent duplicates
+    existingGroups = ~oscLayers.dynamicConfigs.keys.asArray;
+    if (existingGroups.size > 0) {
+        "Cleaning up % existing dynamic layers before re-initialization...".format(existingGroups.size).postln;
+        existingGroups.do { |groupName|
+            ~removeLayerForGroup.(groupName);
+        };
+    };
 
     // Phase 1: Core functions
     ~loadDynamicLayersSynthDefs.();
@@ -2524,10 +2232,7 @@
     // Create coordinator
     ~oscLayers.coordinator = ~createOSCCoordinator.();
 
-    // Create layer responders
-    [\layer1, \layer2, \layer3].do {|layerKey|
-        ~createLayerOSCResponders.(layerKey);
-    };
+    // Legacy layer responders removed - using only dynamic layers
 
     // Create system responders
     ~createSystemOSCResponders.();
@@ -2539,11 +2244,10 @@
     ~setupOSCCompatibility.();
 
     "OSC Layers System initialized successfully".postln;
-    "  - 3 layers with OSC control".postln;
+    "  - Dynamic layers only (no legacy layer1/2/3)".postln;
     "  - System-wide OSC commands".postln;
     "  - External control ready on port 7000".postln;
     "  - Compatibility layer established".postln;
-    "  - All existing functionality preserved".postln;
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
