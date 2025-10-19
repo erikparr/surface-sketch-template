@@ -22,7 +22,6 @@
     var currentMelodyDisplay, navigationSection;
     var prevButton, nextButton;
     var bpmDisplay, restTimeDisplay;
-    var chordCheckbox, arpeggioCheckbox, arpeggioDisplay;
 
     // Check if window already exists
     if (~layersGUIWindow.notNil) {
@@ -153,55 +152,6 @@
                 updateStatus.();
             })
     );
-
-    // Chord mode checkbox
-    chordCheckbox = CheckBox()
-        .string_("Chord Mode (Max 3 notes, Multi-Instrument)")
-        .value_(~oscLayers.state.chordMode)
-        .action_({ |cb|
-            "GUI → OSC: Chord mode %".format(cb.value).postln;
-            NetAddr.localAddr.sendMsg('/system/chord_mode', cb.value);
-            // Enable/disable arpeggio checkbox based on chord mode
-            if (arpeggioCheckbox.notNil) {
-                arpeggioCheckbox.enabled_(cb.value);
-            };
-            updateStatus.();
-            // Update BPM display to show new range
-            if (bpmDisplay.notNil) {
-                if (cb.value) {
-                    bpmDisplay.string_("BPM: 6-100 (Chord Mode, Row 1 Knob 8)");
-                } {
-                    if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
-                        var bpm = ~getBPMFromKnob.();
-                        bpmDisplay.string_("BPM: % (60-400 range, Row 1 Knob 8)".format(bpm.round(1)));
-                    };
-                };
-            };
-        });
-
-    layout.add(chordCheckbox);
-
-    // Arpeggio mode checkbox (requires chord mode)
-    arpeggioCheckbox = CheckBox()
-        .string_("Arpeggio Mode (Random Chord Delays)")
-        .value_(~oscLayers.state.arpeggioMode)
-        .enabled_(~oscLayers.state.chordMode)
-        .action_({ |cb|
-            "GUI → OSC: Arpeggio mode %".format(cb.value).postln;
-            NetAddr.localAddr.sendMsg('/system/arpeggio_mode', cb.value);
-            updateStatus.();
-        });
-
-    layout.add(arpeggioCheckbox);
-
-    // Arpeggio delay display
-    arpeggioDisplay = StaticText()
-        .string_("Delays: 0-20% of duration (Sliders 3-4)")
-        .font_(Font.default.size_(10))
-        .align_(\center)
-        .stringColor_(Color.gray);
-
-    layout.add(arpeggioDisplay);
 
     // Bend mode checkbox
     bendModeCheckbox = CheckBox()
@@ -560,8 +510,6 @@
         statusStr = statusStr ++ "Loop mode: %\n".format(~oscLayers.state.loopingMode);
         statusStr = statusStr ++ "Manual control: %\n".format(~oscLayers.state.manualControl);
         statusStr = statusStr ++ "Single note CC: %\n".format(~oscLayers.state.singleNoteCCMode);
-        statusStr = statusStr ++ "Chord mode: %\n".format(~oscLayers.state.chordMode);
-        statusStr = statusStr ++ "Arpeggio mode: %\n".format(~oscLayers.state.arpeggioMode);
         statusStr = statusStr ++ "Bend mode: %\n".format(~oscLayers.state.bendMode);
         statusStr = statusStr ++ "Simple ramp: %".format(~getLayerBendSimpleRamp.() ? false);
 
@@ -570,8 +518,7 @@
         // Update BPM display
         if (bpmDisplay.notNil and: { ~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil } }) {
             var bpm = ~getBPMFromKnob.();
-            var range = if (~oscLayers.state.chordMode) { "6-100" } { "60-400" };
-            bpmDisplay.string_("BPM: % (% range, Row 1 Knob 8)".format(bpm.round(1), range));
+            bpmDisplay.string_("BPM: % (60-400 range, Row 1 Knob 8)".format(bpm.round(1)));
         };
 
         // Update melody rest display
@@ -579,15 +526,6 @@
             var melodyRest = ~oscLayers.state.melodyRestTime;
             restTimeDisplay.string_("Melody Rest: %s (Slider 2)".format(
                 melodyRest.round(0.01)
-            ));
-        };
-
-        // Update arpeggio delay display
-        if (arpeggioDisplay.notNil) {
-            var minPercent = (~oscLayers.state.arpeggioMinDelay * 100).round(1);
-            var maxPercent = (~oscLayers.state.arpeggioMaxDelay * 100).round(1);
-            arpeggioDisplay.string_("Delays: %-%%  of duration (Sliders 3-4)".format(
-                minPercent, maxPercent
             ));
         };
 

@@ -1,0 +1,33 @@
+🎵 SENDING OSC MESSAGE
+   Path: /chord
+   Target: 127.0.0.1:7000
+   Payload:
+{
+    "notes": [
+        {
+            "midi": 58,
+            "vel": 0.6141732283464567,
+            "dur": 1.5
+        },
+        {
+            "midi": 54,
+            "vel": 0.47244094488188976,
+            "dur": 1.5
+        },
+        {
+            "midi": 63,
+            "vel": 0.14960629921259844,
+            "dur": 1.5
+        }
+    ],
+    "metadata": {
+        "totalDuration": 2,
+        "noteCount": 3,
+        "name": "New Melody",
+        "loop": false,
+        "targetGroup": 0,
+        "key": "C",
+        "scale": "major",
+        "chordMode": true
+    }
+}

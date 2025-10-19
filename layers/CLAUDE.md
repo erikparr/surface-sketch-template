@@ -2,6 +2,18 @@
 
 A synchronized multi-layer playback system using pure OSC-based architecture for coordinating multiple VST instruments playing different melodies in perfect temporal alignment. **Completely replaces the previous ProcMod architecture** with a modern, message-based approach.
 
+## 🚧 FUTURE ARCHITECTURE: Dynamic Layers
+
+**See: @layers/DYNAMIC-LAYERS-DESIGN.md for approved redesign plan**
+
+The current system uses 3 hardcoded layers. The next version will create **one layer per VST group dynamically**:
+- Name-based OSC paths (`/group/bass_tuba/note`)
+- Event-driven layer creation (no polling)
+- Independent melody navigation per group
+- Unlimited layer count
+
+**Current system documentation below** (will be migrated):
+
 ## System Overview
 
 The layers system allows three independent layers to play different melodies through different VST groups while maintaining perfect synchronization. Each layer can have its own melody, VST routing, and timing, but all layers share a common duration and loop together.
@@ -17,12 +29,10 @@ The layers system allows three independent layers to play different melodies thr
         startTime: nil,
         loopingMode: false,       // Enable/disable continuous looping
         manualControl: false,     // Enable MIDI knob control for duration and velocity
-        liveMelodyMode: false,    // Enable live melody updates via OSC
         singleNoteCCMode: false,  // CC envelope mode (false = layer-wide envelopes)
         bendMode: false,          // Bend envelope mode
         isRunning: false,         // System running state
         noteDurationScalar: 1.0,  // Note duration scalar (0.01-1.5) from Row 1 Knob 2
-        pendingUpdates: Dictionary.new  // Store pending melody updates per layer
     ),
 
     // Layer configurations (preserved from original system)
@@ -53,6 +63,70 @@ The layers system allows three independent layers to play different melodies thr
   - Port 7000 for external applications
   - Acknowledgment messages for remote control
   - Full compatibility with existing GUI and MIDI systems
+
+### OSC Responder Architecture
+
+The system creates **7 OSCFunc instances per layer** (21 total for layers) + 13 system + 5 external = **39 total OSCFuncs**.
+
+#### Per-Layer OSCFuncs (7 each)
+
+Each layer has 7 independent OSC message handlers:
+
+1. **`/layer[N]/note`** - Individual note trigger
+   - Sends MIDI note to all VSTs in layer's group
+   - Auto-schedules note-off after duration
+   - Optionally triggers expression/bend envelopes
+
+2. **`/layer[N]/chord`** - Chord trigger (1-3 notes)
+   - Routes notes across layer groups (note 1 → Layer1, note 2 → Layer2, note 3 → Layer3)
+   - Triggers expression envelopes for all 3 layers
+   - Supports arpeggio mode with random delays
+
+3. **`/layer[N]/cc`** - Direct MIDI CC control
+   - Sends raw CC values to VSTs (no envelope)
+   - Real-time parameter control
+
+4. **`/layer[N]/expression`** - CC envelope trigger
+   - Creates SynthDef-based CC envelope (ccEnvelope1/2/3)
+   - Ramps from min → max → min over duration
+   - Sends continuous CC 11/12/13 values
+
+5. **`/layer[N]/bend`** - Pitch bend envelope trigger
+   - Creates BendEnvelope SynthDef (one per VST in group)
+   - Bends from center → peak → center
+   - Controlled by bendAmount (octaves) and peakTimeRatio
+
+6. **`/layer[N]/melody`** - Melody assignment
+   - Assigns melody from ~melodyDict
+   - Doesn't trigger playback, just sets data
+
+7. **`/layer[N]/enabled`** - Layer enable/disable
+   - Boolean on/off switch
+   - Disabled layers skipped during playback
+
+#### Visual OSCFunc Routing
+
+```
+Layer1 (7 OSCFuncs)                    Layer2 (7 OSCFuncs)                    Layer3 (7 OSCFuncs)
+├─ /layer1/note                        ├─ /layer2/note                        ├─ /layer3/note
+├─ /layer1/chord ─────────────────────┼─ /layer2/chord (receives note 2) ────┤─ /layer3/chord (receives note 3)
+├─ /layer1/cc                          ├─ /layer2/cc                          ├─ /layer3/cc
+├─ /layer1/expression                  ├─ /layer2/expression                  ├─ /layer3/expression
+│  └→ ccEnvelope1 SynthDef             │  └→ ccEnvelope2 SynthDef             │  └→ ccEnvelope3 SynthDef
+│     └→ sends CC 11                   │     └→ sends CC 12                   │     └→ sends CC 13
+├─ /layer1/bend                        ├─ /layer2/bend                        ├─ /layer3/bend
+│  └→ BendEnvelope SynthDefs           │  └→ BendEnvelope SynthDefs           │  └→ BendEnvelope SynthDefs
+│     (one per VST in Layer1 group)    │     (one per VST in Layer2 group)    │     (one per VST in Layer3 group)
+├─ /layer1/melody                      ├─ /layer2/melody                      ├─ /layer3/melody
+└─ /layer1/enabled                     └─ /layer2/enabled                     └─ /layer3/enabled
+```
+
+#### Key Design Insights
+
+- **OSCFuncs are per-layer, not per-VST**: Each layer routes to its configured VST group at runtime
+- **Envelope OSCFuncs create SynthDefs**: Expression and bend don't send notes—they spawn synths that continuously send CC/bend values
+- **Chord mode cross-routes**: `/layer1/chord` sends notes to all 3 layer groups (multi-instrument routing)
+- **VST group mapping is dynamic**: Layer configs store group names ('Layer1', 'Layer2', 'Layer3'), allowing runtime changes
 
 ## Key Components
 
@@ -195,6 +269,40 @@ n.sendMsg("/liveMelody/update/layer2", jsonString);
 // If layer already playing, update applies at next loop boundary
 // Each layer has independent playback control
 ```
+
+#### Automatic Chord Mode
+The system automatically detects and applies chord mode settings from live melody metadata:
+
+```supercollider
+// Include chordMode in metadata - system automatically applies it
+n = NetAddr("127.0.0.1", 57120);
+n.sendMsg("/liveMelody/update/layer1", "{
+  \"notes\": [
+    {\"midi\": 46, \"vel\": 0.46, \"dur\": 1.0},
+    {\"midi\": 58, \"vel\": 0.61, \"dur\": 0.875},
+    {\"midi\": 70, \"vel\": 0.74, \"dur\": 0.75}
+  ],
+  \"metadata\": {
+    \"totalDuration\": 2.25,
+    \"chordMode\": true
+  }
+}");
+// System automatically enables chord mode before starting playback
+
+// Disable chord mode via metadata
+n.sendMsg("/liveMelody/update/layer2", "{...\"chordMode\": false...}");
+// System automatically disables chord mode
+
+// Backward compatible: missing chordMode preserves current state
+n.sendMsg("/liveMelody/update/layer3", "{...}");
+// No change to chord mode setting
+```
+
+**Features:**
+- **Automatic**: No manual toggling needed
+- **Per-melody**: Each composition specifies its own mode
+- **Backward compatible**: Missing `chordMode` field preserves current state
+- **Applied before playback**: Ensures correct mode from first note
 
 ## Independent Layer Playback
 

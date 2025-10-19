@@ -4,16 +4,24 @@ ORDER OF OPERATIONS:
 2. STARTUP FILE AUTOMATICALLY LOADS THE SETUP FILES via @setup/_setup-loader.scd
 3. STARTUP FILE AUTOMATICALLY LOADS THE LAYERS SYSTEM via @layers/load-layers.scd
 
-FOR CONTEXT ABOUT THE SYSTEM SEE:
-- @reference/procmod-reference/ProcMod.sc (legacy reference - project now uses OSC-based architecture)
-- @etc/VSTManager/VSTManager.sc (current VST management system)
-- @etc/MIDIController/MIDIController.sc (current MIDI control system)
-
 OSC-BASED LAYERS SYSTEM:
-The project uses a pure OSC-based 3-layer synchronized playback system:
+The project uses a pure OSC-based dynamic layers system with chord groups:
 1. System loads automatically on startup via @layers/load-layers.scd
-2. Open GUI: ~createLayersGUI.()
-3. Or use OSC API: Send messages to port 7000 (/layer1/note, /system/start, etc.)
-4. Or use SC API: ~setLayerMelody.(\layer1, \melody1); ~startLayers.();
+2. Dynamic layers created per VST group (no 3-layer limit)
+3. Chord groups support multi-instrument routing (each note to different VST)
 
-IF YOU GET STUCK, ASK ME.
+OSC API (Port 7000):
+- /chord - Send JSON chord with per-note velocity/duration to chord group by index
+- /melody - Send JSON melody to any group
+- /group/<name>/note - Trigger notes on specific groups
+- /system/start, /system/stop - System control
+
+Example chord message:
+{
+  "notes": [
+    {"midi": 60, "vel": 0.5, "dur": 1.0},
+    {"midi": 64, "vel": 0.6, "dur": 1.0}
+  ],
+  "metadata": {"targetGroup": 0}
+}
+

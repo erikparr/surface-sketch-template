@@ -4,6 +4,7 @@ VSTManager {
     var <vstInstances, <groups, <server, <initialized;
     var <activeGroup;  // Currently active group
     var <defaultGroup; // Default group (optional)
+    var <activeChordGroup;  // Currently active chord group
     
     *initClass {
         instance = nil;
@@ -25,7 +26,8 @@ VSTManager {
         groups = Dictionary.new;
         activeGroup = nil;
         defaultGroup = nil;
-        
+        activeChordGroup = nil;
+
         this.prInitVST();
         "VSTManager: Initialization complete.".postln;
         ^this;
@@ -92,7 +94,7 @@ VSTManager {
             };
 
             if (groups[groupKey].notNil) {
-                groups[groupKey].do { |name|
+                groups[groupKey].members.do { |name|
                     var instance = vstInstances[name];
                     if (instance.notNil) {
                         instances[name] = instance.controller;
@@ -200,7 +202,7 @@ VSTManager {
     // Get instances in a group
     getGroupInstances { |groupName|
         ^if (groups[groupName].notNil) {
-            groups[groupName].collect { |name| vstInstances[name] };
+            groups[groupName].members.collect { |name| vstInstances[name] };
         } {
             [];
         };
@@ -330,18 +332,40 @@ VSTManager {
     }
     
     // Group Management
-    
-    createGroup { |name, vstNames|
-        groups[name] = vstNames.select { |n| vstInstances[n].notNil };
-        "VSTManager: Group '%' created with members: %".format(name, groups[name]).postln;
-        
+
+    createGroup { |name, vstNames, groupType="regular"|
+        var groupConfig;
+
+        // Convert to symbol for validation (accepts both String and Symbol)
+        groupType = groupType.asSymbol;
+
+        // Validate group type
+        if (#[\regular, \chord].includes(groupType).not) {
+            "VSTManager: Invalid group type: %, using 'regular'".format(groupType).warn;
+            groupType = \regular;
+        };
+
+        groupConfig = (
+            members: vstNames.select { |n| vstInstances[n].notNil },
+            type: groupType,
+            metadata: (
+                createdAt: Date.getDate
+            )
+        );
+
+        groups[name] = groupConfig;
+
+        "VSTManager: Group '%' created (type: %, members: %)".format(
+            name, groupType, groupConfig.members
+        ).postln;
+
         // If this is the first group or default group is not set, make it active
         if (activeGroup.isNil || (defaultGroup.isNil && groups.size == 1)) {
             this.setActiveGroup(name);
             if (defaultGroup.isNil) { defaultGroup = name };
         };
-        
-        ^groups[name];
+
+        ^groupConfig;
     }
 
     addToGroup { |groupName, vstName|
@@ -351,9 +375,20 @@ VSTManager {
             if (currentGroup.notNil) {
                 this.removeFromGroup(currentGroup, vstName);
             };
-            groups[groupName] = (groups[groupName] ? #[]).add(vstName).asSet.asArray; // Ensure unique, then array
+
+            // Ensure group config exists
+            if (groups[groupName].isNil) {
+                groups[groupName] = (members: [], type: \regular);
+            };
+
+            // Add to members array
+            groups[groupName].members = (groups[groupName].members ? [])
+                .add(vstName).asSet.asArray;
+
             instance[\group] = groupName;  // Update group using Symbol key
-            "VSTManager: VST '%' added to group '%'. Current group: %".format(vstName, groupName, groups[groupName]).postln;
+            "VSTManager: VST '%' added to group '%' (type: %). Current members: %".format(
+                vstName, groupName, groups[groupName].type, groups[groupName].members
+            ).postln;
             ^true;
         };
         "VSTManager: VST '%' not found, cannot add to group '%' .".format(vstName, groupName).warn;
@@ -365,12 +400,12 @@ VSTManager {
         if (group.notNil) {
             var instance = vstInstances[vstName];
             if (instance.notNil) {
-                var index = groups[groupName].indexOf(vstName);
+                var index = groups[groupName].members.indexOf(vstName);
                 if (index.notNil) {
-                    groups[groupName].removeAt(index);
+                    groups[groupName].members.removeAt(index);
                     instance[\group] = nil;  // Update group using Symbol key
                     "VSTManager: VST '%' removed from group '%'. Remaining in group: %".format(
-                        vstName, groupName, groups[groupName]
+                        vstName, groupName, groups[groupName].members
                     ).postln;
                     ^true;
                 } {
@@ -385,6 +420,67 @@ VSTManager {
             "VSTManager: Group '%' not found.".format(groupName).warn;
             ^false;
         };
+    }
+
+    // Chord Group Management
+
+    // Set active chord group
+    setActiveChordGroup { |groupName|
+        if (groupName.isNil) {
+            activeChordGroup = nil;
+            "VSTManager: Cleared active chord group".postln;
+            ^true;
+        };
+
+        if (groups[groupName].isNil) {
+            "VSTManager: Group not found: %".format(groupName).warn;
+            ^false;
+        };
+
+        if (groups[groupName].type != \chord) {
+            "VSTManager: Group '%' is not a chord group (type: %)".format(
+                groupName, groups[groupName].type
+            ).warn;
+            ^false;
+        };
+
+        activeChordGroup = groupName;
+        "VSTManager: Active chord group set to: %".format(groupName).postln;
+        ^true;
+    }
+
+    // Get chord group names
+    getChordGroupNames {
+        ^groups.keys.select { |name|
+            groups[name].type == \chord
+        }.asArray.sort;
+    }
+
+    // Get regular group names
+    getRegularGroupNames {
+        ^groups.keys.select { |name|
+            groups[name].type == \regular
+        }.asArray.sort;
+    }
+
+    // Check if group is chord type
+    isChordGroup { |groupName|
+        ^(groups[groupName].notNil and: {
+            groups[groupName].type == \chord
+        });
+    }
+
+    // Get group type
+    getGroupType { |groupName|
+        if (groups[groupName].notNil) {
+            ^groups[groupName].type
+        };
+        ^nil;
+    }
+
+    // Get active chord group name
+    getActiveChordGroupName {
+        ^activeChordGroup;
     }
 
     // Parameter Control
@@ -424,7 +520,7 @@ VSTManager {
 
     resolveTarget { |target|
         ^if (groups[target].notNil) {
-            groups[target]
+            groups[target].members
         } {
             if (vstInstances[target].notNil) {
                 [target]

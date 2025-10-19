@@ -40,7 +40,8 @@
     var manualVelocityToggle; // <-- For Manual Velocity toggle
     var multiInstrumentToggle; // <-- For Multi-Instrument Mode toggle
     var groupMgmtLayout, addToGroupLayout, addToGroupButton, existingGroupMenu;
-    var createGroupLayout, newGroupNameField, createNewGroupButton;
+    var createGroupLayout, newGroupNameField, createNewGroupButton, groupTypeMenu, groupTypeLayout;
+    var chordGroupLayout, chordGroupSelector, setChordGroupButton, refreshChordGroupsButton, chordGroupItems;
     // Configuration management variables
     var configLayout, configSelectorMenu, configMenuItems, loadConfigButton, saveConfigButton;
     var saveConfigLayout, configNameField, configDescField, deleteConfigButton, setDefaultButton;
@@ -255,6 +256,15 @@
     createGroupLayout.add(createNewGroupButton);
     groupMgmtLayout.add(createGroupLayout);
 
+    // Row 3: Group type selector
+    groupTypeLayout = HLayout();
+    groupTypeLayout.add(StaticText().string_("Group Type:"));
+    groupTypeMenu = PopUpMenu()
+        .items_(["Regular Group", "Chord Group"])
+        .value_(0);  // Default to Regular
+    groupTypeLayout.add(groupTypeMenu, stretch: 1);
+    groupMgmtLayout.add(groupTypeLayout);
+
     layout.add(groupMgmtLayout);
     // --- End Group Management Section ---
 
@@ -311,6 +321,52 @@
     keyboardGroupHLayout.add(refreshGroupsButton);
     layout.add(keyboardGroupHLayout); // Add the keyboard group layout to the main layout
     // --- End Keyboard Group Assignment UI ---
+
+    // --- Chord Group Management UI ---
+    layout.add(StaticText().string_("Active Chord Group:"));
+    chordGroupLayout = HLayout();
+
+    // Chord group selector
+    chordGroupSelector = PopUpMenu();
+    chordGroupItems = ["None"] ++ (~vstManager.getChordGroupNames() ? []);
+    chordGroupSelector.items = chordGroupItems;
+    if(chordGroupItems.notEmpty) { chordGroupSelector.value = 0 };
+
+    chordGroupLayout.add(chordGroupSelector, stretch: 1);
+
+    // Set Active button
+    setChordGroupButton = Button().states_([["Set Active"]])
+    .action_({ |btn|
+        var selectedIndex = chordGroupSelector.value;
+        if(selectedIndex.notNil) {
+            if(selectedIndex == 0) {
+                // "None" selected
+                ~vstManager.setActiveChordGroup(nil);
+                ~oscLayers.state.activeChordGroup = nil;
+                statusText.string = "Cleared active chord group";
+            } {
+                var groupName = chordGroupItems[selectedIndex];
+                if(~vstManager.setActiveChordGroup(groupName)) {
+                    ~oscLayers.state.activeChordGroup = groupName;
+                    statusText.string = "Active chord group: %".format(groupName);
+                };
+            };
+        };
+    });
+    chordGroupLayout.add(setChordGroupButton);
+
+    // Refresh button
+    refreshChordGroupsButton = Button().states_([["Refresh"]])
+    .action_({
+        chordGroupItems = ["None"] ++ (~vstManager.getChordGroupNames() ? []);
+        chordGroupSelector.items = chordGroupItems;
+        if(chordGroupItems.notEmpty) { chordGroupSelector.value = 0 };
+        statusText.string = "Chord groups refreshed";
+    });
+    chordGroupLayout.add(refreshChordGroupsButton);
+
+    layout.add(chordGroupLayout);
+    // --- End Chord Group Management UI ---
 
     // --- MIDI Control Overrides UI ---
     midiControlOverridesLayout = HLayout();
@@ -481,23 +537,29 @@
 
     // Create new group action
     createNewGroupButton.action = { |btn|
-        var selectedInstanceIndex, instanceName, newGroupName, groupMembers;
+        var selectedInstanceIndex, instanceName, newGroupName, groupMembers, groupType;
         selectedInstanceIndex = instancesList.value;
         newGroupName = newGroupNameField.string.stripWhiteSpace;
-        
+
+        // Determine group type from selector
+        groupType = if (groupTypeMenu.value == 0) { "regular" } { "chord" };
+
         if(newGroupName.notEmpty) {
             // If VST selected, add it to the group; otherwise create empty group
             if(selectedInstanceIndex.notNil) {
                 instanceName = instances[selectedInstanceIndex];
                 groupMembers = [instanceName];
-                statusText.string = "Created group '%' with %".format(newGroupName, instanceName);
+                statusText.string = "Created % group '%' with %".format(
+                    groupType, newGroupName, instanceName
+                );
             } {
                 groupMembers = [];
-                statusText.string = "Created empty group: %".format(newGroupName);
+                statusText.string = "Created empty % group: %".format(groupType, newGroupName);
             };
-            
-            ~vstManager.createGroup(newGroupName, groupMembers);
+
+            ~vstManager.createGroup(newGroupName, groupMembers, groupType);
             newGroupNameField.string = ""; // Clear the text field
+            groupTypeMenu.value = 0;  // Reset to Regular
             ~refreshVSTManagerGroupsUI.();
             // Also refresh layers GUI if available
             if (~refreshLayerVSTGroups.notNil) { ~refreshLayerVSTGroups.() };

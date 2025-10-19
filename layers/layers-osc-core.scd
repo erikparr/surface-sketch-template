@@ -32,14 +32,12 @@
         isRunning: false,
         noteDurationScalar: 1.0,
         melodyRestTime: 0.0,  // Rest duration between loops (0-1 seconds)
-        chordMode: false,  // Enable chord mode (play melody notes as simultaneous chords)
-        arpeggioMode: false,  // Enable arpeggio mode (requires chord mode)
-        arpeggioMinDelay: 0.0,  // Min delay as percentage of duration (0.0-0.9)
-        arpeggioMaxDelay: 0.2,  // Max delay as percentage of duration (0.0-0.9)
         pendingUpdates: Dictionary.new,  // Live melody updates (always active)
         // Global melody navigation
         currentMelodyIndex: 0,
         melodyList: [],  // Array of melody keys from loaded file
+        // Chord Groups System
+        activeChordGroup: nil,  // Active chord group for /chord messages
         // Simplified - no timing state needed
     ),
 
@@ -169,7 +167,11 @@
     dynamicResponders: Dictionary.new,   // groupName → [OSCFuncs array]
     groupToIndex: Dictionary.new,        // groupName → alphabetical index
     indexToGroup: Dictionary.new,        // index → groupName
-    groupToSanitized: Dictionary.new     // groupName → sanitized symbol
+    groupToSanitized: Dictionary.new,    // groupName → sanitized symbol
+
+    // Chord group indexing (separate from regular groups)
+    chordGroupToIndex: Dictionary.new,   // "chordGroup1" → 0
+    indexToChordGroup: Dictionary.new    // 0 → "chordGroup1"
 );
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -217,79 +219,6 @@
             };
 
         }, '/layer' ++ layerNum ++ '/note')
-    );
-
-    // Chord control: /layer1/chord, /layer2/chord, /layer3/chord
-    responders = responders.add(
-        OSCFunc({|msg|
-            var notes = [];
-            var velocity, duration, argIndex;
-
-            // Parse variable number of note arguments (1-3 notes)
-            // msg format: [path, note1, note2?, note3?, velocity, duration]
-            argIndex = 1;
-            while { argIndex < (msg.size - 2) and: { msg[argIndex].isNumber and: { msg[argIndex] >= 0 and: { msg[argIndex] <= 127 } } } } {
-                notes = notes.add(msg[argIndex].asInteger);
-                argIndex = argIndex + 1;
-            };
-
-            // Last two arguments are velocity and duration
-            velocity = msg[msg.size - 2].asInteger ? 127;
-            duration = msg[msg.size - 1].asFloat ? 0.5;
-
-            "OSC: Layer % chord % notes: % vel: % dur: %".format(layerNum, notes.size, notes, velocity, duration).postln;
-
-            // Send to VST with multi-instrument routing (across layer groups)
-            if (~vstManager.notNil) {
-                var layerGroups = ['Layer1', 'Layer2', 'Layer3'];
-
-                notes.do { |note, idx|
-                    var targetGroup = layerGroups[idx % layerGroups.size];
-                    var instances = ~vstManager.getTargetInstances(targetGroup);
-                    var vst = instances.values.asArray.first;  // Get first (and likely only) VST in group
-
-                    if (vst.notNil) {
-                        vst.midi.noteOn(idx, note, velocity);  // Use idx as channel
-                        "Chord note %: pitch % chan % vel % to group % VST %".format(
-                            idx, note, idx, velocity, targetGroup, instances.keys.asArray.first
-                        ).postln;
-                        if (duration > 0) {
-                            SystemClock.sched(duration, {
-                                vst.midi.noteOff(idx, note, 0);
-                            });
-                        };
-                    };
-                };
-            };
-
-            // Trigger CC envelope
-            if (~oscLayers.state.singleNoteCCMode) {
-                // Single note mode: only trigger for this layer
-                if (config.ccControl.enabled) {
-                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
-                };
-            } {
-                // Layer-wide mode: in chord mode, trigger for all layers receiving notes
-                [1, 2, 3].do { |layerIdx|
-                    var layerConfig = ~oscLayers.configs[('layer' ++ layerIdx).asSymbol];
-                    if (layerConfig.ccControl.enabled) {
-                        NetAddr.localAddr.sendMsg('/layer' ++ layerIdx ++ '/expression', duration);
-                    };
-                };
-            };
-
-            // Trigger bend envelope if bend mode
-            if (~oscLayers.state.bendMode) {
-                // In chord mode, trigger bend for all layers receiving notes
-                [1, 2, 3].do { |layerIdx|
-                    var layerConfig = ~oscLayers.configs[('layer' ++ layerIdx).asSymbol];
-                    if (layerConfig.bendControl.enabled) {
-                        NetAddr.localAddr.sendMsg('/layer' ++ layerIdx ++ '/bend', duration);
-                    };
-                };
-            };
-
-        }, '/layer' ++ layerNum ++ '/chord')
     );
 
     // CC control: /layer1/cc, /layer2/cc, /layer3/cc
@@ -510,53 +439,6 @@
         }, '/system/melody_rest')
     );
 
-    // Chord mode control: /system/chord_mode
-    responders = responders.add(
-        OSCFunc({|msg|
-            var enabled = msg[1].asBoolean;
-            ~oscLayers.state.chordMode = enabled;
-            "OSC: Chord mode: % (BPM range: %)".format(
-                enabled,
-                if (enabled) { "6-100" } { "60-400" }
-            ).postln;
-        }, '/system/chord_mode')
-    );
-
-    // Arpeggio mode control: /system/arpeggio_mode
-    responders = responders.add(
-        OSCFunc({|msg|
-            var enabled = msg[1].asBoolean;
-            ~oscLayers.state.arpeggioMode = enabled;
-            "OSC: Arpeggio mode: % (requires chord mode)".format(enabled).postln;
-        }, '/system/arpeggio_mode')
-    );
-
-    // Arpeggio min delay: /system/arpeggio_min
-    responders = responders.add(
-        OSCFunc({|msg|
-            var minDelay = msg[1].clip(0.0, 0.9);
-            ~oscLayers.state.arpeggioMinDelay = minDelay;
-            // Ensure min <= max
-            if (minDelay > ~oscLayers.state.arpeggioMaxDelay) {
-                ~oscLayers.state.arpeggioMaxDelay = minDelay;
-            };
-            "OSC: Arpeggio min delay: %%".format((minDelay * 100).round(1)).postln;
-        }, '/system/arpeggio_min')
-    );
-
-    // Arpeggio max delay: /system/arpeggio_max
-    responders = responders.add(
-        OSCFunc({|msg|
-            var maxDelay = msg[1].clip(0.0, 0.9);
-            ~oscLayers.state.arpeggioMaxDelay = maxDelay;
-            // Ensure min <= max
-            if (maxDelay < ~oscLayers.state.arpeggioMinDelay) {
-                ~oscLayers.state.arpeggioMinDelay = maxDelay;
-            };
-            "OSC: Arpeggio max delay: %%".format((maxDelay * 100).round(1)).postln;
-        }, '/system/arpeggio_max')
-    );
-
     // Melody update: /melody
     responders = responders.add(
         OSCFunc({|msg|
@@ -589,6 +471,47 @@
 
             "DEBUG /melody: Complete".postln;
         }, '/melody')
+    );
+
+    // ─────────────────────────────────────────────────────────────
+    // CHORD GROUP SYSTEM
+    // ─────────────────────────────────────────────────────────────
+
+    // Legacy /chord responder removed - now handled by JSON /chord in external control section
+
+    // /system/active_chord_group - Set active chord group
+    responders = responders.add(
+        OSCFunc({|msg|
+            var groupName = msg[1];
+
+            if (groupName.isNil or: { groupName.asString.isEmpty }) {
+                ~oscLayers.state.activeChordGroup = nil;
+                "OSC: Cleared active chord group".postln;
+            } {
+                if (~vstManager.setActiveChordGroup(groupName)) {
+                    ~oscLayers.state.activeChordGroup = groupName;
+                    "OSC: Active chord group set to: %".format(groupName).postln;
+                };
+            };
+        }, '/system/active_chord_group')
+    );
+
+    // /system/list_chord_groups - List all chord groups (sends reply)
+    responders = responders.add(
+        OSCFunc({|msg, addr|
+            var chordGroups;
+
+            if (~vstManager.notNil) {
+                chordGroups = ~vstManager.getChordGroupNames();
+
+                // Send reply to port 7001
+                NetAddr("127.0.0.1", 7001).sendMsg('/chord_groups/list', *chordGroups);
+
+                "OSC: Sent chord groups list (% groups)".format(chordGroups.size).postln;
+            } {
+                "OSC: VST Manager not available".warn;
+            };
+        }, '/system/list_chord_groups')
     );
 
     ~oscLayers.responders[\system] = responders;
@@ -651,97 +574,188 @@
     };
 
     // Send melody via OSC messages with timing
-    if (~oscLayers.state.chordMode) {
-        var chord, noteDuration, delays;
+    // Normal melody mode: Sequential playback
+    pattern.do {|note, i|
+        var when = i * noteInterval;
+        var noteDuration = (noteInterval * 0.8) * config.noteDurationScalar; // Apply scalar from Row X Knob 2
 
-        // Chord mode: Play first 3 notes
-        chord = pattern[..2];  // Take first 3 notes (or fewer if pattern is shorter)
-        noteDuration = (duration * 0.8) * config.noteDurationScalar;
-
-        if (~oscLayers.state.arpeggioMode and: {
-            ~oscLayers.state.arpeggioMaxDelay > 0
-        }) {
-            // ARPEGGIO MODE: Random delays per note (as percentage of duration)
-            delays = chord.collect {
-                rrand(
-                    ~oscLayers.state.arpeggioMinDelay,
-                    ~oscLayers.state.arpeggioMaxDelay
-                ) * duration;  // Convert percentage to actual time
-            };
-
-            "Arpeggio chord: % notes with delays % (min:%%  max:%%)".format(
-                chord.size,
-                delays.collect(_.round(0.001)),
-                (~oscLayers.state.arpeggioMinDelay * 100).round(1),
-                (~oscLayers.state.arpeggioMaxDelay * 100).round(1)
-            ).postln;
-
-            // Schedule each note with random delay to appropriate layer group
-            chord.do { |note, idx|
-                var targetLayerNum = (idx % 3) + 1;  // 1, 2, or 3
-                var targetLayerKey = ('layer' ++ targetLayerNum).asSymbol;
-                var targetLayerConfig = ~oscLayers.configs[targetLayerKey];
-
-                SystemClock.sched(delays[idx], {
-                    // Send note
-                    NetAddr.localAddr.sendMsg(
-                        '/layer' ++ targetLayerNum ++ '/note',
-                        note, velocity, noteDuration
-                    );
-
-                    // Trigger expression envelope with note's duration (not in single note mode)
-                    if (~oscLayers.state.singleNoteCCMode.not and: {
-                        targetLayerConfig.ccControl.enabled
-                    }) {
-                        NetAddr.localAddr.sendMsg(
-                            '/layer' ++ targetLayerNum ++ '/expression',
-                            noteDuration
-                        );
-                    };
-
-                    // Trigger bend envelope with note's duration
-                    if (~oscLayers.state.bendMode and: {
-                        targetLayerConfig.bendControl.enabled
-                    }) {
-                        NetAddr.localAddr.sendMsg(
-                            '/layer' ++ targetLayerNum ++ '/bend',
-                            noteDuration
-                        );
-                    };
-                });
-            };
-        } {
-            // NORMAL CHORD MODE: Simultaneous (existing code)
-            "Chord mode: Playing % notes as chord: %".format(chord.size, chord).postln;
-
-            // Send chord via dedicated /chord path with notes as separate arguments
-            case
-                { chord.size == 1 } {
-                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], velocity, noteDuration);
-                }
-                { chord.size == 2 } {
-                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], velocity, noteDuration);
-                }
-                { chord.size >= 3 } {
-                    NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/chord', chord[0], chord[1], chord[2], velocity, noteDuration);
-                };
-        };
-    } {
-        // Normal melody mode: Sequential playback
-        pattern.do {|note, i|
-            var when = i * noteInterval;
-            var noteDuration = (noteInterval * 0.8) * config.noteDurationScalar; // Apply scalar from Row X Knob 2
-
-            SystemClock.sched(when, {
-                NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
-            });
-        };
+        SystemClock.sched(when, {
+            NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/note', note, velocity, noteDuration);
+        });
     };
 
     // Trigger layer expression envelope if not in single note mode
     if (~oscLayers.state.singleNoteCCMode.not and: { config.ccControl.enabled }) {
         NetAddr.localAddr.sendMsg('/layer' ++ layerNum ++ '/expression', duration);
     };
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                       CHORD GROUP PLAYBACK                                 │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+~playChordToGroup = { |groupName, notes, velocity, duration|
+    var instances, groupType;
+
+    // Validate VST Manager
+    if (~vstManager.isNil) {
+        "VST Manager not available".error;
+        nil
+    };
+
+    // Validate group exists
+    groupType = ~vstManager.getGroupType(groupName);
+    if (groupType.isNil) {
+        "Group '%' not found".format(groupName).warn;
+        nil
+    };
+
+    // Validate group is chord type
+    if (groupType != \chord) {
+        "Group '%' is not a chord group (type: %)".format(groupName, groupType).warn;
+        nil
+    };
+
+    // Get VST instances
+    instances = ~vstManager.getTargetInstances(groupName).values.asArray;
+
+    if (instances.size == 0) {
+        "Chord group '%' has no VST instances".format(groupName).warn;
+        nil
+    };
+
+    "Chord: % notes → % VSTs in group '%'".format(
+        notes.size, instances.size, groupName
+    ).postln;
+
+    // Distribute notes across VST instances (round-robin)
+    notes.do { |note, idx|
+        var targetVST = instances.wrapAt(idx);
+        var vel = velocity ?? { 100 };
+        var dur = duration ?? { 1.0 };
+
+        if (targetVST.notNil) {
+            // Send note on
+            targetVST.midi.noteOn(0, note, vel);
+
+            // Schedule note off
+            SystemClock.sched(dur, {
+                targetVST.midi.noteOff(0, note);
+            });
+
+            "  Note % → VST % (idx: %)".format(
+                note, targetVST, idx % instances.size
+            ).postln;
+        };
+    };
+
+    true;
+};
+
+// Play chord with per-note velocity and duration from JSON
+~playChordToGroupJSON = { |groupName, noteDataArray|
+    var instances, groupType;
+
+    // Validate VST Manager
+    if (~vstManager.isNil) {
+        "VST Manager not available".error;
+        false;
+    };
+
+    // Validate group
+    groupType = ~vstManager.getGroupType(groupName);
+    if (groupType.isNil) {
+        "Group '%' not found".format(groupName).warn;
+        false;
+    };
+
+    if (groupType != \chord) {
+        "Group '%' is not a chord group (type: %)".format(groupName, groupType).warn;
+        false;
+    };
+
+    // Get VST instances
+    instances = ~vstManager.getTargetInstances(groupName).values.asArray;
+
+    if (instances.size == 0) {
+        "Chord group '%' has no VST instances".format(groupName).warn;
+        nil
+    };
+
+    "Chord JSON: % notes → % VSTs in group '%'".format(
+        noteDataArray.size, instances.size, groupName
+    ).postln;
+
+    // Multi-instrument routing: each note to different VST
+    noteDataArray.do { |noteData, idx|
+        var targetVST = instances.wrapAt(idx);
+        var midiNote = noteData[\midi].asInteger;
+        var velocity = (noteData[\vel] * 127).asInteger.clip(0, 127);
+        var duration = noteData[\dur].asFloat;
+
+        if (targetVST.notNil) {
+            // Send note on
+            targetVST.midi.noteOn(0, midiNote, velocity);
+
+            // Schedule note off
+            SystemClock.sched(duration, {
+                targetVST.midi.noteOff(0, midiNote);
+            });
+
+            "  Note % (vel %, dur %s) → VST idx %".format(
+                midiNote, velocity, duration.round(0.001), idx
+            ).postln;
+        };
+    };
+
+    true;
+};
+
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │                      CHORD GROUP INDEXING FUNCTIONS                        │
+// └─────────────────────────────────────────────────────────────────────────────┘
+
+// Update chord group indices (alphabetical ordering)
+~updateChordGroupIndices = {
+    var chordGroups;
+
+    if (~vstManager.isNil) {
+        "VST Manager not available, skipping chord group indexing".warn;
+        false;
+    };
+
+    chordGroups = ~vstManager.getChordGroupNames();  // Already alphabetically sorted
+
+    ~oscLayers.chordGroupToIndex.clear;
+    ~oscLayers.indexToChordGroup.clear;
+
+    chordGroups.do { |groupName, index|
+        ~oscLayers.chordGroupToIndex[groupName] = index;
+        ~oscLayers.indexToChordGroup[index] = groupName;
+    };
+
+    "Updated chord group indices (% groups)".format(chordGroups.size).postln;
+    true;
+};
+
+// Resolve chord group by index or name
+~resolveChordGroup = { |target|
+    var groupName;
+
+    // If integer, treat as chord group index
+    if (target.isKindOf(Integer) or: { target.isKindOf(Float) }) {
+        groupName = ~oscLayers.indexToChordGroup[target.asInteger];
+        if (groupName.isNil) {
+            "Chord group index % not found (max: %)".format(
+                target, ~oscLayers.indexToChordGroup.size - 1
+            ).warn;
+        };
+    } {
+        // Otherwise treat as group name
+        groupName = target.asSymbol;
+    };
+
+    groupName
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -1109,6 +1123,107 @@
         }, '/external/cc')
     );
 
+    // /chord - JSON-based chord trigger with per-note control
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var jsonString, data, notes, targetGroup, groupName;
+
+            // Convert to string and parse JSON (same pattern as /melody)
+            jsonString = msg[1].asString;
+            data = JSONlib.convertToSC(jsonString, useEvent: true);
+
+            // Extract notes array
+            notes = data[\notes];
+            if (notes.isNil or: { notes.size == 0 }) {
+                "ERROR: /chord JSON missing or empty 'notes' array".error;
+                nil;
+            };
+
+            // Resolve target group (index or name)
+            targetGroup = data[\metadata][\targetGroup];
+            if (targetGroup.isNil) {
+                targetGroup = ~oscLayers.state.activeChordGroup;
+            };
+
+            if (targetGroup.isNil) {
+                "ERROR: No targetGroup in metadata and no active chord group".error;
+                nil;
+            };
+
+            // Resolve chord group by index or name
+            groupName = ~resolveChordGroup.(targetGroup);
+
+            if (groupName.isNil) {
+                "ERROR: Could not resolve chord group: %".format(targetGroup).error;
+                nil;
+            };
+
+            "EXTERNAL OSC /chord: % notes → chord group '%' (target: %)".format(
+                notes.size, groupName, targetGroup
+            ).postln;
+
+            // Play chord with per-note velocity/duration
+            ~playChordToGroupJSON.(groupName, notes);
+
+            // Send acknowledgment to port 7001
+            NetAddr("127.0.0.1", 7001).sendMsg('/chord/complete', groupName, notes.size);
+
+        }, '/chord')
+    );
+
+    // /melody - JSON-based melody assignment
+    externalResponders = externalResponders.add(
+        OSCFunc({|msg, time, addr|
+            var jsonString, data, notes, targetGroup, groupName, melodyKey, melody;
+
+            // Convert to string and parse JSON (same pattern as system /melody)
+            jsonString = msg[1].asString;
+            data = JSONlib.convertToSC(jsonString, useEvent: true);
+
+            // Extract target group (can be index for chord groups or name for regular)
+            targetGroup = data[\metadata][\targetGroup];
+            if (targetGroup.isNil) {
+                "ERROR: /melody JSON missing metadata.targetGroup".error;
+                nil;
+            };
+
+            // Check if targeting chord group by index
+            if (targetGroup.isKindOf(Integer) or: { targetGroup.isKindOf(Float) }) {
+                groupName = ~resolveChordGroup.(targetGroup);
+            } {
+                // Regular group by name
+                groupName = targetGroup;
+            };
+
+            if (groupName.isNil) {
+                "ERROR: Could not resolve group: %".format(targetGroup).error;
+                nil;
+            };
+
+            "EXTERNAL OSC /melody: Target group '%' (from: %)".format(groupName, targetGroup).postln;
+
+            // Convert JSON to melody format
+            melody = ~convertJSONToMelody.(data);
+
+            // Store in melodyDict
+            melodyKey = ('melody_' ++ Date.getDate.stamp).asSymbol;
+            if (~melodyDict.isNil) { ~melodyDict = Dictionary.new };
+            ~melodyDict[melodyKey] = melody;
+
+            // Assign to group's dynamic layer (if exists)
+            if (~oscLayers.dynamicConfigs[groupName].notNil) {
+                ~setMelodyListForGroup.(groupName, [melodyKey]);
+                "Assigned melody '%' to dynamic group '%'".format(melodyKey, groupName).postln;
+            } {
+                "WARNING: No dynamic layer for group '%', melody stored in ~melodyDict only".format(groupName).warn;
+            };
+
+            // Send acknowledgment
+            NetAddr("127.0.0.1", 7001).sendMsg('/melody/complete', groupName, melodyKey);
+
+        }, '/melody')
+    );
+
     // Store external responders
     ~oscLayers.responders[\external] = externalResponders;
 
@@ -1276,10 +1391,10 @@
         ~updateMIDIIndices.();
 
         "Removed dynamic layer for group: %".format(groupName).postln;
-        ^true
+        true
     } {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^false
+        false
     }
 };
 
@@ -1512,6 +1627,9 @@
         ~createLayerForGroup.(groupName);
     };
 
+    // Update chord group indices
+    ~updateChordGroupIndices.();
+
     "Dynamic layers rebuild complete: % total groups".format(currentGroups.size).postln;
 };
 
@@ -1544,7 +1662,7 @@
 
     if (config.isNil) {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^nil
+        nil
     };
 
     if (config.melodyList.size > 0) {
@@ -1573,7 +1691,7 @@
 
     if (config.isNil) {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^nil
+        nil
     };
 
     if (config.melodyList.size > 0) {
@@ -1635,7 +1753,7 @@
 
     if (config.isNil) {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^nil
+        nil
     };
 
     if (config.melodyList.size > 0) {
@@ -1665,7 +1783,7 @@
 
     if (config.isNil) {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^false
+        false
     };
 
     // Get MIDI row for this group (1, 2, or 3)
@@ -1695,10 +1813,10 @@
             ccControl.expressionDurationScalar.round(0.01)
         ).postln;
 
-        ^true
+        true
     } {
         "MIDI controller not available for group %".format(groupName).warn;
-        ^false
+        false
     }
 };
 
@@ -1729,7 +1847,7 @@
 
     if (config.isNil) {
         "Group % not found in dynamic layers".format(groupName).warn;
-        ^false
+        false
     };
 
     // Get MIDI row for this group (1, 2, or 3)
@@ -1746,10 +1864,10 @@
         //     rowNum
         // ).postln;
 
-        ^true
+        true
     } {
         "MIDI controller not available for group %".format(groupName).warn;
-        ^false
+        false
     }
 };
 
@@ -1924,6 +2042,9 @@
             ~createLayerForGroup.(groupName);
         };
         "Created dynamic layers for % groups".format(~vstManager.getGroupNames().size).postln;
+
+        // Initialize chord group indices
+        ~updateChordGroupIndices.();
     } {
         "VST Manager not available, skipping dynamic layer creation".warn;
     };

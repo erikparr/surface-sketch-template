@@ -137,7 +137,7 @@
     
     if (config.isNil) {
         "Error: Layer % not found".format(layerName).error;
-        ^nil;
+        nil;
     };
     
     // Check if melody exists
@@ -270,12 +270,8 @@
                                 };
                                 normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-                                // Map to BPM range based on chord mode
-                                if (~oscLayers.state.chordMode) {
-                                    bpm = normalizedValue.linlin(0.0, 1.0, 6, 100);  // Chord mode: 6-100 BPM
-                                } {
-                                    bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);  // Normal mode: 60-400 BPM
-                                };
+                                // Map to BPM range (60-400 BPM)
+                                bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);
 
                                 // Update the parameter storage with BPM
                                 paramStorage[\loopBPM] = bpm;
@@ -306,12 +302,8 @@
             // Clamp normalized value to prevent issues at extremes
             normalizedValue = normalizedValue.clip(0.0, 1.0);
 
-            // Map to BPM range based on chord mode
-            if (~oscLayers.state.chordMode) {
-                bpm = normalizedValue.linlin(0.0, 1.0, 6, 100);  // Chord mode: 6-100 BPM
-            } {
-                bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);  // Normal mode: 60-400 BPM
-            };
+            // Map to BPM range (60-400 BPM)
+            bpm = normalizedValue.linlin(0.0, 1.0, 60, 400);
 
             "BPM from Row 1 Knob 8 (direct): %".format(bpm.round(1)).postln;
         };
@@ -821,7 +813,7 @@
     
     if (config.isNil) {
         "Error: Layer % not found".format(layerName).postln;
-        ^nil;
+        nil;
     };
     
     // Get current melody
@@ -836,7 +828,7 @@
     
     if (availableMelodies.size == 0) {
         "No melodies available in ~melodyDict".postln;
-        ^nil;
+        nil;
     };
     
     if (availableMelodies.size == 1) {
@@ -874,7 +866,7 @@
     
     if (config.isNil) {
         "Error: Layer % not found".format(layerName).postln;
-        ^nil;
+        nil;
     };
     
     // Get current melody
@@ -889,7 +881,7 @@
     
     if (availableMelodies.size == 0) {
         "No melodies available in ~melodyDict".postln;
-        ^nil;
+        nil;
     };
     
     if (availableMelodies.size == 1) {
@@ -962,61 +954,6 @@
 
 // Initialize melody rest MIDI handler
 ~setupMelodyRestMIDI.();
-
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                         ARPEGGIO CONTROL                                   │
-// └─────────────────────────────────────────────────────────────────────────────┘
-
-// Set up MIDI CC handlers for arpeggio control (Sliders 3-4)
-~setupArpeggioMIDI = {
-    // Clean up existing handlers if they exist
-    if (~arpeggioMinMIDIFunc.notNil) {
-        ~arpeggioMinMIDIFunc.free;
-    };
-    if (~arpeggioMaxMIDIFunc.notNil) {
-        ~arpeggioMaxMIDIFunc.free;
-    };
-
-    // CC 27: Slider 3 - Arpeggio min delay (0-90% of duration)
-    ~arpeggioMinMIDIFunc = MIDIFunc.cc({ |val, num, chan, src|
-        var minDelay;
-
-        // Map 0-127 to 0-0.9 (0-90% of duration)
-        minDelay = val.linlin(0, 127, 0.0, 0.9);
-
-        // Update state via OSC message for consistency
-        NetAddr.localAddr.sendMsg('/system/arpeggio_min', minDelay);
-    }, 27);  // CC 27 = Slider 3 on MIDIMix
-
-    // CC 31: Slider 4 - Arpeggio max delay (0-90% of duration)
-    ~arpeggioMaxMIDIFunc = MIDIFunc.cc({ |val, num, chan, src|
-        var maxDelay;
-
-        // Map 0-127 to 0-0.9 (0-90% of duration)
-        maxDelay = val.linlin(0, 127, 0.0, 0.9);
-
-        // Update state via OSC message for consistency
-        NetAddr.localAddr.sendMsg('/system/arpeggio_max', maxDelay);
-    }, 31);  // CC 31 = Slider 4 on MIDIMix
-
-    "Arpeggio MIDI control active (Sliders 3-4 / CC 27, 31)".postln;
-};
-
-// Clean up arpeggio MIDI handlers
-~cleanupArpeggioMIDI = {
-    if (~arpeggioMinMIDIFunc.notNil) {
-        ~arpeggioMinMIDIFunc.free;
-        ~arpeggioMinMIDIFunc = nil;
-    };
-    if (~arpeggioMaxMIDIFunc.notNil) {
-        ~arpeggioMaxMIDIFunc.free;
-        ~arpeggioMaxMIDIFunc = nil;
-    };
-    "Arpeggio MIDI handlers cleaned up".postln;
-};
-
-// Initialize arpeggio MIDI handlers
-~setupArpeggioMIDI.();
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
 // │                         BEND CONTROL FUNCTIONS                             │
@@ -1252,38 +1189,87 @@
 // Legacy function removed - use dynamic layers version with group names
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
-// │                    ARPEGGIO CONTROL HELPER FUNCTIONS                       │
+// │                    CHORD GROUP CONTROL HELPER FUNCTIONS                    │
 // └─────────────────────────────────────────────────────────────────────────────┘
 
-// Enable/disable arpeggio mode
-~setArpeggioMode = { |enabled|
-    NetAddr.localAddr.sendMsg('/system/arpeggio_mode', enabled);
-};
+// Set active chord group
+~setActiveChordGroup = { |groupName|
+    if (~vstManager.isNil) {
+        "VST Manager not available".error;
+        false;
+    };
 
-// Set arpeggio min delay (0.0-0.9 = 0-90% of duration)
-~setArpeggioMinDelay = { |percentage|
-    NetAddr.localAddr.sendMsg('/system/arpeggio_min', percentage.clip(0.0, 0.9));
-};
-
-// Set arpeggio max delay (0.0-0.9 = 0-90% of duration)
-~setArpeggioMaxDelay = { |percentage|
-    NetAddr.localAddr.sendMsg('/system/arpeggio_max', percentage.clip(0.0, 0.9));
-};
-
-// Get current arpeggio status
-~getArpeggioStatus = {
-    "Arpeggio mode: % (requires chord mode)".format(
-        ~oscLayers.state.arpeggioMode
-    ).postln;
-    "  Min delay: %% of duration".format(
-        (~oscLayers.state.arpeggioMinDelay * 100).round(1)
-    ).postln;
-    "  Max delay: %% of duration".format(
-        (~oscLayers.state.arpeggioMaxDelay * 100).round(1)
-    ).postln;
-    if (~oscLayers.state.arpeggioMode and: { ~oscLayers.state.chordMode.not }) {
-        "  WARNING: Arpeggio enabled but chord mode is OFF".warn;
+    if (~vstManager.setActiveChordGroup(groupName)) {
+        ~oscLayers.state.activeChordGroup = groupName;
+        "Active chord group set to: %".format(groupName).postln;
+        true;
+    } {
+        false;
     };
 };
 
-"Dependent layers control system loaded with melody switching, bend control, and arpeggio".postln;
+// Clear active chord group
+~clearActiveChordGroup = {
+    if (~vstManager.notNil) {
+        ~vstManager.setActiveChordGroup(nil);
+    };
+    ~oscLayers.state.activeChordGroup = nil;
+    "Active chord group cleared".postln;
+};
+
+// Send chord to active chord group
+~sendChord = { |notes, velocity = 100, duration = 1.0|
+    var groupName, msg;
+
+    groupName = ~oscLayers.state.activeChordGroup;
+
+    if (groupName.isNil) {
+        "No active chord group set. Use ~setActiveChordGroup.() first".warn;
+        false;
+    };
+
+    // Flatten notes if needed and convert to array
+    notes = notes.asArray.flat;
+
+    // Send via OSC
+    msg = ['/chord'] ++ notes ++ [velocity, duration];
+    NetAddr.localAddr.sendMsg(*msg);
+    true;
+};
+
+// List all chord groups
+~listChordGroups = {
+    var chordGroups;
+
+    if (~vstManager.isNil) {
+        "VST Manager not available".error;
+        ^[];
+    };
+
+    chordGroups = ~vstManager.getChordGroupNames();
+
+    if (chordGroups.size == 0) {
+        "No chord groups defined".postln;
+    } {
+        "Chord groups:".postln;
+        chordGroups.do { |name|
+            var instances = ~vstManager.getTargetInstances(name);
+            "  % (%  VSTs)".format(name, instances.size).postln;
+        };
+    };
+
+    ^chordGroups;
+};
+
+// Get chord group status
+~getChordGroupStatus = {
+    var activeGroup = ~oscLayers.state.activeChordGroup;
+    var allGroups = ~listChordGroups.();
+
+    "=== Chord Group Status ===".postln;
+    "Active chord group: %".format(activeGroup ?? "None").postln;
+    "Total chord groups: %".format(allGroups.size).postln;
+    "========================".postln;
+};
+
+"Dependent layers control system loaded with melody switching, bend control, and chord groups".postln;
