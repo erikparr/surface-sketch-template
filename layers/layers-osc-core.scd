@@ -151,39 +151,8 @@
         }, '/system/melody_rest')
     );
 
-    // Melody update: /melody
-    responders = responders.add(
-        OSCFunc({|msg|
-            var jsonString, melodyData, targetGroup, groupNames, groupName, tempKey, loop;
-
-            jsonString = msg[1].asString;
-            "DEBUG /melody: Received JSON (length: %)".format(jsonString.size).postln;
-
-            melodyData = JSONlib.convertToSC(jsonString, useEvent: true);
-            "DEBUG /melody: Parsed successfully".postln;
-
-            targetGroup = melodyData.metadata.targetGroup;
-            groupNames = ~oscLayers.dynamicConfigs.keys.asArray.sort;
-            groupName = groupNames[targetGroup];
-
-            "DEBUG /melody: Target group: %".format(groupName).postln;
-
-            tempKey = ("live_" ++ groupName).asSymbol;
-            ~melodyDict[tempKey] = ~convertJSONToMelody.(melodyData);
-
-            loop = (melodyData.metadata[\loop] == true);
-            "DEBUG /melody: Loop = %".format(loop).postln;
-
-            "DEBUG /melody: Setting melody list...".postln;
-            ~setMelodyListForGroup.(groupName, [tempKey]);
-            "DEBUG /melody: After setMelodyListForGroup".postln;
-
-            "DEBUG /melody: Starting playback...".postln;
-            ~startDynamicGroupPlayback.(groupName, targetGroup, loop);
-
-            "DEBUG /melody: Complete".postln;
-        }, '/melody')
-    );
+    // NOTE: /melody responder removed - duplicate of EXTERNAL /melody (line ~888)
+    // EXTERNAL /melody handles both chord groups (by index) and regular groups (by name)
 
     // ─────────────────────────────────────────────────────────────
     // CHORD GROUP SYSTEM
@@ -487,7 +456,7 @@
         ).postln;
     };
 
-    true;
+    maxDuration;  // Return duration for completion scheduling
 };
 
 // ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -829,7 +798,7 @@
     // /chord - JSON-based chord trigger with per-note control
     externalResponders = externalResponders.add(
         OSCFunc({|msg, time, addr|
-            var jsonString, data, notes, targetGroup, groupName;
+            var jsonString, data, notes, targetGroup, groupName, maxDuration;
 
             // Convert to string and parse JSON (same pattern as /melody)
             jsonString = msg[1].asString;
@@ -869,11 +838,18 @@
             ~updateLayerNoteDurationScalar.(groupName);
             // Note: Expression params updated just-in-time before envelope trigger
 
-            // Play chord with per-note velocity/duration
-            ~playChordToGroupJSON.(groupName, notes);
+            // Play chord with per-note velocity/duration and get max duration
+            maxDuration = ~playChordToGroupJSON.(groupName, notes);
 
-            // Send acknowledgment to port 7001
-            NetAddr("127.0.0.1", 7001).sendMsg('/chord/complete', groupName, notes.size);
+            // Schedule completion message after chord finishes playing (matches /melody/complete pattern)
+            if (maxDuration.notNil and: { maxDuration > 0 }) {
+                SystemClock.sched(maxDuration, {
+                    NetAddr("127.0.0.1", 7001).sendMsg('/chord/complete', targetGroup);
+                    "Sent /chord/complete for targetGroup % after %s".format(targetGroup, maxDuration.round(0.001)).postln;
+                });
+            } {
+                "Warning: Could not schedule /chord/complete (maxDuration: %)".format(maxDuration).warn;
+            };
 
         }, '/chord')
     );
@@ -887,18 +863,25 @@
             jsonString = msg[1].asString;
             data = JSONlib.convertToSC(jsonString, useEvent: true);
 
-            // Extract target group (can be index for chord groups or name for regular)
+            // Extract target group (index for REGULAR groups, or name for any group)
             targetGroup = data[\metadata][\targetGroup];
             if (targetGroup.isNil) {
                 "ERROR: /melody JSON missing metadata.targetGroup".error;
                 nil;
             };
 
-            // Check if targeting chord group by index
+            // Resolve by index (REGULAR groups only) or by name
             if (targetGroup.isKindOf(Integer) or: { targetGroup.isKindOf(Float) }) {
-                groupName = ~resolveChordGroup.(targetGroup);
+                var regularGroups;
+                regularGroups = ~vstManager.getRegularGroupNames();
+                groupName = regularGroups[targetGroup.asInteger];
+                if (groupName.isNil) {
+                    "ERROR: /melody regular group index % not found. Available: %".format(
+                        targetGroup, regularGroups
+                    ).error;
+                };
             } {
-                // Regular group by name
+                // String name - works for any group type
                 groupName = targetGroup;
             };
 
@@ -917,16 +900,19 @@
             if (~melodyDict.isNil) { ~melodyDict = Dictionary.new };
             ~melodyDict[melodyKey] = melody;
 
-            // Assign to group's dynamic layer (if exists)
+            // Assign to group's dynamic layer and start playback
             if (~oscLayers.dynamicConfigs[groupName].notNil) {
                 ~setMelodyListForGroup.(groupName, [melodyKey]);
                 "Assigned melody '%' to dynamic group '%'".format(melodyKey, groupName).postln;
+
+                // Start playback immediately (always non-looping for external control)
+                ~startDynamicGroupPlayback.(groupName, targetGroup, false);
             } {
                 "WARNING: No dynamic layer for group '%', melody stored in ~melodyDict only".format(groupName).warn;
             };
 
-            // Send acknowledgment
-            NetAddr("127.0.0.1", 7001).sendMsg('/melody/complete', groupName, melodyKey);
+            // NOTE: Completion message now sent by ~startDynamicGroupPlayback after playback finishes
+            // (Removed immediate acknowledgment to match chord completion timing)
 
         }, '/melody')
     );
