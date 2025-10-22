@@ -1707,20 +1707,38 @@
                         "Group %: Pattern is empty or invalid".format(groupName).warn;
                         false
                     } {
-                        // Determine duration
+                        // Determine duration - NEW: Use BPM if manual control is on
                         playDuration = duration ?? {
-                            if (melodyData.metadata.notNil and: { melodyData.metadata.totalDuration.notNil }) {
-                                melodyData.metadata.totalDuration
+                            if (~oscLayers.state.manualControl and: { ~getBPMFromKnob.notNil }) {
+                                var bpm = ~getBPMFromKnob.();
+                                var noteCount = pattern.size;
+                                var bpmDuration = ~calculateDurationFromBPM.(bpm, noteCount);
+                                "Melody % using BPM %: duration %s for % notes".format(
+                                    groupName, bpm.round(1), bpmDuration.round(0.01), noteCount
+                                ).postln;
+                                bpmDuration
                             } {
-                                4.0
+                                // Fallback to metadata or default
+                                if (melodyData.metadata.notNil and: { melodyData.metadata.totalDuration.notNil }) {
+                                    melodyData.metadata.totalDuration
+                                } {
+                                    4.0
+                                }
                             }
                         };
 
                         sanitizedName = config.sanitizedName;
                         noteInterval = playDuration / pattern.size;
 
-                        // Read velocity from MIDI controller Row X Knob 3 (with safety checks)
+                        // Get MIDI row for this group
                         rowNum = ~getMIDIRowForGroup.(groupName);
+
+                        // NEW: Update note duration scalar from MIDI before playback
+                        if (~oscLayers.state.manualControl and: { ~updateLayerNoteDurationScalar.notNil }) {
+                            ~updateLayerNoteDurationScalar.(groupName);
+                        };
+
+                        // Read velocity from MIDI controller Row X Knob 3 (with safety checks)
                         velocity = if (~oscLayers.state.manualControl and: { ~midiController.notNil }) {
                             var rawVel;
                             rawVel = ~midiController.getKnobRow(rowNum, 3);
@@ -1735,7 +1753,10 @@
                             127;  // Default velocity if manual control off or controller unavailable
                         };
 
-                        "Starting dynamic group %: % notes, duration: %s, loop: %, velocity: %".format(groupName, pattern.size, playDuration, loop, velocity).postln;
+                        "Starting dynamic group %: % notes, duration: %s, loop: %, velocity: %, noteDurScalar: %".format(
+                            groupName, pattern.size, playDuration.round(0.01), loop, velocity,
+                            config.noteDurationScalar.round(0.01)
+                        ).postln;
 
                         // Send notes via OSC
                         pattern.do { |note, i|
@@ -1752,6 +1773,14 @@
                         if (config.ccControl.enabled) {
                             // Update expression parameters from MIDI knobs RIGHT before triggering
                             ~updateLayerExpressionParams.(groupName);
+
+                            // NEW: Debug output to verify expression values
+                            "Group % expression from MIDI (Row %): Min=%, Max=%, DurScalar=%".format(
+                                groupName, rowNum,
+                                config.ccControl.expressionMin,
+                                config.ccControl.expressionMax,
+                                config.ccControl.expressionDurationScalar.round(0.001)
+                            ).postln;
 
                             NetAddr.localAddr.sendMsg('/group/' ++ sanitizedName ++ '/expression', playDuration);
                         };
