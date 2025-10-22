@@ -96,6 +96,14 @@ ConfigurationManager {
 			activeKeyboardGroup: vstManager.activeGroup
 		);
 
+		// Get MIDI row overrides
+		var midiRowMappings = Dictionary.new;
+		if (~midiRowOverrides.notNil) {
+			~midiRowOverrides.keysValuesDo { |groupName, rowNum|
+				midiRowMappings[groupName] = rowNum;
+			};
+		};
+
 		// Create configuration object
 		config = (
 			configName: name,
@@ -104,7 +112,8 @@ ConfigurationManager {
 			timestamp: Date.getDate.stamp,
 			vstInstances: instanceData,
 			groups: groupData,
-			midiSettings: midiSettings
+			midiSettings: midiSettings,
+			midiRowMappings: midiRowMappings  // NEW
 		);
 
 		// Save to file
@@ -392,6 +401,20 @@ ConfigurationManager {
 		};
 
 		// Apply MIDI settings (will be expanded when GUI integration is added)
+
+		// Restore MIDI row mappings
+		if (config["midiRowMappings"].notNil) {
+			~midiRowOverrides.clear;
+			config["midiRowMappings"].keysValuesDo { |groupName, rowNum|
+				~midiRowOverrides[groupName] = rowNum;
+			};
+			("Restored MIDI row mappings for " ++ ~midiRowOverrides.size ++ " groups").postln;
+
+			// Trigger dynamic layers refresh to apply new MIDI mappings
+			if (~refreshDynamicLayersMIDI.notNil) {
+				~refreshDynamicLayersMIDI.();
+			};
+		};
 
 		// Sync OSC layers system with loaded VST configuration
 		if(success and: { ~oscLayers.notNil }) {

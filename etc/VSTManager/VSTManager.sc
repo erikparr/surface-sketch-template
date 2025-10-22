@@ -422,6 +422,36 @@ VSTManager {
         };
     }
 
+    // Delete an entire group
+    deleteGroup { |groupName|
+        if (groups[groupName].notNil) {
+            // Clear group assignment from all member VSTs
+            groups[groupName].members.do { |vstName|
+                var instance = vstInstances[vstName];
+                if (instance.notNil) {
+                    instance[\group] = nil;
+                };
+            };
+
+            // Remove the group
+            groups[groupName] = nil;
+
+            // Clear active group if it was deleted
+            if (activeGroup == groupName) {
+                activeGroup = nil;
+            };
+            if (activeChordGroup == groupName) {
+                activeChordGroup = nil;
+            };
+
+            "VSTManager: Deleted group '%'".format(groupName).postln;
+            ^true;
+        } {
+            "VSTManager: Group '%' not found.".format(groupName).warn;
+            ^false;
+        };
+    }
+
     // Chord Group Management
 
     // Set active chord group

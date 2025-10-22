@@ -19,6 +19,9 @@
 ~layer3_isPlaying = false;
 ~layer3_currentTask = nil;
 
+// Global MIDI row override dictionary (for manual assignments)
+~midiRowOverrides = Dictionary.new;  // groupName → rowNumber (1-3)
+
 // Main container for OSC-based layer system
 ~oscLayers = (
     // System state
@@ -965,14 +968,22 @@
     "Updated MIDI indices for % groups".format(sortedGroups.size).postln;
 };
 
-// Get MIDI row for a group (1-3, modulo-based)
+// Get MIDI row for a group (1-3, with manual override support)
 ~getMIDIRowForGroup = { |groupName|
-    var idx;
-    idx = ~oscLayers.groupToIndex[groupName];
-    if (idx.notNil) {
-        (idx % 3) + 1  // Returns 1, 2, or 3
+    var override, idx;
+
+    // Check for manual override first
+    override = ~midiRowOverrides[groupName];
+    if (override.notNil) {
+        override.clip(1, 3)  // Ensure valid range
     } {
-        1  // Default to row 1 if not found
+        // Fall back to automatic assignment
+        idx = ~oscLayers.groupToIndex[groupName];
+        if (idx.notNil) {
+            (idx % 3) + 1  // Returns 1, 2, or 3
+        } {
+            1  // Default to row 1 if not found
+        }
     }
 };
 
@@ -1829,6 +1840,37 @@
     "  - Melody navigation ready".postln;
     "  - MIDI integration ready".postln;
     "  - Event-driven updates registered".postln;
+};
+
+// Function to update a specific layer's MIDI row
+~updateLayerMIDIRow = { |groupName|
+    var config, newRow;
+
+    config = ~oscLayers.dynamicConfigs[groupName];
+    if (config.notNil) {
+        newRow = ~getMIDIRowForGroup.(groupName);
+
+        "Updating MIDI row for group '%': % → %".format(
+            groupName,
+            config.midiRow ? "none",
+            newRow
+        ).postln;
+
+        config.midiRow = newRow;
+
+        // Update any active parameter callbacks
+        if (~updateLayerParameterCallbacks.notNil) {
+            ~updateLayerParameterCallbacks.(groupName);
+        };
+    };
+};
+
+// Function to refresh all MIDI rows (for config load)
+~refreshDynamicLayersMIDI = {
+    ~oscLayers.dynamicConfigs.keysValuesDo { |groupName, config|
+        ~updateLayerMIDIRow.(groupName);
+    };
+    "Refreshed MIDI rows for all dynamic layers".postln;
 };
 
 // Test function for Phase 1

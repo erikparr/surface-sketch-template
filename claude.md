@@ -25,10 +25,17 @@ Parameters update automatically when knobs change via ParameterRegistry callback
 
 OSC API (Port 7000):
 - /chord - Send JSON chord with per-note velocity/duration to chord group by index
+  - targetGroup (int): Index into CHORD groups (alphabetically sorted, separate namespace)
+  - targetGroup: 0 = First chord group, 1 = Second chord group, etc.
   - Automatically applies MIDI note duration scalar (Row X Knob 2)
   - Triggers expression envelope with MIDI parameters (Row X Knobs 4/5/6)
   - Updates parameters from MIDI before each chord
-- /melody - Send JSON melody to any group
+  - Sends /chord/complete [targetGroup] to port 7001 AFTER chord playback finishes
+- /melody - Send JSON melody to regular group by index or any group by name
+  - targetGroup (int): Index into REGULAR groups (alphabetically sorted, separate namespace)
+  - targetGroup: 0 = First regular group, 1 = Second regular group, etc.
+  - targetGroup (string): Group name for explicit targeting (works for any group type)
+  - Sends /melody/complete [targetGroup] to port 7001 AFTER melody playback finishes
 - /group/<name>/note - Trigger notes on specific groups (routes per group type)
 - /group/<name>/expression - Trigger expression envelope with MIDI parameters
 - /system/start, /system/stop - System control

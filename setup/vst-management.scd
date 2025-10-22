@@ -41,6 +41,13 @@
     var multiInstrumentToggle; // <-- For Multi-Instrument Mode toggle
     var groupMgmtLayout, addToGroupLayout, addToGroupButton, existingGroupMenu;
     var createGroupLayout, newGroupNameField, createNewGroupButton, groupTypeMenu, groupTypeLayout;
+    // Group Details & MIDI Mapping variables
+    var groupDetailsLayout, groupsListView, selectedGroupLayout;
+    var groupNameText, groupTypeText, groupIndexText;
+    var midiRowLayout, midiRowMenu, manualOverrideCheck;
+    var groupMembersLabel, groupMembersListView;
+    var groupActionsLayout, removeFromGroupButton, deleteGroupButton;
+    var updateGroupsList, updateSelectedGroupDetails;
     // Configuration management variables
     var configLayout, configSelectorMenu, configMenuItems, loadConfigButton, saveConfigButton;
     var saveConfigLayout, configNameField, deleteConfigButton, setDefaultButton;
@@ -67,7 +74,7 @@
     };
 
     // Create the window and UI elements
-    win = Window("VST Manager", Rect(100, 100, 400, 650)); // Increased height for configuration management
+    win = Window("VST Manager", Rect(100, 100, 400, 850)); // Increased height for group details & MIDI mapping
     layout = VLayout();
     instances = [];
 
@@ -266,6 +273,224 @@
 
     layout.add(groupMgmtLayout);
     // --- End Group Management Section ---
+
+    // --- Group Details & MIDI Mapping Section ---
+    layout.add(StaticText().string_("Group Details & MIDI Mapping:"));
+    groupDetailsLayout = VLayout();
+
+    // Groups list
+    groupsListView = ListView()
+        .selectionMode_(\single)
+        .items_([])  // Will be populated by updateGroupsList
+        .action_({ |view|
+            var selectedIdx, groupNames, selectedGroup;
+            selectedIdx = view.value;
+            if (selectedIdx.notNil and: { ~vstManager.notNil }) {
+                groupNames = ~vstManager.getGroupNames().sort;
+                if (selectedIdx < groupNames.size) {
+                    selectedGroup = groupNames[selectedIdx];
+                    updateSelectedGroupDetails.(selectedGroup);
+                };
+            };
+        });
+
+    groupDetailsLayout.add(groupsListView, stretch: 1);
+
+    // Selected group details
+    selectedGroupLayout = VLayout();
+
+    // Group info display
+    groupNameText = StaticText().string_("No group selected");
+    groupTypeText = StaticText().string_("Type: -");
+    groupIndexText = StaticText().string_("Index: -");
+
+    // MIDI row control
+    midiRowLayout = HLayout();
+    midiRowLayout.add(StaticText().string_("MIDI Row:"));
+    midiRowMenu = PopUpMenu().items_(["1", "2", "3"]).value_(0);
+    midiRowLayout.add(midiRowMenu);
+    manualOverrideCheck = CheckBox().string_("Manual Override");
+    midiRowLayout.add(manualOverrideCheck);
+
+    // VST instances in group
+    groupMembersLabel = StaticText().string_("Assigned Instruments:");
+    groupMembersListView = ListView()
+        .selectionMode_(\single)
+        .items_([]);
+
+    // Group action buttons
+    groupActionsLayout = HLayout();
+    removeFromGroupButton = Button().states_([["Remove from Group"]])
+        .action_({ |btn|
+            var selectedGroupIdx, groupNames, groupName, selectedMemberIdx, members, memberToRemove;
+            selectedGroupIdx = groupsListView.value;
+            selectedMemberIdx = groupMembersListView.value;
+
+            if (selectedGroupIdx.notNil and: { selectedMemberIdx.notNil } and: { ~vstManager.notNil }) {
+                groupNames = ~vstManager.getGroupNames().sort;
+                if (selectedGroupIdx < groupNames.size) {
+                    groupName = groupNames[selectedGroupIdx];
+                    members = ~vstManager.groups[groupName].members;
+                    if (selectedMemberIdx < members.size) {
+                        memberToRemove = members[selectedMemberIdx];
+                        ~vstManager.removeFromGroup(groupName, memberToRemove);  // Fixed parameter order
+                        updateGroupsList.();
+                        updateSelectedGroupDetails.(groupName);
+                        statusText.string = "Removed % from group %".format(memberToRemove, groupName);
+                    };
+                };
+            };
+        });
+
+    deleteGroupButton = Button().states_([["Delete Group"]])
+        .action_({ |btn|
+            var selectedGroupIdx, groupNames, groupName;
+            selectedGroupIdx = groupsListView.value;
+
+            if (selectedGroupIdx.notNil and: { ~vstManager.notNil }) {
+                groupNames = ~vstManager.getGroupNames().sort;
+                if (selectedGroupIdx < groupNames.size) {
+                    groupName = groupNames[selectedGroupIdx];
+                    // Clear any MIDI row override for this group
+                    ~midiRowOverrides[groupName] = nil;
+                    // Delete the group
+                    ~vstManager.deleteGroup(groupName);
+                    updateGroupsList.();
+                    updateSelectedGroupDetails.(nil);
+                    statusText.string = "Deleted group: %".format(groupName);
+                };
+            };
+        });
+
+    groupActionsLayout.add(removeFromGroupButton);
+    groupActionsLayout.add(deleteGroupButton);
+
+    // Add all to selected group layout
+    selectedGroupLayout.add(groupNameText);
+    selectedGroupLayout.add(groupTypeText);
+    selectedGroupLayout.add(groupIndexText);
+    selectedGroupLayout.add(midiRowLayout);
+    selectedGroupLayout.add(groupMembersLabel);
+    selectedGroupLayout.add(groupMembersListView, stretch: 1);
+    selectedGroupLayout.add(groupActionsLayout);
+
+    groupDetailsLayout.add(selectedGroupLayout);
+    layout.add(groupDetailsLayout, stretch: 1);
+
+    // Function to update groups list display
+    updateGroupsList = {
+        var groupItems, groupNames, currentSelection;
+
+        if (~vstManager.notNil) {
+            groupNames = ~vstManager.getGroupNames().sort;
+            groupItems = groupNames.collect { |name|
+                var groupType, midiRow, override;
+                groupType = ~vstManager.getGroupType(name);
+                midiRow = ~getMIDIRowForGroup.(name);
+                override = ~midiRowOverrides[name].notNil;
+
+                format("% (%) - Row % %",
+                    name,
+                    if(groupType == \chord) { "Chord" } { "Regular" },
+                    midiRow,
+                    if(override) { "[M]" } { "" }  // [M] indicates manual override
+                )
+            };
+
+            currentSelection = groupsListView.value;
+            groupsListView.items = groupItems;
+
+            // Restore selection if valid
+            if (currentSelection.notNil and: { currentSelection < groupItems.size }) {
+                groupsListView.value = currentSelection;
+            };
+        };
+    };
+
+    // Function to update selected group details
+    updateSelectedGroupDetails = { |groupName|
+        var groupType, groupIndex, members, currentRow, hasOverride;
+
+        if (groupName.notNil and: { ~vstManager.notNil }) {
+            groupType = ~vstManager.getGroupType(groupName);
+            groupIndex = ~oscLayers.groupToIndex[groupName] ? "-";
+            members = ~vstManager.groups[groupName].members;
+            currentRow = ~getMIDIRowForGroup.(groupName);
+            hasOverride = ~midiRowOverrides[groupName].notNil;
+
+            groupNameText.string = "Selected Group: " ++ groupName;
+            groupTypeText.string = "Type: " ++ if(groupType == \chord) { "Chord Group" } { "Regular Group" };
+            groupIndexText.string = format("Index: % (alphabetically sorted)", groupIndex);
+
+            midiRowMenu.value = currentRow - 1;  // Menu is 0-indexed
+            manualOverrideCheck.value = hasOverride.asInteger;
+
+            groupMembersListView.items = members ? [];
+        } {
+            // Clear details
+            groupNameText.string = "No group selected";
+            groupTypeText.string = "Type: -";
+            groupIndexText.string = "Index: -";
+            groupMembersListView.items = [];
+        };
+    };
+
+    // MIDI row change handler
+    midiRowMenu.action = { |menu|
+        var selectedGroupIdx, groupName, newRow;
+
+        selectedGroupIdx = groupsListView.value;
+        if (selectedGroupIdx.notNil) {
+            groupName = ~vstManager.getGroupNames().sort[selectedGroupIdx];
+            newRow = menu.value + 1;  // Convert 0-indexed to 1-indexed
+
+            if (manualOverrideCheck.value.asBoolean) {
+                ~midiRowOverrides[groupName] = newRow;
+                "Set manual MIDI row % for group '%'".format(newRow, groupName).postln;
+            } {
+                // Remove override to use automatic assignment
+                ~midiRowOverrides[groupName] = nil;
+                "Removed manual MIDI row for group '%' (using automatic)".format(groupName).postln;
+            };
+
+            // Refresh dynamic layers to apply change
+            if (~updateLayerMIDIRow.notNil) {
+                ~updateLayerMIDIRow.(groupName);
+            };
+
+            // Update display
+            updateGroupsList.();
+            statusText.string = format("MIDI row updated for group: %", groupName);
+        };
+    };
+
+    // Manual override checkbox handler
+    manualOverrideCheck.action = { |check|
+        var selectedGroupIdx, groupName;
+
+        selectedGroupIdx = groupsListView.value;
+        if (selectedGroupIdx.notNil) {
+            groupName = ~vstManager.getGroupNames().sort[selectedGroupIdx];
+
+            if (check.value.asBoolean) {
+                // Enable manual override with current value
+                ~midiRowOverrides[groupName] = midiRowMenu.value + 1;
+            } {
+                // Disable manual override
+                ~midiRowOverrides[groupName] = nil;
+            };
+
+            // Trigger updates
+            updateGroupsList.();
+            if (~updateLayerMIDIRow.notNil) {
+                ~updateLayerMIDIRow.(groupName);
+            };
+        };
+    };
+
+    // Initialize the groups list
+    updateGroupsList.();
+    // --- End Group Details & MIDI Mapping Section ---
 
     // --- Keyboard Group Assignment UI ---
     keyboardGroupHLayout = HLayout();
@@ -718,6 +943,11 @@
                 // Update existing group menu for "Add to Group" functionality
                 existingGroupMenu.items = ["Select Group..."] ++ (~vstManager.getGroupNames().sort ? []);
                 if(existingGroupMenu.items.size > 1) { existingGroupMenu.value = 0 }; // Reset to "Select Group..."
+
+                // Update the new group details list
+                if (updateGroupsList.notNil) {
+                    updateGroupsList.();
+                };
 
                 // Try to restore previous selection
                 if(currentSelectedItem.notNil) {

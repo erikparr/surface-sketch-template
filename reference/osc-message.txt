@@ -1,28 +1,80 @@
+INFO:     127.0.0.1:50833 - "OPTIONS /osc/send-melody HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50835 - "OPTIONS /osc/send-melody HTTP/1.1" 200 OK
+
 ================================================================================
 🎵 SENDING OSC MESSAGE
-   Path: /chord
+   Path: /melody
    Target: 127.0.0.1:7000
+   Loop: False
    Payload:
 {
     "notes": [
         {
-            "midi": 78,
-            "vel": 0.6377952755905512,
-            "dur": 1
+            "midi": 89,
+            "vel": 0.7,
+            "dur": 0.25
         },
         {
-            "midi": 82,
-            "vel": 0.41732283464566927,
-            "dur": 1
+            "midi": 84,
+            "vel": 0.7,
+            "dur": 0.25
         },
         {
-            "midi": 73,
-            "vel": 0.6771653543307087,
+            "midi": 81,
+            "vel": 0.7,
+            "dur": 0.25
+        },
+        {
+            "midi": 77,
+            "vel": 0.7,
+            "dur": 0.25
+        },
+        {
+            "midi": 89,
+            "vel": 0.7,
             "dur": 1
         }
     ],
     "metadata": {
-        "totalDuration": 1.5,
+        "totalDuration": 3,
+        "noteCount": 5,
+        "name": "Original",
+        "loop": false,
+        "targetGroup": 0,
+        "key": "C",
+        "scale": "major"
+    }
+}
+================================================================================
+
+
+================================================================================
+🎵 SENDING OSC MESSAGE
+   Path: /chord
+   Target: 127.0.0.1:7000
+   Loop: False
+   Payload:
+INFO:     127.0.0.1:50833 - "POST /osc/send-melody HTTP/1.1" 200 OK
+{
+    "notes": [
+        {
+            "midi": 66,
+            "vel": 0.5590551181102362,
+            "dur": 1.5
+        },
+        {
+            "midi": 70,
+            "vel": 0.6456692913385826,
+            "dur": 1.5
+        },
+        {
+            "midi": 73,
+            "vel": 0.3228346456692913,
+            "dur": 1.5
+        }
+    ],
+    "metadata": {
+        "totalDuration": 1.875,
         "noteCount": 3,
         "name": "New Melody",
         "loop": false,
@@ -34,4 +86,10 @@
 }
 ================================================================================
 
-INFO:     127.0.0.1:52496 - "POST /osc/send-melody HTTP/1.1" 200 OK
+✅ Completion received - Address: /melody/complete, targetGroup: chordGroup1 (args: ('chordGroup1', 'melody_251020_205310'))
+INFO:     127.0.0.1:50986 - "POST /osc/send-melody HTTP/1.1" 200 OK
+✅ Completion event added for targetGroup chordGroup1
+✅ Completion received - Address: /chord/complete, targetGroup: 0 (args: (0,))
+✅ Completion event added for targetGroup 0
+✅ Completion received - Address: /melody/complete, targetGroup: 0 (args: (0,))
+✅ Completion event added for targetGroup 0
