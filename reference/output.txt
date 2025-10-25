@@ -1,0 +1,82 @@
+ (direct): 400
+Melody flute-melody using BPM 400: duration 0.45s for 3 notes
+Starting dynamic group flute-melody: 3 notes, duration: 0.45s, loop: false, velocity: 116, noteDurScalar: 0.06
+Group flute-melody expression from MIDI (Row 2): Min=0, Max=127, DurScalar=1.0
+Group flute-melody expression from MIDI (Row 2): Min=0, Max=127, DurScalar=1.0
+DEBUG startPlayback: Returning true
+DEBUG Synth args: start=0, peak=127, end=0, attackTime=0.22499999403954, releaseTime=0.22499999403954
+[/midi/cc] Group: flute-melody, CC11: 111 → 1 VSTs
+Sent completion for targetGroup 0
+EXTERNAL OSC /melody: Target group 'flute-melody' (from: 0)
+Group flute-melody: Melody list set with 1 melodies: [melody_251024_215010]
+Assigned melody 'melody_251024_215010' to dynamic group 'flute-melody'
+DEBUG startPlayback: groupName=flute-melody
+DEBUG startPlayback: targetGroup=0
+DEBUG startPlayback: loop=false
+DEBUG startPlayback: config.enabled=true
+DEBUG startPlayback: melodyList.size=1
+DEBUG startPlayback: melodyKey=melody_251024_215010
+DEBUG startPlayback: Melody found
+BPM from Row 1 Knob 8 (direct): 400
+Melody flute-melody using BPM 400: duration 0.45s for 3 notes
+Starting dynamic group flute-melody: 3 notes, duration: 0.45s, loop: false, velocity: 116, noteDurScalar: 0.06
+Group flute-melody expression from MIDI (Row 2): Min=0, Max=127, DurScalar=1.0
+Group flute-melody expression from MIDI (Row 2): Min=0, Max=127, DurScalar=1.0
+DEBUG startPlayback: Returning true
+DEBUG Synth args: start=0, peak=127, end=0, attackTime=0.22499999403954, releaseTime=0.22499999403954
+ERROR: ERROR: Chord group index 1 not found.
+  → Available chord groups (count: 1): [chordGroup1]
+  → Valid indices: 0 to 0
+ERROR: ERROR: Could not resolve chord group: 1
+EXTERNAL OSC /chord: 2 notes → chord group 'nil' (target: 1)
+WARNING: Group nil not found in dynamic layers
+ERROR: Message 'noteDurationScalar_' not understood.
+RECEIVER:
+   nil
+ARGS:
+   Float 0.368583   CC130757 3FD796DB
+KEYWORD ARGUMENTS:
+CALL STACK:
+	DoesNotUnderstandError:reportError
+		arg this = <instance of DoesNotUnderstandError>
+	Nil:handleError
+		arg this = nil
+		arg error = <instance of DoesNotUnderstandError>
+	Thread:handleError
+		arg this = <instance of Thread>
+		arg error = <instance of DoesNotUnderstandError>
+	Object:throw
+		arg this = <instance of DoesNotUnderstandError>
+	Object:doesNotUnderstand
+		arg this = nil
+		arg selector = 'noteDurationScalar_'
+		arg args = [*1]
+		arg kwargs = [*0]
+	< closed FunctionDef >
+		arg groupName = nil
+		var config = nil
+		var rowNum = 1
+	< closed FunctionDef >
+		arg msg = [*2]
+		arg time = 342.492841292
+		arg addr = <instance of NetAddr>
+		var jsonString = "{"notes": [{"midi": 82, "vel..."
+		var data = <instance of Event>
+		var notes = [*2]
+		var targetGroup = 1
+		var groupName = nil
+		var maxDuration = nil
+	OSCMessageDispatcher:value
+		arg this = <instance of OSCMessageDispatcher>
+		arg msg = [*2]
+		arg time = 342.492841292
+		arg addr = <instance of NetAddr>
+		arg recvPort = 7000
+	Main:recvOSCmessage
+		arg this = <instance of Main>
+		arg time = 342.492841292
+		arg replyAddr = <instance of NetAddr>
+		arg recvPort = 7000
+		arg msg = [*2]
+^^ ERROR: Message 'noteDurationScalar_' not understood.
+RECEIVER: nil

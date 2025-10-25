@@ -1044,7 +1044,7 @@
         currentMelodyIndex: 0,
 
         // Expression control
-        expressionCC: 11 + alphabeticalIndex,  // Auto-assigned CC
+        expressionCC: 11,  // Standard MIDI Expression CC for all groups
         expressionMin: rawMin,      // Use MIDI value
         expressionMax: rawMax,      // Use MIDI value
         expressionDurationScalar: durationScalar,
@@ -1059,7 +1059,7 @@
         // CC control (matching legacy structure)
         ccControl: (
             enabled: true,
-            expressionCC: 11 + alphabeticalIndex,
+            expressionCC: 11,  // Standard MIDI Expression CC for all groups
             expressionMin: rawMin,      // Use MIDI value
             expressionMax: rawMax,      // Use MIDI value
             expressionShape: \sin,
