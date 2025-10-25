@@ -1774,6 +1774,9 @@
                             // Update expression parameters from MIDI knobs RIGHT before triggering
                             ~updateLayerExpressionParams.(groupName);
 
+                            // CRITICAL: Track which group triggered the envelope for /midi/cc routing
+                            ~oscLayers.lastTriggeredGroup = groupName;
+
                             // NEW: Debug output to verify expression values
                             "Group % expression from MIDI (Row %): Min=%, Max=%, DurScalar=%".format(
                                 groupName, rowNum,
